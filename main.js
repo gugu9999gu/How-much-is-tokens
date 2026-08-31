@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen } = require("electron");
+const fs = require("fs");
 const path = require("path");
 const { loadSettings, saveSettings } = require("./lib/settings");
 const { fetchAll } = require("./lib/usage");
@@ -20,6 +21,25 @@ function applyAlwaysOnTop(enabled) {
   if (!win) return;
   win.setAlwaysOnTop(!!enabled, enabled ? "screen-saver" : "normal");
   if (enabled) win.moveTop();
+}
+
+function startupPath() {
+  const portable = process.env.PORTABLE_EXECUTABLE_FILE;
+  if (portable && fs.existsSync(portable)) return portable;
+  return process.execPath;
+}
+
+function applyOpenAtLogin(enabled) {
+  const exe = startupPath();
+  app.setLoginItemSettings({ openAtLogin: false });
+  app.setLoginItemSettings({ openAtLogin: false, path: exe });
+  if (enabled) {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      path: exe,
+      args: [],
+    });
+  }
 }
 
 function createWindow() {
@@ -151,7 +171,7 @@ ipcMain.handle("save-settings", (_event, patch) => {
   if (Object.prototype.hasOwnProperty.call(patch || {}, "alwaysOnTop")) applyAlwaysOnTop(next.alwaysOnTop);
   if (Object.prototype.hasOwnProperty.call(patch || {}, "opacity") && win) win.setOpacity(next.opacity);
   if (Object.prototype.hasOwnProperty.call(patch || {}, "openAtLogin")) {
-    app.setLoginItemSettings({ openAtLogin: !!next.openAtLogin });
+    applyOpenAtLogin(!!next.openAtLogin);
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, "refreshSeconds")) scheduleRefresh();
   return next;
@@ -170,7 +190,7 @@ ipcMain.handle("resize", (_event, height) => {
 
 app.whenReady().then(() => {
   const settings = loadSettings();
-  app.setLoginItemSettings({ openAtLogin: !!settings.openAtLogin });
+  applyOpenAtLogin(!!settings.openAtLogin);
   createWindow();
   createTray();
   scheduleRefresh();
