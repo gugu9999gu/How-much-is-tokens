@@ -1,0 +1,51 @@
+{
+  "name": "how-much-is-tokens",
+  "version": "1.0.0",
+  "description": "화면에 남는 AI 구독 잔여량 위젯",
+  "main": "main.js",
+  "author": "gugu9999gu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gugu9999gu/How-much-is-tokens.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "probe": "node --experimental-sqlite lib/cli.js",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.gugu9999gu.how-much-is-tokens",
+    "productName": "How much is tokens",
+    "copyright": "Copyright © 2026 gugu9999gu",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "renderer/**/*",
+      "assets/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "How-much-is-tokens-${version}-portable.exe"
+    },
+    "compression": "maximum"
+  }
+}

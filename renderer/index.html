@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+    <title>AI 토큰 위젯</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="titlebar">
+        <div class="brand">
+          <span class="dot"></span>
+          <div>
+            <strong>토큰 위젯</strong>
+            <p id="updated">불러오는 중</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" id="refreshBtn" title="새로고침">↻</button>
+          <button type="button" id="compactBtn" title="간단/자세히">▣</button>
+          <button type="button" id="settingsBtn" title="설정">⚙</button>
+          <button type="button" id="hideBtn" title="숨기기">–</button>
+        </div>
+      </header>
+      <main id="list" class="list"></main>
+      <section id="settings" class="settings hidden" aria-label="설정">
+        <div class="set-group">
+          <h2>표시</h2>
+          <label class="toggle">
+            <span class="toggle-copy">
+              <b>항상 위에</b>
+              <small>다른 창보다 앞에 고정</small>
+            </span>
+            <input type="checkbox" id="alwaysOnTop" />
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+          <label class="toggle">
+            <span class="toggle-copy">
+              <b>시작 시 실행</b>
+              <small>윈도우 로그인 후 자동으로 열기</small>
+            </span>
+            <input type="checkbox" id="openAtLogin" />
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+          <label class="toggle">
+            <span class="toggle-copy">
+              <b>빈 계정 숨기기</b>
+              <small>로그인되지 않은 서비스 생략</small>
+            </span>
+            <input type="checkbox" id="hideMissing" />
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+          <div class="slider-row">
+            <div class="slider-head">
+              <span>투명도</span>
+              <em id="opacityValue">94%</em>
+            </div>
+            <input type="range" id="opacity" min="0.55" max="1" step="0.01" />
+          </div>
+        </div>
+
+        <div class="set-group">
+          <h2>동기화</h2>
+          <label class="field">
+            <span class="field-label">새로고침 간격</span>
+            <div class="stepper">
+              <input type="number" id="refreshSeconds" min="20" max="600" />
+              <span>초</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="set-group">
+          <h2>연결</h2>
+          <label class="field">
+            <span class="field-label">GitHub 토큰</span>
+            <textarea id="githubToken" rows="2" placeholder="Copilot용 PAT" spellcheck="false"></textarea>
+            <small>VS Code Copilot이 안 잡힐 때 사용</small>
+          </label>
+          <label class="field">
+            <span class="field-label">Cursor 쿠키</span>
+            <textarea id="cursorCookie" rows="2" placeholder="WorkosCursorSessionToken" spellcheck="false"></textarea>
+            <small>Cursor 잔여량이 비면 세션 쿠키를 붙여넣기</small>
+          </label>
+        </div>
+
+        <div class="settings-actions">
+          <button type="button" id="saveBtn" class="btn primary">저장하고 새로고침</button>
+          <button type="button" id="quitBtn" class="btn danger">위젯 종료</button>
+        </div>
+      </section>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

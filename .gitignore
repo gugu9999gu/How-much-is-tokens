@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.cache/
+_probe.js
+*.log
+*.exe
+.DS_Store
