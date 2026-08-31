@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen } = require("electron");
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, dialog } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const { loadSettings, saveSettings } = require("./lib/settings");
@@ -6,6 +6,27 @@ const { fetchAll } = require("./lib/usage");
 
 app.commandLine.appendSwitch("js-flags", "--experimental-sqlite");
 app.setAppUserModelId("com.tokenwidget.desktop");
+
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.whenReady().then(() => {
+    dialog.showMessageBoxSync({
+      type: "info",
+      title: "토큰 위젯",
+      message: "이미 실행 중입니다.",
+      buttons: ["확인"],
+    });
+    app.exit(0);
+  });
+} else {
+  app.on("second-instance", () => {
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+    applyAlwaysOnTop(loadSettings().alwaysOnTop);
+  });
+}
 
 let win = null;
 let tray = null;
@@ -63,7 +84,7 @@ function createWindow() {
     fullscreenable: false,
     skipTaskbar: true,
     alwaysOnTop: settings.alwaysOnTop,
-    hasShadow: true,
+    hasShadow: false,
     show: false,
     backgroundColor: "#00000000",
     icon: iconPath(),
@@ -76,6 +97,7 @@ function createWindow() {
   });
 
   win.setMenuBarVisibility(false);
+  win.setHasShadow(false);
   applyAlwaysOnTop(settings.alwaysOnTop);
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setOpacity(settings.opacity ?? 0.94);
@@ -189,6 +211,7 @@ ipcMain.handle("resize", (_event, height) => {
 });
 
 app.whenReady().then(() => {
+  if (!gotTheLock) return;
   const settings = loadSettings();
   applyOpenAtLogin(!!settings.openAtLogin);
   createWindow();

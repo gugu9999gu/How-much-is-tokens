@@ -26,11 +26,12 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.0-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.2-portable.exe`입니다.
 
 ## 사용
 
 - 헤더를 잡고 위치를 옮깁니다.
+- 이미 실행 중이면 새 창을 만들지 않고 알려 줍니다.
 - `↻` 새로고침, `▣` 간단/자세히, `⚙` 설정, `–` 트레이로 숨기기
 - 닫기 대신 숨기며, 종료는 설정 또는 트레이 메뉴에서 합니다.
 - Copilot이 안 보이면 GitHub 토큰을 설정에 붙여 넣으세요.
