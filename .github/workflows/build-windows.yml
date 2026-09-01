@@ -38,11 +38,35 @@ jobs:
           node --check lib/usage.js
           node --check lib/antigravity-bridge.js
           node --check lib/providers/antigravity.js
-          node --check lib/providers/gemini.js
           node --check renderer/app.js
 
       - name: Run tests
         run: npm test
+
+      - name: Smoke test Antigravity Windows bridge
+        shell: pwsh
+        run: |
+          $agyDir = Join-Path $HOME ".gemini\antigravity-cli"
+          New-Item -ItemType Directory -Force -Path $agyDir | Out-Null
+          $settingsPath = Join-Path $agyDir "settings.json"
+          [IO.File]::WriteAllText($settingsPath, "{}", (New-Object Text.UTF8Encoding($false)))
+
+          node -e "const r=require('./lib/antigravity-bridge').ensureBridgeInstalled(); if(!r.ok) throw new Error(JSON.stringify(r)); if(r.command.includes(' -File ')) throw new Error('quoted -File leaked into Antigravity command'); console.log(r.command);"
+
+          $settings = Get-Content -Raw -LiteralPath $settingsPath | ConvertFrom-Json
+          $command = [string]$settings.statusLine.command
+          if ($command -match '"') { throw "Antigravity command contains quote characters: $command" }
+
+          $fixture = '{"version":"1.0-test","email":"developer@example.com","plan_tier":"Pro","quota":{"gemini-weekly":{"remaining_fraction":0.75,"reset_in_seconds":3600},"3p-5h":{"remaining_fraction":0.42,"reset_in_seconds":1200}}}'
+          $fixture | cmd.exe /d /s /c $command
+          if ($LASTEXITCODE -ne 0) { throw "Statusline command failed with exit code $LASTEXITCODE" }
+
+          $snapshotPath = Join-Path $env:APPDATA "how-much-is-tokens\antigravity-status.json"
+          if (!(Test-Path -LiteralPath $snapshotPath)) { throw "Snapshot was not created" }
+          $snapshot = Get-Content -Raw -LiteralPath $snapshotPath | ConvertFrom-Json
+          if ($snapshot.accounts.Count -lt 1) { throw "Snapshot contains no account" }
+          if ($snapshot.accounts[0].quota.'gemini-weekly'.remaining_fraction -ne 0.75) { throw "Gemini quota was not captured" }
+          if ($snapshot.accounts[0].quota.'3p-5h'.remaining_fraction -ne 0.42) { throw "Third-party quota was not captured" }
 
       - name: Build portable EXE
         run: npm run dist
