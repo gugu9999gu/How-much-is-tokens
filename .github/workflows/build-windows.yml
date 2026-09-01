@@ -38,6 +38,10 @@ jobs:
           node --check lib/usage.js
           node --check lib/antigravity-bridge.js
           node --check lib/providers/antigravity.js
+          node --check lib/providers/cursor-auth.js
+          node --check lib/providers/cursor.js
+          node --check lib/providers/grok.js
+          node --check lib/providers/grokbot.js
           node --check renderer/app.js
 
       - name: Run tests

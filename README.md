@@ -1,6 +1,6 @@
 # How much is tokens
 
-화면에 항상 떠 있는 AI 구독 잔여량 위젯입니다. 로컬에 로그인된 Claude, Cursor, Codex, Copilot, Grok, Antigravity의 **남은 사용량**을 모아 보여 줍니다.
+화면에 항상 떠 있는 AI 구독 잔여량 위젯입니다. 로컬에 로그인된 Claude, Cursor, Grok Bot, Codex, Copilot, Grok, Antigravity의 **남은 사용량**을 모아 보여 줍니다.
 
 > Gemini CLI provider는 현재 위젯 표시 대상에서 제외했습니다. Google 계열 사용량은 Antigravity quota만 표시합니다.
 
@@ -29,7 +29,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.4-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.5-portable.exe`입니다.
 
 ## 사용
 
@@ -39,6 +39,7 @@ npm run dist
 - 닫기 대신 숨기며, 종료는 설정 또는 트레이 메뉴에서 합니다.
 - Copilot이 안 보이면 GitHub 토큰을 설정에 붙여 넣으세요.
 - Claude가 “로그인 필요”이면 터미널에서 `claude`를 한 번 실행해 세션을 갱신하세요.
+- Grok Bot은 Cursor 계정 세션을 사용하므로 Cursor 또는 Grok Bot에 로그인되어 있어야 합니다.
 - Antigravity는 `agy`를 한 번 실행한 뒤 위젯을 새로고침하면 공식 status-line bridge가 자동 연결됩니다.
 
 ## 지원 서비스
@@ -47,10 +48,22 @@ npm run dist
 | --- | --- |
 | Claude Code | `~/.claude/.credentials.json` |
 | Cursor | Cursor 앱 `state.vscdb` 세션 |
+| Grok Bot | Cursor 세션 + Cursor DashboardService의 Grok Bot usage RPC |
 | Codex / ChatGPT | `~/.codex/auth.json` |
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
-| Grok | `~/.grok/auth.json` |
+| Grok / Grok Build | `~/.grok/auth.json` |
 | Antigravity | 공식 custom status-line JSON의 `quota`, `plan_tier`, `email` |
+
+### Grok Bot
+
+Grok Bot은 일반 Grok/Grok Build와 별도 카드로 표시합니다. Grok Bot 자체가 Cursor 계정으로 로그인하고 사용량/결제를 Cursor 계정에서 관리하므로, 위젯도 Cursor가 로컬에 보유한 로그인 세션을 읽기 전용으로 재사용합니다.
+
+- `GetSandUsageStatus`: Grok Bot 주간 사용률, 남은 %, 리셋 시각, 사용 가능/소진 상태
+- `GetCurrentPeriodUsage`: on-demand 사용액, 한도, 잔액 및 결제 주기 종료 시각
+- Cursor 카드와 Grok Bot 카드는 같은 로그인 세션을 공유하지만 quota는 서로 다른 product meter로 구분해 표시
+- Grok Bot 인증정보를 별도 파일에 복사하거나 저장하지 않음
+
+Cursor/Grok Bot 사용량 RPC는 현재 Cursor 앱/대시보드가 사용하는 계정 API이며 공개 REST 문서로 고정된 API는 아닙니다. 응답 스키마가 바뀔 수 있으므로 parser 테스트를 함께 유지합니다.
 
 ### Antigravity
 
@@ -85,7 +98,7 @@ npm run probe
 
 1. `npm ci`
 2. JavaScript syntax check
-3. `npm test`
+3. `npm test` (Antigravity + Grok Bot parser)
 4. 실제 `cmd.exe → PowerShell` Antigravity status-line bridge smoke test
 5. `npm run dist`
 6. `How-much-is-tokens-windows-portable` artifact 업로드
