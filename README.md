@@ -13,6 +13,7 @@
 - 설정은 `%APPDATA%\how-much-is-tokens`에 저장
 - **시작 시 실행**은 지금 있는 포터블 exe 경로를 시작 프로그램에 등록합니다. exe를 다른 폴더로 옮기면 설정을 한 번 껐다 다시 켜세요.
 - v1.0.6부터 표시되는 서비스/카드 수에 맞춰 위젯 높이가 자동으로 늘어나며, 앱 내부의 최대 높이 제한을 두지 않습니다.
+- v1.0.7부터 카드는 AI 제공자별로 정렬하고 섹션을 나눠 표시합니다.
 
 Windows가 SmartScreen 경고를 띄우면 **추가 정보 → 실행**을 누르면 됩니다. 코드 서명은 없습니다.
 
@@ -30,7 +31,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.6-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.7-portable.exe`입니다.
 
 ## 사용
 
@@ -38,6 +39,8 @@ npm run dist
 - 이미 실행 중이면 새 창을 만들지 않고 알려 줍니다.
 - `↻` 새로고침, `▣` 간단/자세히, `⚙` 설정, `–` 트레이로 숨기기
 - 표시 카드가 추가/제거되면 콘텐츠 높이를 다시 계산해 위젯 창 높이도 자동 조정합니다.
+- AI 제공자 정렬 순서는 `OpenAI → Anthropic → Google → xAI → Cursor → GitHub → 기타`입니다.
+- Grok과 Grok Bot은 xAI 섹션에 함께 표시하며, Grok Bot의 실제 로그인/사용량 조회는 Cursor 계정을 사용합니다.
 - 닫기 대신 숨기며, 종료는 설정 또는 트레이 메뉴에서 합니다.
 - Copilot이 안 보이면 GitHub 토큰을 설정에 붙여 넣으세요.
 - Claude가 “로그인 필요”이면 터미널에서 `claude`를 한 번 실행해 세션을 갱신하세요.
@@ -55,6 +58,18 @@ npm run dist
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
 | Grok / Grok Build | `~/.grok/auth.json` |
 | Antigravity | 공식 custom status-line JSON의 `quota`, `plan_tier`, `email` |
+
+### 제공자별 정렬
+
+카드는 서비스 배열의 등록 순서가 아니라 각 서비스의 AI 제공자 메타데이터를 기준으로 정렬됩니다. UI에서는 각 제공자 이름과 구분선을 표시하고 같은 제공자의 카드를 하나의 섹션에 연속 배치합니다.
+
+- OpenAI: Codex / ChatGPT
+- Anthropic: Claude
+- Google: Antigravity
+- xAI: Grok / Grok Bot
+- Cursor: Cursor
+- GitHub: Copilot
+- 새 provider가 메타데이터 없이 추가된 경우 `기타` 섹션으로 자동 이동
 
 ### Grok Bot
 
@@ -100,7 +115,7 @@ npm run probe
 
 1. `npm ci`
 2. JavaScript syntax check
-3. `npm test` (Antigravity + Grok Bot parser)
+3. `npm test` (Antigravity + Grok Bot parser + provider grouping)
 4. 실제 `cmd.exe → PowerShell` Antigravity status-line bridge smoke test
 5. `npm run dist`
 6. `How-much-is-tokens-windows-portable` artifact 업로드

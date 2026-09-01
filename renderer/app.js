@@ -40,6 +40,48 @@ function visibleProviders(providers) {
   return providers.filter((p) => p.status !== "missing");
 }
 
+function groupProviders(providers) {
+  const groups = [];
+  for (const provider of providers) {
+    const vendor = provider.vendor || "기타";
+    const current = groups[groups.length - 1];
+    if (current && current.vendor === vendor) current.providers.push(provider);
+    else groups.push({ vendor, providers: [provider] });
+  }
+  return groups;
+}
+
+function renderProviderCard(provider) {
+  const remaining = provider.remainingPct;
+  const plan = provider.plan ? ` · ${provider.plan}` : "";
+  const statusLine =
+    provider.status === "ok"
+      ? resetText(provider.resetAt)
+      : provider.status === "login"
+        ? "로그인 필요"
+        : provider.status === "missing"
+          ? "계정 없음"
+          : provider.error || "오류";
+  const chips = [
+    ...(provider.windows || []).slice(0, compact ? 0 : 4).map((win) => `${win.label} ${pctLabel(win.remainingPct)}%`),
+    ...(provider.extras || []).filter((item) => String(item.value || "").length < 28).slice(0, compact ? 0 : 4).map((item) => `${item.label} ${item.value}`),
+  ].map((text) => `<span class="chip">${text}</span>`).join("");
+  const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
+  return `
+    <article class="row ${compact ? "compact" : ""}">
+      <div class="ring" style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};">
+        <span>${provider.status === "ok" ? pctLabel(remaining) : "·"}</span>
+      </div>
+      <div class="meta">
+        <b>${provider.name}${plan}</b>
+        <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
+        ${chips ? `<div class="windows">${chips}</div>` : ""}
+        ${hint}
+      </div>
+    </article>
+  `;
+}
+
 function render(payload) {
   lastPayload = payload;
   const settings = payload.settings || {};
@@ -55,36 +97,17 @@ function render(payload) {
     return;
   }
 
-  listEl.innerHTML = providers.map((provider) => {
-    const remaining = provider.remainingPct;
-    const plan = provider.plan ? ` · ${provider.plan}` : "";
-    const statusLine =
-      provider.status === "ok"
-        ? resetText(provider.resetAt)
-        : provider.status === "login"
-          ? "로그인 필요"
-          : provider.status === "missing"
-            ? "계정 없음"
-            : provider.error || "오류";
-    const chips = [
-      ...(provider.windows || []).slice(0, compact ? 0 : 4).map((win) => `${win.label} ${pctLabel(win.remainingPct)}%`),
-      ...(provider.extras || []).filter((item) => String(item.value || "").length < 28).slice(0, compact ? 0 : 4).map((item) => `${item.label} ${item.value}`),
-    ].map((text) => `<span class="chip">${text}</span>`).join("");
-    const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
-    return `
-      <article class="row ${compact ? "compact" : ""}">
-        <div class="ring" style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};">
-          <span>${provider.status === "ok" ? pctLabel(remaining) : "·"}</span>
-        </div>
-        <div class="meta">
-          <b>${provider.name}${plan}</b>
-          <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
-          ${chips ? `<div class="windows">${chips}</div>` : ""}
-          ${hint}
-        </div>
-      </article>
-    `;
-  }).join("");
+  listEl.innerHTML = groupProviders(providers).map((group) => `
+    <section class="provider-group">
+      <div class="provider-group-head">
+        <span>${group.vendor}</span>
+        <i></i>
+      </div>
+      <div class="provider-group-cards">
+        ${group.providers.map(renderProviderCard).join("")}
+      </div>
+    </section>
+  `).join("");
   requestResize();
 }
 
