@@ -51,6 +51,27 @@ function groupProviders(providers) {
   return groups;
 }
 
+function isFiveHourWindow(win) {
+  const text = `${win && win.id ? win.id : ""} ${win && win.label ? win.label : ""}`.toLowerCase();
+  return text.includes("5시간") || /(^|[^0-9])5h([^0-9]|$)/.test(text) || /five[ _-]?hour/.test(text);
+}
+
+function renderQuotaRing(win) {
+  const remaining = win.remainingPct;
+  const reset = resetText(win.resetAt);
+  return `
+    <div class="quota-ring-item">
+      <div class="quota-ring" style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};">
+        <span>${pctLabel(remaining)}%</span>
+      </div>
+      <div class="quota-ring-copy">
+        <b>${win.label}</b>
+        ${reset ? `<small>${reset}</small>` : ""}
+      </div>
+    </div>
+  `;
+}
+
 function renderProviderCard(provider) {
   const remaining = provider.remainingPct;
   const plan = provider.plan ? ` · ${provider.plan}` : "";
@@ -63,11 +84,32 @@ function renderProviderCard(provider) {
           ? "계정 없음"
           : provider.error || "오류";
   const quotaWindows = compact ? [] : (provider.windows || []);
-  const chips = [
-    ...quotaWindows.map((win) => `${win.label} ${pctLabel(win.remainingPct)}%`),
-    ...(provider.extras || []).filter((item) => String(item.value || "").length < 28).slice(0, compact ? 0 : 4).map((item) => `${item.label} ${item.value}`),
-  ].map((text) => `<span class="chip">${text}</span>`).join("");
+  const showQuotaRings = quotaWindows.length >= 2 && quotaWindows.some(isFiveHourWindow);
+  const extras = (provider.extras || [])
+    .filter((item) => String(item.value || "").length < 28)
+    .slice(0, compact ? 0 : 4)
+    .map((item) => `<span class="chip">${item.label} ${item.value}</span>`)
+    .join("");
+  const quotaChips = showQuotaRings
+    ? ""
+    : quotaWindows.map((win) => `<span class="chip">${win.label} ${pctLabel(win.remainingPct)}%</span>`).join("");
+  const chips = `${quotaChips}${extras}`;
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
+
+  if (showQuotaRings) {
+    return `
+      <article class="row multi-quota ${compact ? "compact" : ""}">
+        <div class="meta">
+          <b>${provider.name}${plan}</b>
+          <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
+          <div class="quota-rings">${quotaWindows.map(renderQuotaRing).join("")}</div>
+          ${extras ? `<div class="windows">${extras}</div>` : ""}
+          ${hint}
+        </div>
+      </article>
+    `;
+  }
+
   return `
     <article class="row ${compact ? "compact" : ""}">
       <div class="ring" style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};">
