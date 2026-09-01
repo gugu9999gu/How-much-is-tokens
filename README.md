@@ -16,6 +16,7 @@
 - v1.0.7부터 카드는 AI 제공자별로 정렬하고 섹션을 나눠 표시합니다.
 - v1.0.8부터 5시간 한도와 주간 한도가 함께 제공되는 서비스는 두 한도를 모두 상세 보기에 표시합니다.
 - v1.0.9부터 5시간 한도가 있는 서비스는 5시간/주간 등 각 quota를 **독립 원형 그래프**로 표시하고, Antigravity 1.1.11+는 위젯이 공식 `/usage` 명령으로 quota를 자동 갱신합니다.
+- v1.0.10부터 설정에서 사용량 시각화를 **원형 / 막대 / 숫자** 방식으로 즉시 전환할 수 있습니다.
 
 Windows가 SmartScreen 경고를 띄우면 **추가 정보 → 실행**을 누르면 됩니다. 코드 서명은 없습니다.
 
@@ -33,7 +34,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.9-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.10-portable.exe`입니다.
 
 ## 사용
 
@@ -43,8 +44,9 @@ npm run dist
 - 표시 카드가 추가/제거되면 콘텐츠 높이를 다시 계산해 위젯 창 높이도 자동 조정합니다.
 - AI 제공자 정렬 순서는 `OpenAI → Anthropic → Google → xAI → Cursor → GitHub → 기타`입니다.
 - Grok과 Grok Bot은 xAI 섹션에 함께 표시하며, Grok Bot의 실제 로그인/사용량 조회는 Cursor 계정을 사용합니다.
-- 상세 모드에서 5시간 quota가 있는 서비스는 `5시간 한도`, `주간 한도`, 모델별 추가 주간 한도 등을 각각 원형 그래프로 표시합니다.
-- Compact 모드는 기존처럼 대표 잔여량 1개만 표시합니다.
+- 설정 → 표시 → `사용량 표시`에서 `원형`, `막대`, `숫자` 중 하나를 선택하면 저장과 동시에 전체 카드에 적용됩니다.
+- 상세 모드에서 5시간/주간 등 여러 quota가 있는 서비스는 선택한 시각화 방식으로 모든 quota를 각각 표시합니다.
+- Compact 모드에서는 대표 잔여량 1개만 표시하되 선택한 시각화 방식은 유지합니다.
 - 닫기 대신 숨기며, 종료는 설정 또는 트레이 메뉴에서 합니다.
 - Copilot이 안 보이면 GitHub 토큰을 설정에 붙여 넣으세요.
 - Claude가 “로그인 필요”이면 터미널에서 `claude`를 한 번 실행해 세션을 갱신하세요.
@@ -63,12 +65,22 @@ npm run dist
 | Grok / Grok Build | `~/.grok/auth.json` |
 | Antigravity | `agy -p "/usage"` (1.1.11+) 우선, 공식 custom status-line snapshot fallback |
 
-### 5시간 / 주간 원형 그래프
+### 사용량 시각화
 
-5시간 한도와 주간 한도를 동시에 제공하는 서비스는 상세 보기에서 quota별 원형 그래프를 각각 표시합니다. 각 그래프 안에는 남은 `%`가 표시되고, 옆에는 quota 이름과 리셋까지 남은 시간이 표시됩니다.
+설정의 `사용량 표시`에서 세 가지 모드를 선택할 수 있습니다. 선택값은 `%APPDATA%\how-much-is-tokens\settings.json`에 저장되며 다음 실행에도 유지됩니다. 기존 사용자처럼 설정값이 없는 경우 기본값은 `원형`입니다.
 
-- Claude: `5시간 한도`, `주간 한도`, Sonnet/Opus 등 모델별 주간 한도가 있으면 추가 원형 그래프로 표시
-- Codex / ChatGPT: 5시간 session window와 주간 window를 각각 원형 그래프로 표시
+- **원형**: 남은 퍼센트를 원형 게이지로 표시
+- **막대**: 남은 퍼센트를 가로 진행률 막대로 표시
+- **숫자**: 큰 퍼센트 숫자를 중심으로 표시
+- 잘못된/구버전 설정값은 자동으로 `원형`으로 복구
+- 여러 quota가 있는 카드에서는 5시간, 주간, 모델별 주간 한도 등이 모두 선택한 시각화 방식으로 함께 전환
+
+### 5시간 / 주간 quota
+
+5시간 한도와 주간 한도를 동시에 제공하는 서비스는 상세 보기에서 quota별 사용량을 각각 표시합니다. 각 항목에는 남은 `%`, quota 이름, 리셋까지 남은 시간이 표시됩니다.
+
+- Claude: `5시간 한도`, `주간 한도`, Sonnet/Opus 등 모델별 주간 한도가 있으면 추가 표시
+- Codex / ChatGPT: 5시간 session window와 주간 window를 각각 표시
 - Antigravity: `Gemini 5시간 한도`, `Gemini 주간 한도`, `Claude/GPT 5시간 한도`, `Claude/GPT 주간 한도`를 실제로 제공된 만큼 표시
 - 실제 API/CLI에 특정 bucket이 없는 경우에는 존재하지 않는 한도를 추정해서 만들지 않음
 
@@ -135,7 +147,7 @@ npm run probe
 
 1. `npm ci`
 2. JavaScript syntax check
-3. `npm test` (Antigravity status-line + live `/usage` parser + Grok Bot + provider grouping + quota pairing)
+3. `npm test` (Antigravity status-line + live `/usage` parser + Grok Bot + provider grouping + quota pairing + visualization modes)
 4. 실제 `cmd.exe → PowerShell` Antigravity status-line bridge smoke test
 5. `npm run dist`
 6. `How-much-is-tokens-windows-portable` artifact 업로드
