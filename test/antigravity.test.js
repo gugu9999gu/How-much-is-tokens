@@ -2,8 +2,8 @@ const assert = require("assert");
 const { bucketLabel, windowsForAccount } = require("../lib/providers/antigravity");
 const { commandForBridge, launcherScript, LAUNCHER_MARKER } = require("../lib/antigravity-bridge");
 
-assert.strictEqual(bucketLabel("gemini-weekly"), "Gemini 주간");
-assert.strictEqual(bucketLabel("3p-5h"), "Claude/GPT 5시간");
+assert.strictEqual(bucketLabel("gemini-weekly"), "Gemini 주간 한도");
+assert.strictEqual(bucketLabel("3p-5h"), "Claude/GPT 5시간 한도");
 
 const windows = windowsForAccount({
   id: "abc123",

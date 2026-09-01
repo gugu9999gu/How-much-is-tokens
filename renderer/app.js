@@ -62,8 +62,9 @@ function renderProviderCard(provider) {
         : provider.status === "missing"
           ? "계정 없음"
           : provider.error || "오류";
+  const quotaWindows = compact ? [] : (provider.windows || []);
   const chips = [
-    ...(provider.windows || []).slice(0, compact ? 0 : 4).map((win) => `${win.label} ${pctLabel(win.remainingPct)}%`),
+    ...quotaWindows.map((win) => `${win.label} ${pctLabel(win.remainingPct)}%`),
     ...(provider.extras || []).filter((item) => String(item.value || "").length < 28).slice(0, compact ? 0 : 4).map((item) => `${item.label} ${item.value}`),
   ].map((text) => `<span class="chip">${text}</span>`).join("");
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
