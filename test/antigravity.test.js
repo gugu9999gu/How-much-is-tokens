@@ -1,5 +1,6 @@
 const assert = require("assert");
 const { bucketLabel, windowsForAccount } = require("../lib/providers/antigravity");
+const { commandForBridge, launcherScript, LAUNCHER_MARKER } = require("../lib/antigravity-bridge");
 
 assert.strictEqual(bucketLabel("gemini-weekly"), "Gemini 주간");
 assert.strictEqual(bucketLabel("3p-5h"), "Claude/GPT 5시간");
@@ -29,4 +30,10 @@ assert.strictEqual(windows[0].remainingPct, 64);
 assert.strictEqual(windows[1].remainingPct, 31);
 assert.match(windows[0].label, /de\*\*\*@gmail\.com/);
 
-console.log("antigravity provider tests passed");
+const statusCommand = commandForBridge();
+assert.match(statusCommand, /^cmd\.exe \/d \/c /);
+assert.ok(statusCommand.includes(LAUNCHER_MARKER));
+assert.ok(!statusCommand.includes("-File \""), "Antigravity command must not contain a quoted PowerShell -File path");
+assert.match(launcherScript(), /powershell\.exe .* -File "/);
+
+console.log("antigravity provider and bridge tests passed");
