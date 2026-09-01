@@ -68,7 +68,7 @@ function render(payload) {
             : provider.error || "오류";
     const chips = [
       ...(provider.windows || []).slice(0, compact ? 0 : 4).map((win) => `${win.label} ${pctLabel(win.remainingPct)}%`),
-      ...(provider.extras || []).filter((item) => String(item.value || "").length < 28).slice(0, compact ? 0 : 2).map((item) => `${item.label} ${item.value}`),
+      ...(provider.extras || []).filter((item) => String(item.value || "").length < 28).slice(0, compact ? 0 : 4).map((item) => `${item.label} ${item.value}`),
     ].map((text) => `<span class="chip">${text}</span>`).join("");
     const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
     return `
