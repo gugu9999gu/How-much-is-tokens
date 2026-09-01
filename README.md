@@ -1,6 +1,6 @@
 # How much is tokens
 
-화면에 항상 떠 있는 AI 구독 잔여량 위젯입니다. 로컬에 로그인된 Claude, Cursor, Codex, Copilot, Grok, Gemini의 **남은 사용량**을 모아 보여 줍니다.
+화면에 항상 떠 있는 AI 구독 잔여량 위젯입니다. 로컬에 로그인된 Claude, Cursor, Codex, Copilot, Grok, Gemini, Antigravity의 **남은 사용량**을 모아 보여 줍니다.
 
 ## 포터블 실행 파일
 
@@ -36,6 +36,7 @@ npm run dist
 - 닫기 대신 숨기며, 종료는 설정 또는 트레이 메뉴에서 합니다.
 - Copilot이 안 보이면 GitHub 토큰을 설정에 붙여 넣으세요.
 - Claude가 “로그인 필요”이면 터미널에서 `claude`를 한 번 실행해 세션을 갱신하세요.
+- Antigravity가 “로그인 필요”이면 `agy`를 한 번 실행해 로그인 세션을 갱신하세요.
 
 ## 지원 서비스
 
@@ -47,8 +48,11 @@ npm run dist
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
 | Grok | `~/.grok/auth.json` |
 | Gemini CLI | `~/.gemini/oauth_creds.json` (있을 때만) |
+| Antigravity | Windows Credential Manager의 `gemini:antigravity`; Linux/container는 `~/.gemini/antigravity-cli/antigravity-oauth-token` |
 
-각 서비스 공식 공개 API가 아니라, 해당 앱/CLI가 쓰는 사용량 엔드포인트를 읽습니다. 요청은 조회만 하며 토큰을 소모하지 않습니다.
+Antigravity는 계정의 모델별 `retrieveUserQuota`와 `fetchAvailableModels`의 공유 quota를 함께 읽습니다. 상세 보기에서는 Gemini 모델별 잔여량과 Gemini 공유 풀, Claude/GPT 공유 풀을 분리해 보여 주며, 카드의 대표 퍼센트는 현재 확인 가능한 quota 중 가장 낮은 값입니다.
+
+각 서비스 공식 공개 API가 아니라, 해당 앱/CLI가 쓰는 사용량 엔드포인트를 읽습니다. 요청은 조회만 하며 토큰을 소모하지 않습니다. Antigravity 자격증명도 읽기만 하며 저장된 토큰을 수정하지 않습니다.
 
 ## 검증용 CLI
 
