@@ -5,10 +5,18 @@ const settingsBtn = document.getElementById("settingsBtn");
 const shellEl = document.querySelector(".shell");
 const opacityEl = document.getElementById("opacity");
 const opacityValueEl = document.getElementById("opacityValue");
+const visualizationInputs = [...document.querySelectorAll('input[name="visualization"]')];
+
+const VISUALIZATION_MODES = new Set(["ring", "bar", "number"]);
 
 let compact = false;
 let hideMissing = true;
+let visualization = "ring";
 let lastPayload = null;
+
+function normalizeVisualization(value) {
+  return VISUALIZATION_MODES.has(value) ? value : "ring";
+}
 
 function tone(pct) {
   if (pct == null) return "var(--login)";
@@ -51,11 +59,6 @@ function groupProviders(providers) {
   return groups;
 }
 
-function isFiveHourWindow(win) {
-  const text = `${win && win.id ? win.id : ""} ${win && win.label ? win.label : ""}`.toLowerCase();
-  return text.includes("5시간") || /(^|[^0-9])5h([^0-9]|$)/.test(text) || /five[ _-]?hour/.test(text);
-}
-
 function renderQuotaRing(win) {
   const remaining = win.remainingPct;
   const reset = resetText(win.resetAt);
@@ -72,8 +75,73 @@ function renderQuotaRing(win) {
   `;
 }
 
+function renderQuotaBar(win) {
+  const remaining = win.remainingPct;
+  const reset = resetText(win.resetAt);
+  return `
+    <div class="quota-bar-item">
+      <div class="quota-bar-head">
+        <b>${win.label}</b>
+        <strong>${pctLabel(remaining)}%</strong>
+      </div>
+      <div class="quota-bar-track">
+        <i style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};"></i>
+      </div>
+      ${reset ? `<small>${reset}</small>` : ""}
+    </div>
+  `;
+}
+
+function renderQuotaNumber(win) {
+  const remaining = win.remainingPct;
+  const reset = resetText(win.resetAt);
+  return `
+    <div class="quota-number-item" style="--tone:${tone(remaining)};">
+      <strong>${pctLabel(remaining)}<em>%</em></strong>
+      <div>
+        <b>${win.label}</b>
+        ${reset ? `<small>${reset}</small>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function renderQuotaVisual(win) {
+  if (visualization === "bar") return renderQuotaBar(win);
+  if (visualization === "number") return renderQuotaNumber(win);
+  return renderQuotaRing(win);
+}
+
+function renderSummaryVisual(provider) {
+  const remaining = provider.status === "ok" ? provider.remainingPct : null;
+  const display = provider.status === "ok" ? pctLabel(remaining) : "·";
+
+  if (visualization === "bar") {
+    return `
+      <div class="summary-bar">
+        <strong>${provider.status === "ok" ? `${display}%` : "--"}</strong>
+        <div><i style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};"></i></div>
+      </div>
+    `;
+  }
+
+  if (visualization === "number") {
+    return `
+      <div class="summary-number" style="--tone:${tone(remaining)};">
+        <strong>${provider.status === "ok" ? display : "--"}</strong>
+        <span>%</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="ring" style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};">
+      <span>${provider.status === "ok" ? display : "·"}</span>
+    </div>
+  `;
+}
+
 function renderProviderCard(provider) {
-  const remaining = provider.remainingPct;
   const plan = provider.plan ? ` · ${provider.plan}` : "";
   const statusLine =
     provider.status === "ok"
@@ -84,25 +152,25 @@ function renderProviderCard(provider) {
           ? "계정 없음"
           : provider.error || "오류";
   const quotaWindows = compact ? [] : (provider.windows || []);
-  const showQuotaRings = quotaWindows.length >= 2 && quotaWindows.some(isFiveHourWindow);
+  const showQuotaVisuals = quotaWindows.length >= 2;
   const extras = (provider.extras || [])
     .filter((item) => String(item.value || "").length < 28)
     .slice(0, compact ? 0 : 4)
     .map((item) => `<span class="chip">${item.label} ${item.value}</span>`)
     .join("");
-  const quotaChips = showQuotaRings
+  const quotaChips = showQuotaVisuals
     ? ""
     : quotaWindows.map((win) => `<span class="chip">${win.label} ${pctLabel(win.remainingPct)}%</span>`).join("");
   const chips = `${quotaChips}${extras}`;
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
 
-  if (showQuotaRings) {
+  if (showQuotaVisuals) {
     return `
-      <article class="row multi-quota ${compact ? "compact" : ""}">
+      <article class="row multi-quota visual-${visualization}">
         <div class="meta">
           <b>${provider.name}${plan}</b>
           <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
-          <div class="quota-rings">${quotaWindows.map(renderQuotaRing).join("")}</div>
+          <div class="quota-visuals quota-${visualization}s">${quotaWindows.map(renderQuotaVisual).join("")}</div>
           ${extras ? `<div class="windows">${extras}</div>` : ""}
           ${hint}
         </div>
@@ -111,10 +179,8 @@ function renderProviderCard(provider) {
   }
 
   return `
-    <article class="row ${compact ? "compact" : ""}">
-      <div class="ring" style="--pct:${remaining ?? 0}; --tone:${tone(remaining)};">
-        <span>${provider.status === "ok" ? pctLabel(remaining) : "·"}</span>
-      </div>
+    <article class="row visual-${visualization} ${compact ? "compact" : ""}">
+      ${renderSummaryVisual(provider)}
       <div class="meta">
         <b>${provider.name}${plan}</b>
         <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
@@ -130,6 +196,7 @@ function render(payload) {
   const settings = payload.settings || {};
   compact = !!settings.compact;
   hideMissing = settings.hideMissing !== false;
+  visualization = normalizeVisualization(settings.visualization);
   const providers = visibleProviders(payload.providers || []);
   const time = payload.fetchedAt ? new Date(payload.fetchedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "";
   updatedEl.textContent = payload.error ? payload.error : time ? `${time} 갱신` : "대기";
@@ -168,6 +235,18 @@ function setOpacityUi(value) {
   opacityEl.style.setProperty("--fill", `${Math.max(0, Math.min(100, fill))}%`);
 }
 
+function setVisualizationUi(value) {
+  const mode = normalizeVisualization(value);
+  visualizationInputs.forEach((input) => {
+    input.checked = input.value === mode;
+  });
+}
+
+function selectedVisualization() {
+  const checked = visualizationInputs.find((input) => input.checked);
+  return normalizeVisualization(checked ? checked.value : visualization);
+}
+
 function setSettingsOpen(open) {
   settingsEl.classList.toggle("hidden", !open);
   settingsBtn.classList.toggle("active", open);
@@ -179,6 +258,7 @@ function fillSettings(settings) {
   document.getElementById("alwaysOnTop").checked = !!settings.alwaysOnTop;
   document.getElementById("openAtLogin").checked = !!settings.openAtLogin;
   document.getElementById("hideMissing").checked = settings.hideMissing !== false;
+  setVisualizationUi(settings.visualization || "ring");
   setOpacityUi(settings.opacity ?? 0.94);
   document.getElementById("refreshSeconds").value = settings.refreshSeconds ?? 60;
   document.getElementById("githubToken").value = settings.githubToken || "";
@@ -193,11 +273,20 @@ document.getElementById("compactBtn").onclick = async () => {
   const settings = await window.tokenWidget.saveSettings({ compact });
   if (lastPayload) render({ ...lastPayload, settings });
 };
+visualizationInputs.forEach((input) => {
+  input.onchange = async () => {
+    if (!input.checked) return;
+    visualization = normalizeVisualization(input.value);
+    const settings = await window.tokenWidget.saveSettings({ visualization });
+    if (lastPayload) render({ ...lastPayload, settings });
+  };
+});
 document.getElementById("saveBtn").onclick = async () => {
   const patch = {
     alwaysOnTop: document.getElementById("alwaysOnTop").checked,
     openAtLogin: document.getElementById("openAtLogin").checked,
     hideMissing: document.getElementById("hideMissing").checked,
+    visualization: selectedVisualization(),
     opacity: Number(opacityEl.value),
     refreshSeconds: Number(document.getElementById("refreshSeconds").value),
     githubToken: document.getElementById("githubToken").value.trim(),
