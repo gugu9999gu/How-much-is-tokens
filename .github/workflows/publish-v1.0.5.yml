@@ -1,0 +1,86 @@
+name: Publish v1.0.5 Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    if: ${{ github.event.head_commit.message == 'release: publish v1.0.5' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download verified Windows artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 33467107661 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name How-much-is-tokens-windows-portable \
+            --dir release-artifact
+
+      - name: Verify release asset
+        run: |
+          test -f release-artifact/How-much-is-tokens-1.0.5-portable.exe
+          sha256sum release-artifact/How-much-is-tokens-1.0.5-portable.exe
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## How much is tokens v1.0.5
+
+          주요 AI 서비스의 잔여 사용량을 한 화면에서 확인하는 Windows 포터블 위젯입니다.
+
+          ### 주요 변경 사항
+          - **Grok Bot 사용량 지원**
+            - 주간 사용량 / 잔여량 / 리셋 시각
+            - 주간 사용 가능 또는 소진 상태
+            - On-demand 사용액 / 잔액 / 한도
+          - **Cursor 사용량 표시 개선**
+            - Cursor Models / Other Models 구분
+            - Cursor와 Grok Bot이 같은 로그인 세션을 안전하게 공유
+          - **Antigravity 지원 안정화**
+            - 공식 custom status-line JSON 기반 quota 수집
+            - Windows statusline 실행 오류 수정
+            - Gemini / Claude·GPT 5시간·주간 quota 표시
+          - **Gemini CLI 카드 제거**
+          - 상세 보기에서 크레딧/잔액 관련 항목을 더 많이 표시
+
+          ### 다운로드
+          `How-much-is-tokens-1.0.5-portable.exe`를 내려받아 설치 없이 실행하면 됩니다.
+
+          Windows SmartScreen 경고가 표시될 수 있습니다. 현재 코드 서명은 적용되어 있지 않습니다.
+
+          ### 검증
+          이 EXE는 `main` commit `6bcda79219e228c4d6bfacbfe6de63da500a869d`에서 GitHub Actions Windows runner로 다음 검증을 모두 통과한 artifact입니다.
+          - JavaScript syntax check
+          - Antigravity / Grok Bot parser tests
+          - Antigravity Windows status-line bridge smoke test
+          - electron-builder Windows portable build
+          EOF
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.5"
+          ASSET="release-artifact/How-much-is-tokens-1.0.5-portable.exe"
+          TARGET="6bcda79219e228c4d6bfacbfe6de63da500a869d"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$ASSET" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          fi
