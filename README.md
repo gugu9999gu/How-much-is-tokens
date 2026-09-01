@@ -14,6 +14,7 @@
 - **시작 시 실행**은 지금 있는 포터블 exe 경로를 시작 프로그램에 등록합니다. exe를 다른 폴더로 옮기면 설정을 한 번 껐다 다시 켜세요.
 - v1.0.6부터 표시되는 서비스/카드 수에 맞춰 위젯 높이가 자동으로 늘어나며, 앱 내부의 최대 높이 제한을 두지 않습니다.
 - v1.0.7부터 카드는 AI 제공자별로 정렬하고 섹션을 나눠 표시합니다.
+- v1.0.8부터 5시간 한도와 주간 한도가 함께 제공되는 서비스는 두 한도를 모두 상세 보기에 표시합니다.
 
 Windows가 SmartScreen 경고를 띄우면 **추가 정보 → 실행**을 누르면 됩니다. 코드 서명은 없습니다.
 
@@ -31,7 +32,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.7-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.8-portable.exe`입니다.
 
 ## 사용
 
@@ -41,6 +42,7 @@ npm run dist
 - 표시 카드가 추가/제거되면 콘텐츠 높이를 다시 계산해 위젯 창 높이도 자동 조정합니다.
 - AI 제공자 정렬 순서는 `OpenAI → Anthropic → Google → xAI → Cursor → GitHub → 기타`입니다.
 - Grok과 Grok Bot은 xAI 섹션에 함께 표시하며, Grok Bot의 실제 로그인/사용량 조회는 Cursor 계정을 사용합니다.
+- 상세 모드는 provider가 전달한 quota window를 임의로 4개로 자르지 않습니다. 따라서 `5시간 한도`와 `주간 한도`가 모두 존재하면 둘 다 표시됩니다.
 - 닫기 대신 숨기며, 종료는 설정 또는 트레이 메뉴에서 합니다.
 - Copilot이 안 보이면 GitHub 토큰을 설정에 붙여 넣으세요.
 - Claude가 “로그인 필요”이면 터미널에서 `claude`를 한 번 실행해 세션을 갱신하세요.
@@ -58,6 +60,15 @@ npm run dist
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
 | Grok / Grok Build | `~/.grok/auth.json` |
 | Antigravity | 공식 custom status-line JSON의 `quota`, `plan_tier`, `email` |
+
+### 5시간 / 주간 한도
+
+5시간 한도와 주간 한도를 동시에 제공하는 서비스는 상세 보기에서 두 값을 각각 별도 chip으로 표시합니다.
+
+- Claude: `5시간 한도`, `주간 한도`, 모델별 주간 한도가 있으면 함께 표시
+- Codex / ChatGPT: rate-limit primary/secondary window를 모두 표시하며 5시간 window는 `5시간 한도`, 장기 window는 `주간 한도`로 표시
+- Antigravity: 공식 status-line에서 전달된 `Gemini 5시간 한도` + `Gemini 주간 한도`, `Claude/GPT 5시간 한도` + `Claude/GPT 주간 한도`를 모두 표시
+- 실제 API/status-line에 특정 bucket이 없는 경우에는 존재하지 않는 한도를 추정해서 만들지 않음
 
 ### 제공자별 정렬
 
@@ -115,7 +126,7 @@ npm run probe
 
 1. `npm ci`
 2. JavaScript syntax check
-3. `npm test` (Antigravity + Grok Bot parser + provider grouping)
+3. `npm test` (Antigravity + Grok Bot parser + provider grouping + 5시간/주간 quota pairing)
 4. 실제 `cmd.exe → PowerShell` Antigravity status-line bridge smoke test
 5. `npm run dist`
 6. `How-much-is-tokens-windows-portable` artifact 업로드
