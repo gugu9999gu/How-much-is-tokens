@@ -15,6 +15,7 @@
 - v1.0.6부터 표시되는 서비스/카드 수에 맞춰 위젯 높이가 자동으로 늘어나며, 앱 내부의 최대 높이 제한을 두지 않습니다.
 - v1.0.7부터 카드는 AI 제공자별로 정렬하고 섹션을 나눠 표시합니다.
 - v1.0.8부터 5시간 한도와 주간 한도가 함께 제공되는 서비스는 두 한도를 모두 상세 보기에 표시합니다.
+- v1.0.9부터 5시간 한도가 있는 서비스는 5시간/주간 등 각 quota를 **독립 원형 그래프**로 표시하고, Antigravity 1.1.11+는 위젯이 공식 `/usage` 명령으로 quota를 자동 갱신합니다.
 
 Windows가 SmartScreen 경고를 띄우면 **추가 정보 → 실행**을 누르면 됩니다. 코드 서명은 없습니다.
 
@@ -32,7 +33,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.8-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.9-portable.exe`입니다.
 
 ## 사용
 
@@ -42,12 +43,13 @@ npm run dist
 - 표시 카드가 추가/제거되면 콘텐츠 높이를 다시 계산해 위젯 창 높이도 자동 조정합니다.
 - AI 제공자 정렬 순서는 `OpenAI → Anthropic → Google → xAI → Cursor → GitHub → 기타`입니다.
 - Grok과 Grok Bot은 xAI 섹션에 함께 표시하며, Grok Bot의 실제 로그인/사용량 조회는 Cursor 계정을 사용합니다.
-- 상세 모드는 provider가 전달한 quota window를 임의로 4개로 자르지 않습니다. 따라서 `5시간 한도`와 `주간 한도`가 모두 존재하면 둘 다 표시됩니다.
+- 상세 모드에서 5시간 quota가 있는 서비스는 `5시간 한도`, `주간 한도`, 모델별 추가 주간 한도 등을 각각 원형 그래프로 표시합니다.
+- Compact 모드는 기존처럼 대표 잔여량 1개만 표시합니다.
 - 닫기 대신 숨기며, 종료는 설정 또는 트레이 메뉴에서 합니다.
 - Copilot이 안 보이면 GitHub 토큰을 설정에 붙여 넣으세요.
 - Claude가 “로그인 필요”이면 터미널에서 `claude`를 한 번 실행해 세션을 갱신하세요.
 - Grok Bot은 Cursor 계정 세션을 사용하므로 Cursor 또는 Grok Bot에 로그인되어 있어야 합니다.
-- Antigravity는 `agy`를 한 번 실행한 뒤 위젯을 새로고침하면 공식 status-line bridge가 자동 연결됩니다.
+- Antigravity 1.1.11+는 위젯 새로고침만으로 quota가 자동 갱신됩니다. 최초 로그인 또는 완전히 만료/해제된 세션만 `agy`에서 다시 로그인해야 합니다.
 
 ## 지원 서비스
 
@@ -59,16 +61,16 @@ npm run dist
 | Codex / ChatGPT | `~/.codex/auth.json` |
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
 | Grok / Grok Build | `~/.grok/auth.json` |
-| Antigravity | 공식 custom status-line JSON의 `quota`, `plan_tier`, `email` |
+| Antigravity | `agy -p "/usage"` (1.1.11+) 우선, 공식 custom status-line snapshot fallback |
 
-### 5시간 / 주간 한도
+### 5시간 / 주간 원형 그래프
 
-5시간 한도와 주간 한도를 동시에 제공하는 서비스는 상세 보기에서 두 값을 각각 별도 chip으로 표시합니다.
+5시간 한도와 주간 한도를 동시에 제공하는 서비스는 상세 보기에서 quota별 원형 그래프를 각각 표시합니다. 각 그래프 안에는 남은 `%`가 표시되고, 옆에는 quota 이름과 리셋까지 남은 시간이 표시됩니다.
 
-- Claude: `5시간 한도`, `주간 한도`, 모델별 주간 한도가 있으면 함께 표시
-- Codex / ChatGPT: rate-limit primary/secondary window를 모두 표시하며 5시간 window는 `5시간 한도`, 장기 window는 `주간 한도`로 표시
-- Antigravity: 공식 status-line에서 전달된 `Gemini 5시간 한도` + `Gemini 주간 한도`, `Claude/GPT 5시간 한도` + `Claude/GPT 주간 한도`를 모두 표시
-- 실제 API/status-line에 특정 bucket이 없는 경우에는 존재하지 않는 한도를 추정해서 만들지 않음
+- Claude: `5시간 한도`, `주간 한도`, Sonnet/Opus 등 모델별 주간 한도가 있으면 추가 원형 그래프로 표시
+- Codex / ChatGPT: 5시간 session window와 주간 window를 각각 원형 그래프로 표시
+- Antigravity: `Gemini 5시간 한도`, `Gemini 주간 한도`, `Claude/GPT 5시간 한도`, `Claude/GPT 주간 한도`를 실제로 제공된 만큼 표시
+- 실제 API/CLI에 특정 bucket이 없는 경우에는 존재하지 않는 한도를 추정해서 만들지 않음
 
 ### 제공자별 정렬
 
@@ -93,24 +95,31 @@ Grok Bot은 일반 Grok/Grok Build와 별도 카드로 표시합니다. Grok Bot
 
 Cursor/Grok Bot 사용량 RPC는 현재 Cursor 앱/대시보드가 사용하는 계정 API이며 공개 REST 문서로 고정된 API는 아닙니다. 응답 스키마가 바뀔 수 있으므로 parser 테스트를 함께 유지합니다.
 
-### Antigravity
+### Antigravity 자동 quota 갱신
 
-Antigravity는 로그인 토큰이나 Windows Credential Manager를 직접 읽지 않습니다. 위젯은 Antigravity CLI가 공식적으로 지원하는 custom status-line command를 자동으로 연결하고, CLI가 전달한 JSON에서 필요한 값만 로컬 snapshot에 저장합니다.
+Antigravity 로그인 토큰이나 Windows Credential Manager의 값을 위젯이 직접 읽거나 복사하지 않습니다.
 
-Windows에서는 status-line launcher와 PowerShell bridge를 `~/.gemini/antigravity-cli/` 아래에 설치합니다. v1.0.4부터 Antigravity에 직접 `powershell.exe -File "..."` 경로를 전달하지 않고, 따옴표가 없는 `cmd.exe` launcher 명령을 사용합니다. 이전 v1.0.3에서 `Statusline Error`와 `-File '"C:\...ps1"'` 형태의 경로 오류가 발생한 경우 새 버전을 실행하고 위젯을 새로고침하면 기존 위젯 status-line 설정을 자동 교체합니다.
+`agy` 1.1.11 이상에서는 공식 CLI가 read-only slash command를 headless print mode에서 직접 처리합니다. 따라서 위젯 새로고침 시 다음 공식 명령을 백그라운드에서 실행합니다.
 
-- `quota`: Gemini / Claude·GPT의 5시간·주간 quota 등 CLI가 실제로 보고한 bucket만 표시
-- `plan_tier`: 현재 계정의 플랜 표시
-- `email`: 원문을 저장하지 않고 SHA-256 기반 계정 ID + 마스킹된 주소만 저장
-- 여러 Google 계정으로 전환해 `agy`를 실행하면 계정별 snapshot을 유지하고 상세 보기에서 각각의 quota를 분리 표시
-- 15분 이상 새 status-line 이벤트가 없으면 이전 값으로 표시
-- 기존에 사용자가 별도의 custom status-line command를 설정해 둔 경우에는 덮어쓰지 않음
-- 위젯이 만든 이전 `how-much-is-tokens-antigravity-statusline.ps1` 설정은 새 launcher 방식으로 자동 마이그레이션
-- `stack_with_default: true`를 사용해 Antigravity 기본 status line은 그대로 유지
+```bash
+agy -p "/usage"
+```
 
-Antigravity의 **AI Credits 잔액**은 현재 공식 custom status-line JSON 스키마에 포함되지 않습니다. 따라서 잔액을 추정하거나 비공개 API로 우회하지 않으며, 위젯에는 `useG1Credits` 설정의 사용/미사용 상태만 표시합니다. 실제 잔액과 결제 주기 사용량은 Antigravity CLI의 `/credits` 화면을 기준으로 확인하세요.
+이 명령은 모델 turn을 만들거나 AI quota를 소모하지 않고 실시간 quota를 다시 조회합니다. 위젯은 명령의 TSV 결과에서 Gemini / Claude·GPT의 5시간 및 주간 잔여량과 리셋 시각을 읽습니다.
 
-다른 provider는 각 앱/CLI가 이미 보유한 로컬 로그인 정보와 사용량 엔드포인트를 이용합니다. 토큰을 생성형 요청에 사용하지 않으며, Antigravity는 별도로 공식 status-line export만 사용합니다.
+안전장치:
+
+- 먼저 `agy --version`을 확인하고 **1.1.11 이상에서만** `/usage` headless 호출을 사용
+- 1.1.10 이하에서는 같은 입력이 일반 프롬프트로 처리될 수 있으므로 절대 자동 호출하지 않음
+- 최신 CLI 호출이 실패하면 기존 공식 custom status-line snapshot으로 fallback
+- CLI가 OS keyring에 저장한 로그인 세션을 자체적으로 사용하므로 위젯은 자격증명 값을 알 수 없음
+- 최초 로그인, 로그아웃, 계정 권한 해제처럼 refresh로 복구할 수 없는 인증 상태만 사용자가 `agy`에서 다시 로그인해야 함
+
+Windows에서는 fallback용 status-line launcher와 PowerShell bridge를 `~/.gemini/antigravity-cli/` 아래에 유지합니다. 기존 사용자 custom status-line 명령은 덮어쓰지 않습니다.
+
+Antigravity의 **AI Credits 잔액**은 공식 status-line과 현재 quota 출력에서 별도 numeric balance로 안정적으로 노출되는 경우에만 향후 표시합니다. 현재 위젯은 잔액을 추정하거나 비공개 API를 호출하지 않습니다.
+
+다른 provider는 각 앱/CLI가 이미 보유한 로컬 로그인 정보와 사용량 엔드포인트를 이용합니다. 토큰을 생성형 요청에 사용하지 않습니다.
 
 ## 검증용 CLI
 
@@ -126,7 +135,7 @@ npm run probe
 
 1. `npm ci`
 2. JavaScript syntax check
-3. `npm test` (Antigravity + Grok Bot parser + provider grouping + 5시간/주간 quota pairing)
+3. `npm test` (Antigravity status-line + live `/usage` parser + Grok Bot + provider grouping + quota pairing)
 4. 실제 `cmd.exe → PowerShell` Antigravity status-line bridge smoke test
 5. `npm run dist`
 6. `How-much-is-tokens-windows-portable` artifact 업로드
