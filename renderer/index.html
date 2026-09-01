@@ -51,6 +51,28 @@
             <input type="checkbox" id="hideMissing" />
             <span class="switch" aria-hidden="true"></span>
           </label>
+
+          <div class="viz-field">
+            <div class="viz-head">
+              <b>사용량 표시</b>
+              <small>원형, 막대, 숫자 방식으로 전환</small>
+            </div>
+            <div class="viz-picker" role="radiogroup" aria-label="사용량 표시 방식">
+              <label class="viz-option">
+                <input type="radio" name="visualization" value="ring" />
+                <span><em class="viz-icon">◯</em><b>원형</b></span>
+              </label>
+              <label class="viz-option">
+                <input type="radio" name="visualization" value="bar" />
+                <span><em class="viz-icon">▰</em><b>막대</b></span>
+              </label>
+              <label class="viz-option">
+                <input type="radio" name="visualization" value="number" />
+                <span><em class="viz-icon number">42</em><b>숫자</b></span>
+              </label>
+            </div>
+          </div>
+
           <div class="slider-row">
             <div class="slider-head">
               <span>투명도</span>
