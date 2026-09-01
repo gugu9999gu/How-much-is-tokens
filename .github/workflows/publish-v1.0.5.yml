@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .release-trigger-v1.0.5
 
 permissions:
   contents: write
@@ -11,7 +13,6 @@ permissions:
 
 jobs:
   release:
-    if: ${{ github.event.head_commit.message == 'release: publish v1.0.5' }}
     runs-on: ubuntu-latest
 
     steps:
