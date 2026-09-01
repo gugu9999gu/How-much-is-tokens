@@ -204,8 +204,14 @@ ipcMain.handle("quit", () => {
   app.quit();
 });
 ipcMain.handle("resize", (_event, height) => {
-  if (!win || !height) return;
-  const next = Math.max(160, Math.min(720, Math.round(height)));
+  if (!win) return;
+  const requested = Number(height);
+  if (!Number.isFinite(requested) || requested <= 0) return;
+
+  // The renderer measures the complete card stack. Keep only the minimum
+  // usable height; deliberately do not impose a maximum so additional AI
+  // provider cards can expand the widget to their full content height.
+  const next = Math.max(160, Math.round(requested));
   const bounds = win.getBounds();
   if (Math.abs(bounds.height - next) > 4) win.setContentSize(bounds.width, next);
 });
