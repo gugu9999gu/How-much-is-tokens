@@ -3,6 +3,7 @@ const updatedEl = document.getElementById("updated");
 const settingsEl = document.getElementById("settings");
 const settingsBtn = document.getElementById("settingsBtn");
 const shellEl = document.querySelector(".shell");
+const alwaysOnTopEl = document.getElementById("alwaysOnTop");
 const opacityEl = document.getElementById("opacity");
 const opacityValueEl = document.getElementById("opacityValue");
 const visualizationInputs = [...document.querySelectorAll('input[name="visualization"]')];
@@ -255,7 +256,7 @@ function setSettingsOpen(open) {
 }
 
 function fillSettings(settings) {
-  document.getElementById("alwaysOnTop").checked = !!settings.alwaysOnTop;
+  alwaysOnTopEl.checked = !!settings.alwaysOnTop;
   document.getElementById("openAtLogin").checked = !!settings.openAtLogin;
   document.getElementById("hideMissing").checked = settings.hideMissing !== false;
   setVisualizationUi(settings.visualization || "ring");
@@ -273,6 +274,16 @@ document.getElementById("compactBtn").onclick = async () => {
   const settings = await window.tokenWidget.saveSettings({ compact });
   if (lastPayload) render({ ...lastPayload, settings });
 };
+alwaysOnTopEl.onchange = async () => {
+  const settings = await window.tokenWidget.saveSettings({ alwaysOnTop: !!alwaysOnTopEl.checked });
+  alwaysOnTopEl.checked = !!settings.alwaysOnTop;
+  if (lastPayload) {
+    lastPayload = {
+      ...lastPayload,
+      settings: { ...(lastPayload.settings || {}), alwaysOnTop: !!settings.alwaysOnTop },
+    };
+  }
+};
 visualizationInputs.forEach((input) => {
   input.onchange = async () => {
     if (!input.checked) return;
@@ -283,7 +294,7 @@ visualizationInputs.forEach((input) => {
 });
 document.getElementById("saveBtn").onclick = async () => {
   const patch = {
-    alwaysOnTop: document.getElementById("alwaysOnTop").checked,
+    alwaysOnTop: alwaysOnTopEl.checked,
     openAtLogin: document.getElementById("openAtLogin").checked,
     hideMissing: document.getElementById("hideMissing").checked,
     visualization: selectedVisualization(),
