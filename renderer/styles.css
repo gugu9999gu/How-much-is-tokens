@@ -98,6 +98,10 @@ button:hover { background: rgba(255,255,255,0.12); }
   background: var(--card);
 }
 .row.compact { grid-template-columns: 28px 1fr auto; padding: 6px 8px; }
+.row.multi-quota {
+  display: block;
+  padding: 9px;
+}
 
 .ring {
   width: 42px;
@@ -122,6 +126,56 @@ button:hover { background: rgba(255,255,255,0.12); }
 
 .meta b { font-size: 13px; }
 .meta .sub { color: var(--muted); font-size: 11px; margin-top: 1px; }
+.quota-rings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.quota-ring-item {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 58px;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.025);
+}
+.quota-ring {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--tone) calc(var(--pct) * 1%), rgba(255,255,255,0.08) 0);
+}
+.quota-ring span {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #11141c;
+  font-size: 9px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.quota-ring-copy { min-width: 0; }
+.quota-ring-copy b {
+  display: block;
+  font-size: 10px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.quota-ring-copy small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.25;
+}
 .windows { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .chip {
   font-size: 10px;
