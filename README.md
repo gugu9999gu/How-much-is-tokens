@@ -1,6 +1,8 @@
 # How much is tokens
 
-화면에 항상 떠 있는 AI 구독 잔여량 위젯입니다. 로컬에 로그인된 Claude, Cursor, Codex, Copilot, Grok, Gemini, Antigravity의 **남은 사용량**을 모아 보여 줍니다.
+화면에 항상 떠 있는 AI 구독 잔여량 위젯입니다. 로컬에 로그인된 Claude, Cursor, Codex, Copilot, Grok, Antigravity의 **남은 사용량**을 모아 보여 줍니다.
+
+> Gemini CLI provider는 현재 위젯 표시 대상에서 제외했습니다. Google 계열 사용량은 Antigravity quota만 표시합니다.
 
 ## 포터블 실행 파일
 
@@ -27,7 +29,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.3-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.4-portable.exe`입니다.
 
 ## 사용
 
@@ -48,12 +50,13 @@ npm run dist
 | Codex / ChatGPT | `~/.codex/auth.json` |
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
 | Grok | `~/.grok/auth.json` |
-| Gemini CLI | `~/.gemini/oauth_creds.json` (있을 때만) |
 | Antigravity | 공식 custom status-line JSON의 `quota`, `plan_tier`, `email` |
 
 ### Antigravity
 
 Antigravity는 로그인 토큰이나 Windows Credential Manager를 직접 읽지 않습니다. 위젯은 Antigravity CLI가 공식적으로 지원하는 custom status-line command를 자동으로 연결하고, CLI가 전달한 JSON에서 필요한 값만 로컬 snapshot에 저장합니다.
+
+Windows에서는 status-line launcher와 PowerShell bridge를 `~/.gemini/antigravity-cli/` 아래에 설치합니다. v1.0.4부터 Antigravity에 직접 `powershell.exe -File "..."` 경로를 전달하지 않고, 따옴표가 없는 `cmd.exe` launcher 명령을 사용합니다. 이전 v1.0.3에서 `Statusline Error`와 `-File '"C:\...ps1"'` 형태의 경로 오류가 발생한 경우 새 버전을 실행하고 위젯을 새로고침하면 기존 위젯 status-line 설정을 자동 교체합니다.
 
 - `quota`: Gemini / Claude·GPT의 5시간·주간 quota 등 CLI가 실제로 보고한 bucket만 표시
 - `plan_tier`: 현재 계정의 플랜 표시
@@ -61,6 +64,7 @@ Antigravity는 로그인 토큰이나 Windows Credential Manager를 직접 읽�
 - 여러 Google 계정으로 전환해 `agy`를 실행하면 계정별 snapshot을 유지하고 상세 보기에서 각각의 quota를 분리 표시
 - 15분 이상 새 status-line 이벤트가 없으면 이전 값으로 표시
 - 기존에 사용자가 별도의 custom status-line command를 설정해 둔 경우에는 덮어쓰지 않음
+- 위젯이 만든 이전 `how-much-is-tokens-antigravity-statusline.ps1` 설정은 새 launcher 방식으로 자동 마이그레이션
 - `stack_with_default: true`를 사용해 Antigravity 기본 status line은 그대로 유지
 
 Antigravity의 **AI Credits 잔액**은 현재 공식 custom status-line JSON 스키마에 포함되지 않습니다. 따라서 잔액을 추정하거나 비공개 API로 우회하지 않으며, 위젯에는 `useG1Credits` 설정의 사용/미사용 상태만 표시합니다. 실제 잔액과 결제 주기 사용량은 Antigravity CLI의 `/credits` 화면을 기준으로 확인하세요.
@@ -77,10 +81,11 @@ npm run probe
 
 ## Windows 자동 빌드
 
-`.github/workflows/build-windows.yml`이 `main` push마다 Windows runner에서 다음을 실행합니다.
+`.github/workflows/build-windows.yml`이 PR과 `main` push에서 Windows runner로 다음을 검증합니다.
 
 1. `npm ci`
 2. JavaScript syntax check
 3. `npm test`
-4. `npm run dist`
-5. `How-much-is-tokens-windows-portable` artifact 업로드
+4. 실제 `cmd.exe → PowerShell` Antigravity status-line bridge smoke test
+5. `npm run dist`
+6. `How-much-is-tokens-windows-portable` artifact 업로드
