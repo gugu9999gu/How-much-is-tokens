@@ -1,0 +1,53 @@
+name: Build Windows Portable
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check
+        shell: pwsh
+        run: |
+          node --check main.js
+          node --check preload.js
+          node --check lib/usage.js
+          node --check lib/antigravity-bridge.js
+          node --check lib/providers/antigravity.js
+          node --check lib/providers/gemini.js
+          node --check renderer/app.js
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build portable EXE
+        run: npm run dist
+
+      - name: Upload portable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: How-much-is-tokens-windows-portable
+          path: dist/*-portable.exe
+          if-no-files-found: error
+          retention-days: 30
