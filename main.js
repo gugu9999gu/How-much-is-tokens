@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { loadSettings, saveSettings } = require("./lib/settings");
 const { fetchAll } = require("./lib/usage");
+const { applyAlwaysOnTop: setWindowAlwaysOnTop } = require("./lib/window-behavior");
 
 app.commandLine.appendSwitch("js-flags", "--experimental-sqlite");
 app.setAppUserModelId("com.tokenwidget.desktop");
@@ -22,9 +23,7 @@ if (!gotTheLock) {
   app.on("second-instance", () => {
     if (!win) return;
     if (win.isMinimized()) win.restore();
-    win.show();
-    win.focus();
-    applyAlwaysOnTop(loadSettings().alwaysOnTop);
+    showWidget();
   });
 }
 
@@ -32,6 +31,7 @@ let win = null;
 let tray = null;
 let refreshTimer = null;
 let fetching = false;
+let alwaysOnTopRetry = null;
 const cache = new Map();
 
 function iconPath() {
@@ -39,9 +39,31 @@ function iconPath() {
 }
 
 function applyAlwaysOnTop(enabled) {
-  if (!win) return;
-  win.setAlwaysOnTop(!!enabled, enabled ? "screen-saver" : "normal");
-  if (enabled) win.moveTop();
+  if (!win || win.isDestroyed()) return;
+  const desired = !!enabled;
+  const applied = setWindowAlwaysOnTop(win, desired);
+
+  if (alwaysOnTopRetry) clearTimeout(alwaysOnTopRetry);
+  if (!applied) {
+    // Some Windows z-order transitions settle asynchronously. Retry once if
+    // Electron still reports a state different from the saved preference.
+    alwaysOnTopRetry = setTimeout(() => {
+      alwaysOnTopRetry = null;
+      if (!win || win.isDestroyed()) return;
+      setWindowAlwaysOnTop(win, desired);
+    }, 50);
+  }
+}
+
+function showWidget() {
+  if (!win || win.isDestroyed()) return;
+  const alwaysOnTop = !!loadSettings().alwaysOnTop;
+  applyAlwaysOnTop(alwaysOnTop);
+  win.show();
+  win.focus();
+  // Re-assert after show because Windows may recalculate native z-order when
+  // a hidden frameless window is restored from the tray.
+  setImmediate(() => applyAlwaysOnTop(alwaysOnTop));
 }
 
 function startupPath() {
@@ -83,7 +105,7 @@ function createWindow() {
     minimizable: false,
     fullscreenable: false,
     skipTaskbar: true,
-    alwaysOnTop: settings.alwaysOnTop,
+    alwaysOnTop: !!settings.alwaysOnTop,
     hasShadow: false,
     show: false,
     backgroundColor: "#00000000",
@@ -104,8 +126,12 @@ function createWindow() {
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
 
   win.once("ready-to-show", () => {
-    win.show();
+    showWidget();
     refreshUsage(true);
+  });
+
+  win.on("show", () => {
+    applyAlwaysOnTop(loadSettings().alwaysOnTop);
   });
 
   win.on("moved", () => {
@@ -127,7 +153,7 @@ function createTray() {
   tray = new Tray(image.resize({ width: 16, height: 16 }));
   tray.setToolTip("AI 토큰 위젯");
   const menu = Menu.buildFromTemplate([
-    { label: "위젯 보기", click: () => { win?.show(); win?.focus(); } },
+    { label: "위젯 보기", click: () => showWidget() },
     { label: "새로고침", click: () => refreshUsage(true) },
     { type: "separator" },
     { label: "종료", click: () => { app.isQuitting = true; app.quit(); } },
@@ -136,10 +162,7 @@ function createTray() {
   tray.on("click", () => {
     if (!win) return;
     if (win.isVisible()) win.hide();
-    else {
-      win.show();
-      win.focus();
-    }
+    else showWidget();
   });
 }
 
