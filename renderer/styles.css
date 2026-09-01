@@ -57,7 +57,37 @@ button {
 }
 button:hover { background: rgba(255,255,255,0.12); }
 
-.list { display: flex; flex-direction: column; gap: 8px; }
+.list { display: flex; flex-direction: column; gap: 11px; }
+.provider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.provider-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 3px;
+  min-height: 14px;
+}
+.provider-group-head span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.provider-group-head i {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+}
+.provider-group-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .row {
   display: grid;
   grid-template-columns: 42px 1fr;
