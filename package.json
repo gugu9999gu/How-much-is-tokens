@@ -1,6 +1,6 @@
 {
   "name": "how-much-is-tokens",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "화면에 남는 AI 구독 잔여량 위젯",
   "main": "main.js",
   "author": "gugu9999gu",
@@ -12,6 +12,7 @@
   "scripts": {
     "start": "electron .",
     "probe": "node --experimental-sqlite lib/cli.js",
+    "test": "node test/antigravity.test.js",
     "dist": "electron-builder --win portable"
   },
   "devDependencies": {
