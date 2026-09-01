@@ -1,4 +1,6 @@
 const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
 const { applyAlwaysOnTop } = require("../lib/window-behavior");
 
 function mockWindow(initial = false) {
@@ -30,5 +32,9 @@ assert.strictEqual(applyAlwaysOnTop(disabled, false), true);
 assert.deepStrictEqual(disabled.calls, [["setAlwaysOnTop", false, undefined]]);
 
 assert.strictEqual(applyAlwaysOnTop(null, false), false);
+
+const renderer = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
+assert.match(renderer, /alwaysOnTopEl\.onchange\s*=\s*async/);
+assert.match(renderer, /saveSettings\(\{\s*alwaysOnTop:\s*!!alwaysOnTopEl\.checked\s*\}\)/);
 
 console.log("window always-on-top behavior tests passed");
