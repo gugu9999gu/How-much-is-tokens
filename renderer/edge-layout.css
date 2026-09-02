@@ -1,0 +1,193 @@
+html, body {
+  height: 100%;
+  min-height: 0;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.titlebar {
+  flex: 0 0 auto;
+}
+
+.list {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.list::-webkit-scrollbar,
+.settings::-webkit-scrollbar {
+  width: 5px;
+}
+
+.list::-webkit-scrollbar-track,
+.settings::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.list::-webkit-scrollbar-thumb,
+.settings::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.14);
+  border-radius: 99px;
+}
+
+.shell.viewport-constrained .list {
+  padding-right: 2px;
+}
+
+.shell.settings-open .settings {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.shell.edge-dock-enabled .titlebar {
+  -webkit-app-region: no-drag;
+}
+
+/* Detailed mode with tighter spacing: no quota/detail data is removed. */
+.shell.dense-layout {
+  padding: 8px;
+}
+.shell.dense-layout .titlebar {
+  margin-bottom: 6px;
+}
+.shell.dense-layout .list {
+  gap: 7px;
+}
+.shell.dense-layout .provider-group {
+  gap: 4px;
+}
+.shell.dense-layout .provider-group-head {
+  min-height: 11px;
+}
+.shell.dense-layout .provider-group-cards {
+  gap: 5px;
+}
+.shell.dense-layout .row {
+  gap: 7px;
+  padding: 5px 6px;
+  border-radius: 9px;
+}
+.shell.dense-layout .row.multi-quota {
+  padding: 6px;
+}
+.shell.dense-layout .quota-visuals {
+  margin-top: 5px;
+}
+.shell.dense-layout .quota-rings,
+.shell.dense-layout .quota-numbers {
+  gap: 4px;
+}
+.shell.dense-layout .quota-ring-item,
+.shell.dense-layout .quota-number-item {
+  min-height: 48px;
+  padding: 4px 5px;
+  gap: 5px;
+}
+.shell.dense-layout .quota-ring,
+.shell.dense-layout .quota-ring-item {
+  grid-template-columns: 38px minmax(0, 1fr);
+}
+.shell.dense-layout .quota-ring {
+  width: 38px;
+  height: 38px;
+}
+.shell.dense-layout .quota-ring span {
+  width: 28px;
+  height: 28px;
+}
+.shell.dense-layout .quota-bars {
+  gap: 4px;
+}
+.shell.dense-layout .quota-bar-item {
+  padding: 5px 6px;
+}
+.shell.dense-layout .quota-bar-track {
+  margin-top: 4px;
+  height: 6px;
+}
+.shell.dense-layout .windows {
+  margin-top: 4px;
+  gap: 3px;
+}
+.shell.dense-layout .chip {
+  padding: 1px 6px;
+  font-size: 9px;
+}
+
+.edge-toggle {
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.edge-dock-options {
+  padding: 9px 6px 5px;
+  transition: opacity 0.15s ease;
+}
+.edge-dock-options.disabled {
+  opacity: 0.42;
+}
+.edge-dock-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 8px;
+}
+.edge-dock-head b {
+  font-size: 12px;
+  font-weight: 600;
+}
+.edge-dock-head small,
+.edge-dock-options p {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.edge-dock-options p {
+  margin-top: 7px;
+}
+
+.edge-side-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.edge-side-picker label {
+  cursor: pointer;
+}
+.edge-side-picker input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.edge-side-picker span {
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(0,0,0,0.2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.edge-side-picker input:checked + span {
+  color: var(--ok);
+  border-color: rgba(62,224,160,0.35);
+  background: rgba(62,224,160,0.1);
+}
+.edge-side-picker input:focus-visible + span {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
+}
+.edge-dock-options.disabled .edge-side-picker label {
+  cursor: default;
+}
