@@ -39,7 +39,8 @@ html, body {
   border-radius: 99px;
 }
 
-.shell.viewport-constrained .list {
+.shell.viewport-constrained .list,
+.shell.token-height-limited .list {
   padding-right: 2px;
 }
 
@@ -120,6 +121,19 @@ html, body {
 .shell.dense-layout .chip {
   padding: 1px 6px;
   font-size: 9px;
+}
+
+.token-height-field {
+  margin: 2px 0;
+  padding: 9px 6px 8px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.token-height-field .stepper {
+  align-self: flex-start;
+}
+.token-height-field input {
+  width: 86px;
 }
 
 .edge-toggle {
