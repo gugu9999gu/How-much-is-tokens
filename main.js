@@ -19,6 +19,7 @@ app.setAppUserModelId("com.tokenwidget.desktop");
 const EDGE_POLL_MS = 50;
 const EDGE_HIDE_DELAY_MS = 700;
 const EDGE_REVEAL_GRACE_MS = 900;
+const EDGE_SIDE_CHANGE_GRACE_MS = 3500;
 const EDGE_SHOW_MS = 180;
 const EDGE_HIDE_MS = 160;
 
@@ -53,6 +54,7 @@ let edgeGeometry = null;
 let edgeDisplayId = null;
 let edgeOutsideSince = 0;
 let edgeGraceUntil = 0;
+let edgeConfigRevision = 0;
 const cache = new Map();
 
 function iconPath() {
@@ -117,11 +119,24 @@ function resolveDockDisplay(settings = loadSettings()) {
   return display;
 }
 
-function calculateEdgeGeometry(settings = loadSettings()) {
+function stableDockPositionHint(settings = loadSettings()) {
+  if (settings.position && Number.isFinite(settings.position.x) && Number.isFinite(settings.position.y)) {
+    return { x: settings.position.x, y: settings.position.y };
+  }
+  if (edgeGeometry && edgeGeometry.shown) {
+    return { x: edgeGeometry.shown.x, y: edgeGeometry.shown.y };
+  }
+  if (!win || win.isDestroyed()) return null;
+  const display = resolveDockDisplay(settings);
+  const safe = clampNormalBounds(win.getBounds(), display.workArea, 6);
+  return { x: safe.x, y: safe.y };
+}
+
+function calculateEdgeGeometry(settings = loadSettings(), positionOverride = null) {
   if (!win || win.isDestroyed()) return null;
   const display = resolveDockDisplay(settings);
   const bounds = win.getBounds();
-  const positionHint = settings.position || { x: bounds.x, y: bounds.y };
+  const positionHint = positionOverride || settings.position || { x: bounds.x, y: bounds.y };
   return getDockGeometry(
     display,
     { width: bounds.width, height: bounds.height },
@@ -250,6 +265,8 @@ function stopEdgePolling() {
 
 function configureEdgeDock(settings = loadSettings(), options = {}) {
   if (!win || win.isDestroyed()) return;
+  const revision = ++edgeConfigRevision;
+  const sideChanged = options.sideChanged === true;
   cancelEdgeAnimation();
 
   if (!settings.edgeDockEnabled) {
@@ -269,7 +286,9 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
     const display = screen.getDisplayMatching(win.getBounds()) || resolveDockDisplay(settings);
     edgeDisplayId = display.id;
   }
-  edgeGeometry = calculateEdgeGeometry(settings);
+
+  const positionHint = sideChanged ? stableDockPositionHint(settings) : null;
+  edgeGeometry = calculateEdgeGeometry(settings, positionHint);
   startEdgePolling();
 
   if (!win.isVisible()) win.showInactive();
@@ -279,10 +298,33 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
     return;
   }
 
+  // A direction change must always restart from the fully visible bounds.
+  // Never reuse the previous side's hidden/showing coordinates as the new
+  // reference point; otherwise rapid top/right/bottom/left changes can leave
+  // the titlebar partially outside the monitor.
   setBoundsImmediately(edgeGeometry.shown);
   edgeState = "shown";
   edgeOutsideSince = 0;
-  edgeGraceUntil = Date.now() + 1400;
+  edgeGraceUntil = Date.now() + (sideChanged ? EDGE_SIDE_CHANGE_GRACE_MS : 1400);
+
+  if (sideChanged) {
+    win.show();
+    win.focus();
+    // Re-assert once after Electron/Windows finishes the move. A revision
+    // guard makes rapid consecutive side changes last-selection-wins.
+    setImmediate(() => {
+      if (revision !== edgeConfigRevision || !win || win.isDestroyed()) return;
+      const current = loadSettings();
+      if (!current.edgeDockEnabled || current.edgeDockSide !== settings.edgeDockSide) return;
+      edgeGeometry = calculateEdgeGeometry(current, positionHint);
+      if (!edgeGeometry) return;
+      cancelEdgeAnimation();
+      setBoundsImmediately(edgeGeometry.shown);
+      edgeState = "shown";
+      edgeOutsideSince = 0;
+      edgeGraceUntil = Date.now() + EDGE_SIDE_CHANGE_GRACE_MS;
+    });
+  }
 }
 
 function showWidget({ focus = true } = {}) {
@@ -448,7 +490,8 @@ ipcMain.handle("save-settings", (_event, patch) => {
     Object.prototype.hasOwnProperty.call(patch || {}, "edgeDockSide")
   ) {
     if (!prev.edgeDockEnabled && next.edgeDockEnabled) edgeDisplayId = null;
-    configureEdgeDock(next, { initialHidden: false });
+    const sideChanged = next.edgeDockEnabled && prev.edgeDockSide !== next.edgeDockSide;
+    configureEdgeDock(next, { initialHidden: false, sideChanged });
   }
   return next;
 });
@@ -475,7 +518,7 @@ ipcMain.handle("resize", (_event, height) => {
 
   if (settings.edgeDockEnabled) {
     setBoundsImmediately(resized);
-    edgeGeometry = calculateEdgeGeometry(settings);
+    edgeGeometry = calculateEdgeGeometry(settings, stableDockPositionHint(settings));
     if (edgeGeometry) {
       const target = edgeState === "hidden" || edgeState === "hiding"
         ? edgeGeometry.hidden
@@ -502,7 +545,7 @@ function refreshForDisplayChange() {
   const settings = loadSettings();
   if (settings.edgeDockEnabled) {
     if (!displayById(edgeDisplayId)) edgeDisplayId = null;
-    edgeGeometry = calculateEdgeGeometry(settings);
+    edgeGeometry = calculateEdgeGeometry(settings, stableDockPositionHint(settings));
     if (!edgeGeometry) return;
     const target = edgeState === "hidden" || edgeState === "hiding"
       ? edgeGeometry.hidden
