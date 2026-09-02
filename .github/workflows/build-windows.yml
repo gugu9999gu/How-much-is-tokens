@@ -51,9 +51,14 @@ jobs:
           node --check lib/providers/grok.js
           node --check lib/providers/grokbot.js
           node --check renderer/app.js
+          node --check test/renderer-layout-smoke.js
+          node --check test/renderer-layout-preload.js
 
       - name: Run tests
         run: npm test
+
+      - name: Smoke test renderer titlebar isolation
+        run: npm run test:renderer-layout
 
       - name: Smoke test Antigravity Windows bridge
         shell: pwsh

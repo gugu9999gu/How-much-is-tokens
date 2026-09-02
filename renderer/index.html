@@ -24,136 +24,139 @@
           <button type="button" id="hideBtn" title="숨기기">–</button>
         </div>
       </header>
-      <main id="list" class="list"></main>
-      <section id="settings" class="settings hidden" aria-label="설정">
-        <div class="set-group">
-          <h2>표시</h2>
-          <label class="toggle">
-            <span class="toggle-copy">
-              <b>항상 위에</b>
-              <small>다른 창보다 앞에 고정</small>
-            </span>
-            <input type="checkbox" id="alwaysOnTop" />
-            <span class="switch" aria-hidden="true"></span>
-          </label>
-          <label class="toggle">
-            <span class="toggle-copy">
-              <b>촘촘하게</b>
-              <small>상세 정보는 유지하고 카드/그룹 여백만 줄임</small>
-            </span>
-            <input type="checkbox" id="denseLayout" />
-            <span class="switch" aria-hidden="true"></span>
-          </label>
-          <label class="field token-height-field">
-            <span class="field-label">토큰 영역 최대 높이</span>
-            <div class="stepper">
-              <input type="number" id="tokenAreaMaxHeight" min="0" max="2000" step="10" inputmode="numeric" />
-              <span>px</span>
-            </div>
-            <small>토큰 잔여량 카드 영역만 제한합니다. 0이면 모니터 높이에 맞춰 자동 조정하며, 초과 내용은 이 영역 안에서 스크롤됩니다.</small>
-          </label>
-          <label class="toggle">
-            <span class="toggle-copy">
-              <b>시작 시 실행</b>
-              <small>윈도우 로그인 후 이 exe를 다시 실행</small>
-            </span>
-            <input type="checkbox" id="openAtLogin" />
-            <span class="switch" aria-hidden="true"></span>
-          </label>
-          <label class="toggle">
-            <span class="toggle-copy">
-              <b>빈 계정 숨기기</b>
-              <small>로그인되지 않은 서비스 생략</small>
-            </span>
-            <input type="checkbox" id="hideMissing" />
-            <span class="switch" aria-hidden="true"></span>
-          </label>
 
-          <div class="viz-field">
-            <div class="viz-head">
-              <b>사용량 표시</b>
-              <small>원형, 막대, 숫자 방식으로 전환</small>
+      <div id="contentViewport" class="content-viewport">
+        <main id="list" class="list"></main>
+        <section id="settings" class="settings hidden" aria-label="설정">
+          <div class="set-group">
+            <h2>표시</h2>
+            <label class="toggle">
+              <span class="toggle-copy">
+                <b>항상 위에</b>
+                <small>다른 창보다 앞에 고정</small>
+              </span>
+              <input type="checkbox" id="alwaysOnTop" />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+            <label class="toggle">
+              <span class="toggle-copy">
+                <b>촘촘하게</b>
+                <small>상세 정보는 유지하고 카드/그룹 여백만 줄임</small>
+              </span>
+              <input type="checkbox" id="denseLayout" />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+            <label class="field token-height-field">
+              <span class="field-label">토큰 영역 최대 높이</span>
+              <div class="stepper">
+                <input type="number" id="tokenAreaMaxHeight" min="0" max="2000" step="10" inputmode="numeric" />
+                <span>px</span>
+              </div>
+              <small>토큰 잔여량 카드 영역만 제한합니다. 0이면 모니터 높이에 맞춰 자동 조정하며, 초과 내용은 이 영역 안에서 스크롤됩니다.</small>
+            </label>
+            <label class="toggle">
+              <span class="toggle-copy">
+                <b>시작 시 실행</b>
+                <small>윈도우 로그인 후 이 exe를 다시 실행</small>
+              </span>
+              <input type="checkbox" id="openAtLogin" />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+            <label class="toggle">
+              <span class="toggle-copy">
+                <b>빈 계정 숨기기</b>
+                <small>로그인되지 않은 서비스 생략</small>
+              </span>
+              <input type="checkbox" id="hideMissing" />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+
+            <div class="viz-field">
+              <div class="viz-head">
+                <b>사용량 표시</b>
+                <small>원형, 막대, 숫자 방식으로 전환</small>
+              </div>
+              <div class="viz-picker" role="radiogroup" aria-label="사용량 표시 방식">
+                <label class="viz-option">
+                  <input type="radio" name="visualization" value="ring" />
+                  <span><em class="viz-icon">◯</em><b>원형</b></span>
+                </label>
+                <label class="viz-option">
+                  <input type="radio" name="visualization" value="bar" />
+                  <span><em class="viz-icon">▰</em><b>막대</b></span>
+                </label>
+                <label class="viz-option">
+                  <input type="radio" name="visualization" value="number" />
+                  <span><em class="viz-icon number">42</em><b>숫자</b></span>
+                </label>
+              </div>
             </div>
-            <div class="viz-picker" role="radiogroup" aria-label="사용량 표시 방식">
-              <label class="viz-option">
-                <input type="radio" name="visualization" value="ring" />
-                <span><em class="viz-icon">◯</em><b>원형</b></span>
-              </label>
-              <label class="viz-option">
-                <input type="radio" name="visualization" value="bar" />
-                <span><em class="viz-icon">▰</em><b>막대</b></span>
-              </label>
-              <label class="viz-option">
-                <input type="radio" name="visualization" value="number" />
-                <span><em class="viz-icon number">42</em><b>숫자</b></span>
-              </label>
+
+            <div class="slider-row">
+              <div class="slider-head">
+                <span>투명도</span>
+                <em id="opacityValue">94%</em>
+              </div>
+              <input type="range" id="opacity" min="0.55" max="1" step="0.01" />
             </div>
           </div>
 
-          <div class="slider-row">
-            <div class="slider-head">
-              <span>투명도</span>
-              <em id="opacityValue">94%</em>
+          <div class="set-group">
+            <h2>화면 가장자리</h2>
+            <label class="toggle edge-toggle">
+              <span class="toggle-copy">
+                <b>엣지 숨김 패널</b>
+                <small>평소 모니터 밖에 숨기고 가장자리 hover 시 표시</small>
+              </span>
+              <input type="checkbox" id="edgeDockEnabled" />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+            <div id="edgeDockOptions" class="edge-dock-options disabled">
+              <div class="edge-dock-head">
+                <b>마우스 오버 위치</b>
+                <small>패널 위치와 감지 영역을 같은 가장자리에 고정</small>
+              </div>
+              <div class="edge-side-picker" role="radiogroup" aria-label="엣지 패널 위치">
+                <label><input type="radio" name="edgeDockSide" value="top" /><span>상</span></label>
+                <label><input type="radio" name="edgeDockSide" value="right" /><span>우</span></label>
+                <label><input type="radio" name="edgeDockSide" value="bottom" /><span>하</span></label>
+                <label><input type="radio" name="edgeDockSide" value="left" /><span>좌</span></label>
+              </div>
+              <p>감지 영역은 화면 가장자리에 고정되어 패널 애니메이션을 따라 움직이지 않습니다. 패널과 감지 영역 모두에서 마우스가 벗어난 뒤에만 닫혀 반복 열림/닫힘을 방지합니다.</p>
             </div>
-            <input type="range" id="opacity" min="0.55" max="1" step="0.01" />
           </div>
-        </div>
 
-        <div class="set-group">
-          <h2>화면 가장자리</h2>
-          <label class="toggle edge-toggle">
-            <span class="toggle-copy">
-              <b>엣지 숨김 패널</b>
-              <small>평소 모니터 밖에 숨기고 가장자리 hover 시 표시</small>
-            </span>
-            <input type="checkbox" id="edgeDockEnabled" />
-            <span class="switch" aria-hidden="true"></span>
-          </label>
-          <div id="edgeDockOptions" class="edge-dock-options disabled">
-            <div class="edge-dock-head">
-              <b>마우스 오버 위치</b>
-              <small>패널 위치와 감지 영역을 같은 가장자리에 고정</small>
-            </div>
-            <div class="edge-side-picker" role="radiogroup" aria-label="엣지 패널 위치">
-              <label><input type="radio" name="edgeDockSide" value="top" /><span>상</span></label>
-              <label><input type="radio" name="edgeDockSide" value="right" /><span>우</span></label>
-              <label><input type="radio" name="edgeDockSide" value="bottom" /><span>하</span></label>
-              <label><input type="radio" name="edgeDockSide" value="left" /><span>좌</span></label>
-            </div>
-            <p>감지 영역은 화면 가장자리에 고정되어 패널 애니메이션을 따라 움직이지 않습니다. 패널과 감지 영역 모두에서 마우스가 벗어난 뒤에만 닫혀 반복 열림/닫힘을 방지합니다.</p>
+          <div class="set-group">
+            <h2>동기화</h2>
+            <label class="field">
+              <span class="field-label">새로고침 간격</span>
+              <div class="stepper">
+                <input type="number" id="refreshSeconds" min="20" max="600" />
+                <span>초</span>
+              </div>
+            </label>
           </div>
-        </div>
 
-        <div class="set-group">
-          <h2>동기화</h2>
-          <label class="field">
-            <span class="field-label">새로고침 간격</span>
-            <div class="stepper">
-              <input type="number" id="refreshSeconds" min="20" max="600" />
-              <span>초</span>
-            </div>
-          </label>
-        </div>
+          <div class="set-group">
+            <h2>연결</h2>
+            <label class="field">
+              <span class="field-label">GitHub 토큰</span>
+              <textarea id="githubToken" rows="2" placeholder="Copilot용 PAT" spellcheck="false"></textarea>
+              <small>VS Code Copilot이 안 잡힐 때 사용</small>
+            </label>
+            <label class="field">
+              <span class="field-label">Cursor 쿠키</span>
+              <textarea id="cursorCookie" rows="2" placeholder="WorkosCursorSessionToken" spellcheck="false"></textarea>
+              <small>Cursor 잔여량이 비면 세션 쿠키를 붙여넣기</small>
+            </label>
+          </div>
 
-        <div class="set-group">
-          <h2>연결</h2>
-          <label class="field">
-            <span class="field-label">GitHub 토큰</span>
-            <textarea id="githubToken" rows="2" placeholder="Copilot용 PAT" spellcheck="false"></textarea>
-            <small>VS Code Copilot이 안 잡힐 때 사용</small>
-          </label>
-          <label class="field">
-            <span class="field-label">Cursor 쿠키</span>
-            <textarea id="cursorCookie" rows="2" placeholder="WorkosCursorSessionToken" spellcheck="false"></textarea>
-            <small>Cursor 잔여량이 비면 세션 쿠키를 붙여넣기</small>
-          </label>
-        </div>
-
-        <div class="settings-actions">
-          <button type="button" id="saveBtn" class="btn primary">저장하고 새로고침</button>
-          <button type="button" id="quitBtn" class="btn danger">위젯 종료</button>
-        </div>
-      </section>
+          <div class="settings-actions">
+            <button type="button" id="saveBtn" class="btn primary">저장하고 새로고침</button>
+            <button type="button" id="quitBtn" class="btn danger">위젯 종료</button>
+          </div>
+        </section>
+      </div>
     </div>
     <script src="app.js"></script>
   </body>
