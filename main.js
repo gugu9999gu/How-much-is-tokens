@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, dialog } = require("electron");
 const fs = require("fs");
 const path = require("path");
-const { loadSettings, saveSettings } = require("./lib/settings");
+const { loadSettings, saveSettings, resetSettings } = require("./lib/settings");
 const { fetchAll } = require("./lib/usage");
 const { applyAlwaysOnTop: setWindowAlwaysOnTop } = require("./lib/window-behavior");
 const {
@@ -20,6 +20,7 @@ const EDGE_POLL_MS = 50;
 const EDGE_HIDE_DELAY_MS = 700;
 const EDGE_REVEAL_GRACE_MS = 900;
 const EDGE_SIDE_CHANGE_GRACE_MS = 3500;
+const EDGE_STARTUP_GRACE_MS = 5000;
 const EDGE_SHOW_MS = 180;
 const EDGE_HIDE_MS = 160;
 
@@ -103,6 +104,44 @@ function displayById(id) {
 function displayForNormalWindow() {
   if (!win || win.isDestroyed()) return screen.getPrimaryDisplay();
   return screen.getDisplayMatching(win.getBounds()) || screen.getPrimaryDisplay();
+}
+
+function safeInitialBounds(settings, width, height) {
+  const hasPosition = !!(
+    settings.position &&
+    Number.isFinite(settings.position.x) &&
+    Number.isFinite(settings.position.y)
+  );
+  const display = hasPosition
+    ? screen.getDisplayNearestPoint({ x: settings.position.x, y: settings.position.y })
+    : screen.getPrimaryDisplay();
+  const work = display.workArea;
+  const desired = hasPosition
+    ? { x: settings.position.x, y: settings.position.y, width, height }
+    : {
+        x: work.x + work.width - width - 16,
+        y: work.y + 16,
+        width,
+        height,
+      };
+  return clampNormalBounds(desired, work, 8);
+}
+
+function defaultVisibleBounds() {
+  const display = screen.getPrimaryDisplay();
+  const work = display.workArea;
+  const current = win && !win.isDestroyed() ? win.getBounds() : { width: 332, height: 420 };
+  const width = Math.max(1, current.width || 332);
+  const height = Math.min(
+    Math.max(160, current.height || 420),
+    maxWidgetHeight(work, 10),
+  );
+  return clampNormalBounds({
+    x: work.x + work.width - width - 16,
+    y: work.y + 16,
+    width,
+    height,
+  }, work, 8);
 }
 
 function resolveDockDisplay(settings = loadSettings()) {
@@ -267,6 +306,7 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
   if (!win || win.isDestroyed()) return;
   const revision = ++edgeConfigRevision;
   const sideChanged = options.sideChanged === true;
+  const startupVisible = options.startupVisible === true;
   cancelEdgeAnimation();
 
   if (!settings.edgeDockEnabled) {
@@ -298,18 +338,26 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
     return;
   }
 
-  // A direction change must always restart from the fully visible bounds.
-  // Never reuse the previous side's hidden/showing coordinates as the new
-  // reference point; otherwise rapid top/right/bottom/left changes can leave
-  // the titlebar partially outside the monitor.
+  // Direction changes and startup recovery always begin from fully visible
+  // bounds. Never let a persisted hidden/off-screen coordinate be the only
+  // state the user sees after launching a new version.
   setBoundsImmediately(edgeGeometry.shown);
   edgeState = "shown";
   edgeOutsideSince = 0;
-  edgeGraceUntil = Date.now() + (sideChanged ? EDGE_SIDE_CHANGE_GRACE_MS : 1400);
+  edgeGraceUntil = Date.now() + (
+    sideChanged
+      ? EDGE_SIDE_CHANGE_GRACE_MS
+      : startupVisible
+        ? EDGE_STARTUP_GRACE_MS
+        : 1400
+  );
+
+  if (sideChanged || startupVisible) {
+    win.show();
+    if (startupVisible || sideChanged) win.focus();
+  }
 
   if (sideChanged) {
-    win.show();
-    win.focus();
     // Re-assert once after Electron/Windows finishes the move. A revision
     // guard makes rapid consecutive side changes last-selection-wins.
     setImmediate(() => {
@@ -337,6 +385,8 @@ function showWidget({ focus = true } = {}) {
     return;
   }
 
+  const display = screen.getDisplayMatching(win.getBounds()) || screen.getPrimaryDisplay();
+  setBoundsImmediately(clampNormalBounds(win.getBounds(), display.workArea, 8));
   win.show();
   if (focus) win.focus();
   setImmediate(() => applyAlwaysOnTop(settings.alwaysOnTop));
@@ -344,17 +394,16 @@ function showWidget({ focus = true } = {}) {
 
 function createWindow() {
   const settings = loadSettings();
-  const display = screen.getPrimaryDisplay().workArea;
+  const primaryWork = screen.getPrimaryDisplay().workArea;
   const width = 332;
-  const height = Math.min(420, maxWidgetHeight(display, 10));
-  const startX = settings.position?.x ?? display.x + display.width - width - 16;
-  const startY = settings.position?.y ?? display.y + 16;
+  const height = Math.min(420, maxWidgetHeight(primaryWork, 10));
+  const initial = safeInitialBounds(settings, width, height);
 
   win = new BrowserWindow({
-    width,
-    height,
-    x: startX,
-    y: startY,
+    width: initial.width,
+    height: initial.height,
+    x: initial.x,
+    y: initial.y,
     frame: false,
     transparent: true,
     resizable: false,
@@ -383,8 +432,11 @@ function createWindow() {
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
 
   win.once("ready-to-show", () => {
-    if (settings.edgeDockEnabled) configureEdgeDock(settings, { initialHidden: true });
-    else showWidget({ focus: true });
+    if (settings.edgeDockEnabled) {
+      configureEdgeDock(settings, { initialHidden: false, startupVisible: true });
+    } else {
+      showWidget({ focus: true });
+    }
     refreshUsage(true);
   });
 
@@ -408,6 +460,48 @@ function createWindow() {
   });
 }
 
+async function resetUserSettingsFromTray() {
+  const options = {
+    type: "warning",
+    title: "설정값 초기화",
+    message: "위젯 설정을 기본값으로 초기화할까요?",
+    detail: "위치, 엣지 패널, 최대 높이, 표시 방식, 투명도, 시작프로그램 설정을 초기화합니다. GitHub/Cursor 인증값은 유지됩니다.",
+    buttons: ["초기화", "취소"],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true,
+  };
+  const result = win && !win.isDestroyed()
+    ? await dialog.showMessageBox(win, options)
+    : await dialog.showMessageBox(options);
+  if (result.response !== 0) return;
+
+  const next = resetSettings({ preserveCredentials: true });
+  stopEdgePolling();
+  cancelEdgeAnimation();
+  edgeConfigRevision += 1;
+  edgeGeometry = null;
+  edgeDisplayId = null;
+  edgeState = "shown";
+  edgeOutsideSince = 0;
+  edgeGraceUntil = 0;
+
+  applyOpenAtLogin(false);
+  scheduleRefresh();
+
+  if (!win || win.isDestroyed()) return;
+  win.setOpacity(next.opacity);
+  setBoundsImmediately(defaultVisibleBounds());
+  applyAlwaysOnTop(next.alwaysOnTop);
+  win.show();
+  win.focus();
+
+  // Reload the renderer so every settings control reflects the reset values,
+  // then repopulate usage from the preserved local account sessions.
+  win.webContents.once("did-finish-load", () => refreshUsage(true));
+  win.webContents.reloadIgnoringCache();
+}
+
 function createTray() {
   const image = nativeImage.createFromPath(iconPath());
   if (image.isEmpty()) return;
@@ -416,6 +510,8 @@ function createTray() {
   const menu = Menu.buildFromTemplate([
     { label: "위젯 보기", click: () => showWidget({ focus: true }) },
     { label: "새로고침", click: () => refreshUsage(true) },
+    { type: "separator" },
+    { label: "설정값 초기화", click: () => resetUserSettingsFromTray() },
     { type: "separator" },
     { label: "종료", click: () => { app.isQuitting = true; app.quit(); } },
   ]);
