@@ -61,8 +61,6 @@ assert.strictEqual(bottom.shown.y, 434);
 assert.strictEqual(bottom.hidden.y, 1077);
 assert.strictEqual(bottom.trigger.y, 1070);
 
-// Repeated side changes must always derive a fully visible shown rectangle
-// from the same stable anchor, not from the previous side's hidden position.
 for (const side of ["top", "right", "bottom", "left", "top", "bottom", "right"]) {
   const geometry = getDockGeometry(display, size, side, anchor);
   assert.ok(geometry.shown.x >= display.workArea.x, `${side}: shown x escaped work area`);
@@ -100,7 +98,22 @@ assert.ok(renderer.includes("viewport-constrained"));
 assert.ok(renderer.includes("saveSettings({ denseLayout"));
 assert.ok(renderer.includes("tokenAreaMaxHeight"));
 assert.ok(renderer.includes("listEl.style.maxHeight"));
-assert.ok(renderer.includes("edgeDockEnabled"));
+assert.ok(renderer.includes("applyContentLayoutSettings"));
+assert.ok(renderer.includes("applyEdgeInteractionSettings"));
+
+const layoutFn = renderer.slice(
+  renderer.indexOf("function applyContentLayoutSettings"),
+  renderer.indexOf("function applyEdgeInteractionSettings"),
+);
+assert.ok(!layoutFn.includes("edgeDockEnabled"), "edge state must not change renderer layout geometry");
+
+const edgeToggleHandler = renderer.slice(
+  renderer.indexOf("edgeDockEnabledEl.onchange"),
+  renderer.indexOf("edgeDockSideInputs.forEach"),
+);
+assert.ok(edgeToggleHandler.includes("resizeSequence += 1"));
+assert.ok(edgeToggleHandler.includes("applyEdgeInteractionSettings(settings)"));
+assert.ok(!edgeToggleHandler.includes("requestResize()"), "edge toggle must not request a content resize");
 
 const main = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
 assert.ok(main.includes("screen.getCursorScreenPoint()"));
@@ -111,5 +124,8 @@ assert.ok(main.includes("stableDockPositionHint"));
 assert.ok(main.includes("sideChanged"));
 assert.ok(main.includes("edgeGeometry.trigger"));
 assert.ok(main.includes("requested > maxHeight"));
+assert.ok(main.includes("function setPositionImmediately"));
+assert.ok(main.includes("setPositionImmediately(interpolateBounds(from, to, progress))"));
+assert.ok(!main.includes("setBoundsImmediately(interpolateBounds(from, target, progress))"));
 
-console.log("edge dock, max-height, and overflow tests passed");
+console.log("edge dock, layout stability, max-height, and overflow tests passed");
