@@ -1,0 +1,97 @@
+name: Publish v1.0.12 Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .release-trigger-v1.0.12
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download verified Windows artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 33578569509 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name How-much-is-tokens-windows-portable \
+            --dir release-artifact
+
+      - name: Verify release asset
+        run: |
+          test -f release-artifact/How-much-is-tokens-1.0.12-portable.exe
+          echo "8186a295828ca004d309b0c3716619d5c3772dd6a424fef3d199917d1fe29ce7  release-artifact/How-much-is-tokens-1.0.12-portable.exe" | sha256sum -c -
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## How much is tokens v1.0.12
+
+          ### 화면 밖으로 길어지는 위젯 대응
+          - 현재 모니터 작업영역보다 콘텐츠가 길어지면 창 높이를 화면 안으로 자동 제한
+          - 제한된 경우 카드 목록만 내부 스크롤
+          - 일반 모드에서는 리사이즈 후에도 위젯 전체가 현재 모니터 작업영역 안에 있도록 위치 보정
+          - `촘촘하게` 옵션으로 상세 정보는 유지하면서 카드/그룹 간격과 패딩 축소
+
+          ### 엣지 숨김 패널
+          - 설정에서 `상 / 우 / 하 / 좌` 가장자리 선택
+          - 평소 패널은 선택한 모니터 가장자리 밖으로 숨고 약 3px만 남김
+          - 화면 가장자리의 고정 hover 감지 영역에 마우스를 올리면 ease-out 모션으로 부드럽게 표시
+          - hover 감지 영역은 움직이는 패널 위치와 분리된 고정 geometry 사용
+          - 열린 뒤에는 패널 영역 또는 원래 감지 영역에 마우스가 있는 동안 유지
+          - 둘 다 벗어난 상태가 700ms 지속된 뒤에만 숨김
+          - 표시 애니메이션 중 hide 판정을 막고 reveal grace를 적용해 반복적으로 나왔다 들어가는 현상 방지
+          - 모니터 해상도/작업영역 변경 시 위치와 감지 영역 자동 재계산
+
+          ### 유지 기능
+          - 원형 / 막대 / 숫자 시각화
+          - 5시간 / 주간 quota 동시 표시
+          - 제공자별 정렬
+          - Antigravity 자동 `/usage` 갱신
+          - Grok Bot 사용량
+          - 항상 위에 토글 즉시 적용
+
+          ### Windows
+          `How-much-is-tokens-1.0.12-portable.exe`를 설치 없이 실행하면 됩니다.
+
+          ### 검증
+          이 EXE는 `main` commit `783b96e0faa47316787ddce3ab1aaa1dc8a08b2c`에서 GitHub Actions Windows runner로 검증된 artifact입니다.
+          - JavaScript syntax check
+          - edge dock shown/hidden/trigger geometry tests
+          - screen-height cap / normal-window clamp tests
+          - dense/edge settings UI tests
+          - 기존 Antigravity / Grok Bot / quota / visualization / always-on-top tests
+          - Antigravity Windows bridge smoke test
+          - electron-builder Windows portable build
+
+          SHA-256: `8186a295828ca004d309b0c3716619d5c3772dd6a424fef3d199917d1fe29ce7`
+          EOF
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.12"
+          ASSET="release-artifact/How-much-is-tokens-1.0.12-portable.exe"
+          TARGET="783b96e0faa47316787ddce3ab1aaa1dc8a08b2c"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$ASSET" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          fi
