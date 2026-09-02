@@ -38,6 +38,7 @@ jobs:
           node --check lib/usage.js
           node --check lib/settings.js
           node --check lib/window-behavior.js
+          node --check lib/edge-dock.js
           node --check lib/antigravity-bridge.js
           node --check lib/antigravity-cli.js
           node --check lib/providers/antigravity.js
