@@ -211,12 +211,18 @@ function renderProviderCard(provider) {
   `;
 }
 
-function applyLayoutSettings(settings = {}) {
+function applyContentLayoutSettings(settings = {}) {
   const tokenAreaMaxHeight = normalizeTokenAreaMaxHeight(settings.tokenAreaMaxHeight);
   shellEl.classList.toggle("dense-layout", settings.denseLayout === true);
-  shellEl.classList.toggle("edge-dock-enabled", settings.edgeDockEnabled === true);
   shellEl.classList.toggle("token-height-limited", tokenAreaMaxHeight > 0);
   listEl.style.maxHeight = tokenAreaMaxHeight > 0 ? `${tokenAreaMaxHeight}px` : "";
+}
+
+function applyEdgeInteractionSettings(settings = {}) {
+  // Edge docking changes only the native window's screen position. Keep every
+  // geometry-affecting renderer style independent so toggling edge mode cannot
+  // move, shrink, or clip the titlebar/cards inside the rounded shell.
+  shellEl.classList.toggle("edge-dock-enabled", settings.edgeDockEnabled === true);
 }
 
 function render(payload) {
@@ -225,7 +231,8 @@ function render(payload) {
   compact = !!settings.compact;
   hideMissing = settings.hideMissing !== false;
   visualization = normalizeVisualization(settings.visualization);
-  applyLayoutSettings(settings);
+  applyContentLayoutSettings(settings);
+  applyEdgeInteractionSettings(settings);
   const providers = visibleProviders(payload.providers || []);
   const time = payload.fetchedAt ? new Date(payload.fetchedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "";
   updatedEl.textContent = payload.error ? payload.error : time ? `${time} 갱신` : "대기";
@@ -347,7 +354,8 @@ function fillSettings(settings) {
   document.getElementById("hideMissing").checked = settings.hideMissing !== false;
   setVisualizationUi(settings.visualization || "ring");
   setEdgeDockUi(settings);
-  applyLayoutSettings(settings);
+  applyContentLayoutSettings(settings);
+  applyEdgeInteractionSettings(settings);
   setOpacityUi(settings.opacity ?? 0.94);
   document.getElementById("refreshSeconds").value = settings.refreshSeconds ?? 60;
   document.getElementById("githubToken").value = settings.githubToken || "";
@@ -371,7 +379,7 @@ denseLayoutEl.onchange = async () => {
   const settings = await window.tokenWidget.saveSettings({ denseLayout: !!denseLayoutEl.checked });
   denseLayoutEl.checked = !!settings.denseLayout;
   mergePayloadSettings({ denseLayout: !!settings.denseLayout });
-  applyLayoutSettings(settings);
+  applyContentLayoutSettings(settings);
   requestResize();
 };
 tokenAreaMaxHeightEl.onchange = async () => {
@@ -379,7 +387,7 @@ tokenAreaMaxHeightEl.onchange = async () => {
   const settings = await window.tokenWidget.saveSettings({ tokenAreaMaxHeight });
   tokenAreaMaxHeightEl.value = settings.tokenAreaMaxHeight;
   mergePayloadSettings({ tokenAreaMaxHeight: settings.tokenAreaMaxHeight });
-  applyLayoutSettings(settings);
+  applyContentLayoutSettings(settings);
   requestResize();
 };
 edgeDockEnabledEl.onchange = async () => {
@@ -387,11 +395,19 @@ edgeDockEnabledEl.onchange = async () => {
     edgeDockEnabled: !!edgeDockEnabledEl.checked,
     edgeDockSide: selectedEdgeDockSide(),
   };
-  const settings = await window.tokenWidget.saveSettings(patch);
-  setEdgeDockUi(settings);
-  mergePayloadSettings({ edgeDockEnabled: settings.edgeDockEnabled, edgeDockSide: settings.edgeDockSide });
-  applyLayoutSettings(settings);
-  requestResize();
+
+  // Invalidate any renderer resize callback already in flight. Edge ON/OFF is
+  // position-only and must not itself trigger a BrowserWindow content resize.
+  resizeSequence += 1;
+  edgeDockEnabledEl.disabled = true;
+  try {
+    const settings = await window.tokenWidget.saveSettings(patch);
+    setEdgeDockUi(settings);
+    mergePayloadSettings({ edgeDockEnabled: settings.edgeDockEnabled, edgeDockSide: settings.edgeDockSide });
+    applyEdgeInteractionSettings(settings);
+  } finally {
+    edgeDockEnabledEl.disabled = false;
+  }
 };
 edgeDockSideInputs.forEach((input) => {
   input.onchange = async () => {
@@ -399,6 +415,7 @@ edgeDockSideInputs.forEach((input) => {
     const settings = await window.tokenWidget.saveSettings({ edgeDockSide: normalizeEdgeDockSide(input.value) });
     setEdgeDockUi(settings);
     mergePayloadSettings({ edgeDockSide: settings.edgeDockSide });
+    applyEdgeInteractionSettings(settings);
   };
 });
 visualizationInputs.forEach((input) => {
