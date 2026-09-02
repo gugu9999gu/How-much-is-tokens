@@ -36,12 +36,16 @@ jobs:
           node --check main.js
           node --check preload.js
           node --check lib/usage.js
+          node --check lib/usage-cache.js
+          node --check lib/codex-app-server.js
           node --check lib/settings.js
           node --check lib/window-behavior.js
           node --check lib/edge-dock.js
           node --check lib/antigravity-bridge.js
           node --check lib/antigravity-cli.js
           node --check lib/providers/antigravity.js
+          node --check lib/providers/claude.js
+          node --check lib/providers/codex.js
           node --check lib/providers/cursor-auth.js
           node --check lib/providers/cursor.js
           node --check lib/providers/grok.js
