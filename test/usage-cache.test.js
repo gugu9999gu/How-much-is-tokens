@@ -3,6 +3,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const {
+  hasGauge,
   sanitizeProvider,
   saveProviderSnapshot,
   loadProviderSnapshot,
@@ -12,6 +13,9 @@ const {
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "how-much-is-tokens-cache-"));
 const file = path.join(dir, "usage-cache.json");
 const now = 1_800_000_000_000;
+assert.strictEqual(hasGauge({ remainingPct: null, windows: [] }), false);
+assert.strictEqual(hasGauge({ remainingPct: undefined, windows: [{ remainingPct: null }] }), false);
+
 const good = {
   id: "claude",
   name: "Claude",
