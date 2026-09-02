@@ -92,7 +92,6 @@ html, body {
   padding: 4px 5px;
   gap: 5px;
 }
-.shell.dense-layout .quota-ring,
 .shell.dense-layout .quota-ring-item {
   grid-template-columns: 38px minmax(0, 1fr);
 }
