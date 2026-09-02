@@ -5,6 +5,7 @@ const settingsBtn = document.getElementById("settingsBtn");
 const shellEl = document.querySelector(".shell");
 const alwaysOnTopEl = document.getElementById("alwaysOnTop");
 const denseLayoutEl = document.getElementById("denseLayout");
+const tokenAreaMaxHeightEl = document.getElementById("tokenAreaMaxHeight");
 const edgeDockEnabledEl = document.getElementById("edgeDockEnabled");
 const edgeDockOptionsEl = document.getElementById("edgeDockOptions");
 const edgeDockSideInputs = [...document.querySelectorAll('input[name="edgeDockSide"]')];
@@ -14,6 +15,8 @@ const visualizationInputs = [...document.querySelectorAll('input[name="visualiza
 
 const VISUALIZATION_MODES = new Set(["ring", "bar", "number"]);
 const EDGE_DOCK_SIDES = new Set(["top", "right", "bottom", "left"]);
+const TOKEN_AREA_MIN_HEIGHT = 120;
+const TOKEN_AREA_MAX_HEIGHT = 2000;
 
 let compact = false;
 let hideMissing = true;
@@ -27,6 +30,12 @@ function normalizeVisualization(value) {
 
 function normalizeEdgeDockSide(value) {
   return EDGE_DOCK_SIDES.has(value) ? value : "right";
+}
+
+function normalizeTokenAreaMaxHeight(value) {
+  const height = Number(value);
+  if (!Number.isFinite(height) || height <= 0) return 0;
+  return Math.max(TOKEN_AREA_MIN_HEIGHT, Math.min(TOKEN_AREA_MAX_HEIGHT, Math.round(height)));
 }
 
 function tone(pct) {
@@ -203,8 +212,11 @@ function renderProviderCard(provider) {
 }
 
 function applyLayoutSettings(settings = {}) {
+  const tokenAreaMaxHeight = normalizeTokenAreaMaxHeight(settings.tokenAreaMaxHeight);
   shellEl.classList.toggle("dense-layout", settings.denseLayout === true);
   shellEl.classList.toggle("edge-dock-enabled", settings.edgeDockEnabled === true);
+  shellEl.classList.toggle("token-height-limited", tokenAreaMaxHeight > 0);
+  listEl.style.maxHeight = tokenAreaMaxHeight > 0 ? `${tokenAreaMaxHeight}px` : "";
 }
 
 function render(payload) {
@@ -262,10 +274,9 @@ function desiredWindowHeight() {
     px(titleStyle.marginBottom);
   let contentHeight = content.scrollHeight + px(contentStyle.marginTop) + px(contentStyle.marginBottom);
 
-  if (settingsOpen) {
-    const configuredMax = px(contentStyle.maxHeight);
-    if (configuredMax > 0) contentHeight = Math.min(contentHeight, configuredMax);
-  }
+  const configuredMax = px(contentStyle.maxHeight);
+  if (configuredMax > 0) contentHeight = Math.min(contentHeight, configuredMax);
+
   return Math.ceil(shellChrome + titleHeight + contentHeight + 4);
 }
 
@@ -331,6 +342,7 @@ function setSettingsOpen(open) {
 function fillSettings(settings) {
   alwaysOnTopEl.checked = !!settings.alwaysOnTop;
   denseLayoutEl.checked = settings.denseLayout === true;
+  tokenAreaMaxHeightEl.value = normalizeTokenAreaMaxHeight(settings.tokenAreaMaxHeight);
   document.getElementById("openAtLogin").checked = !!settings.openAtLogin;
   document.getElementById("hideMissing").checked = settings.hideMissing !== false;
   setVisualizationUi(settings.visualization || "ring");
@@ -359,6 +371,14 @@ denseLayoutEl.onchange = async () => {
   const settings = await window.tokenWidget.saveSettings({ denseLayout: !!denseLayoutEl.checked });
   denseLayoutEl.checked = !!settings.denseLayout;
   mergePayloadSettings({ denseLayout: !!settings.denseLayout });
+  applyLayoutSettings(settings);
+  requestResize();
+};
+tokenAreaMaxHeightEl.onchange = async () => {
+  const tokenAreaMaxHeight = normalizeTokenAreaMaxHeight(tokenAreaMaxHeightEl.value);
+  const settings = await window.tokenWidget.saveSettings({ tokenAreaMaxHeight });
+  tokenAreaMaxHeightEl.value = settings.tokenAreaMaxHeight;
+  mergePayloadSettings({ tokenAreaMaxHeight: settings.tokenAreaMaxHeight });
   applyLayoutSettings(settings);
   requestResize();
 };
@@ -393,6 +413,7 @@ document.getElementById("saveBtn").onclick = async () => {
   const patch = {
     alwaysOnTop: alwaysOnTopEl.checked,
     denseLayout: denseLayoutEl.checked,
+    tokenAreaMaxHeight: normalizeTokenAreaMaxHeight(tokenAreaMaxHeightEl.value),
     edgeDockEnabled: edgeDockEnabledEl.checked,
     edgeDockSide: selectedEdgeDockSide(),
     openAtLogin: document.getElementById("openAtLogin").checked,
