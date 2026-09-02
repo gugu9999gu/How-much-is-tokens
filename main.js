@@ -4,9 +4,23 @@ const path = require("path");
 const { loadSettings, saveSettings } = require("./lib/settings");
 const { fetchAll } = require("./lib/usage");
 const { applyAlwaysOnTop: setWindowAlwaysOnTop } = require("./lib/window-behavior");
+const {
+  pointInRect,
+  expandRect,
+  maxWidgetHeight,
+  clampNormalBounds,
+  getDockGeometry,
+  interpolateBounds,
+} = require("./lib/edge-dock");
 
 app.commandLine.appendSwitch("js-flags", "--experimental-sqlite");
 app.setAppUserModelId("com.tokenwidget.desktop");
+
+const EDGE_POLL_MS = 50;
+const EDGE_HIDE_DELAY_MS = 700;
+const EDGE_REVEAL_GRACE_MS = 900;
+const EDGE_SHOW_MS = 180;
+const EDGE_HIDE_MS = 160;
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -23,7 +37,7 @@ if (!gotTheLock) {
   app.on("second-instance", () => {
     if (!win) return;
     if (win.isMinimized()) win.restore();
-    showWidget();
+    showWidget({ focus: true });
   });
 }
 
@@ -32,6 +46,13 @@ let tray = null;
 let refreshTimer = null;
 let fetching = false;
 let alwaysOnTopRetry = null;
+let edgePollTimer = null;
+let edgeAnimationTimer = null;
+let edgeState = "shown";
+let edgeGeometry = null;
+let edgeDisplayId = null;
+let edgeOutsideSince = 0;
+let edgeGraceUntil = 0;
 const cache = new Map();
 
 function iconPath() {
@@ -45,25 +66,12 @@ function applyAlwaysOnTop(enabled) {
 
   if (alwaysOnTopRetry) clearTimeout(alwaysOnTopRetry);
   if (!applied) {
-    // Some Windows z-order transitions settle asynchronously. Retry once if
-    // Electron still reports a state different from the saved preference.
     alwaysOnTopRetry = setTimeout(() => {
       alwaysOnTopRetry = null;
       if (!win || win.isDestroyed()) return;
       setWindowAlwaysOnTop(win, desired);
     }, 50);
   }
-}
-
-function showWidget() {
-  if (!win || win.isDestroyed()) return;
-  const alwaysOnTop = !!loadSettings().alwaysOnTop;
-  applyAlwaysOnTop(alwaysOnTop);
-  win.show();
-  win.focus();
-  // Re-assert after show because Windows may recalculate native z-order when
-  // a hidden frameless window is restored from the tray.
-  setImmediate(() => applyAlwaysOnTop(alwaysOnTop));
 }
 
 function startupPath() {
@@ -85,11 +93,218 @@ function applyOpenAtLogin(enabled) {
   }
 }
 
+function displayById(id) {
+  if (id == null) return null;
+  return screen.getAllDisplays().find((display) => String(display.id) === String(id)) || null;
+}
+
+function displayForNormalWindow() {
+  if (!win || win.isDestroyed()) return screen.getPrimaryDisplay();
+  return screen.getDisplayMatching(win.getBounds()) || screen.getPrimaryDisplay();
+}
+
+function resolveDockDisplay(settings = loadSettings()) {
+  const remembered = displayById(edgeDisplayId);
+  if (remembered) return remembered;
+
+  let display = null;
+  if (settings.position && Number.isFinite(settings.position.x) && Number.isFinite(settings.position.y)) {
+    display = screen.getDisplayNearestPoint({ x: settings.position.x, y: settings.position.y });
+  }
+  if (!display && win && !win.isDestroyed()) display = screen.getDisplayMatching(win.getBounds());
+  if (!display) display = screen.getPrimaryDisplay();
+  edgeDisplayId = display.id;
+  return display;
+}
+
+function calculateEdgeGeometry(settings = loadSettings()) {
+  if (!win || win.isDestroyed()) return null;
+  const display = resolveDockDisplay(settings);
+  const bounds = win.getBounds();
+  const positionHint = settings.position || { x: bounds.x, y: bounds.y };
+  return getDockGeometry(
+    display,
+    { width: bounds.width, height: bounds.height },
+    settings.edgeDockSide,
+    positionHint,
+    { margin: 6, peek: 3, triggerThickness: 10, triggerPadding: 8 },
+  );
+}
+
+function cancelEdgeAnimation() {
+  if (!edgeAnimationTimer) return;
+  clearInterval(edgeAnimationTimer);
+  edgeAnimationTimer = null;
+}
+
+function setBoundsImmediately(bounds) {
+  if (!win || win.isDestroyed() || !bounds) return;
+  win.setBounds({
+    x: Math.round(bounds.x),
+    y: Math.round(bounds.y),
+    width: Math.round(bounds.width),
+    height: Math.round(bounds.height),
+  }, false);
+}
+
+function animateEdgeTo(target, nextState, duration, focusAtEnd = false) {
+  if (!win || win.isDestroyed() || !target) return;
+  cancelEdgeAnimation();
+  const from = win.getBounds();
+  const started = Date.now();
+  const total = Math.max(1, duration);
+
+  edgeAnimationTimer = setInterval(() => {
+    if (!win || win.isDestroyed()) {
+      cancelEdgeAnimation();
+      return;
+    }
+    const progress = Math.min(1, (Date.now() - started) / total);
+    setBoundsImmediately(interpolateBounds(from, target, progress));
+    if (progress >= 1) {
+      cancelEdgeAnimation();
+      edgeState = nextState;
+      if (focusAtEnd && win && !win.isDestroyed()) win.focus();
+    }
+  }, 16);
+}
+
+function revealEdgeDock(focus = false) {
+  const settings = loadSettings();
+  if (!settings.edgeDockEnabled || !win || win.isDestroyed()) return;
+  edgeGeometry = calculateEdgeGeometry(settings);
+  if (!edgeGeometry) return;
+
+  if (!win.isVisible()) {
+    if (focus) win.show();
+    else win.showInactive();
+  }
+  applyAlwaysOnTop(settings.alwaysOnTop);
+  edgeOutsideSince = 0;
+  edgeGraceUntil = Date.now() + EDGE_REVEAL_GRACE_MS;
+  edgeState = "showing";
+  animateEdgeTo(edgeGeometry.shown, "shown", EDGE_SHOW_MS, focus);
+}
+
+function hideEdgeDock(immediate = false) {
+  const settings = loadSettings();
+  if (!settings.edgeDockEnabled || !win || win.isDestroyed()) return;
+  edgeGeometry = calculateEdgeGeometry(settings);
+  if (!edgeGeometry) return;
+
+  edgeOutsideSince = 0;
+  if (immediate) {
+    cancelEdgeAnimation();
+    setBoundsImmediately(edgeGeometry.hidden);
+    edgeState = "hidden";
+    return;
+  }
+  edgeState = "hiding";
+  animateEdgeTo(edgeGeometry.hidden, "hidden", EDGE_HIDE_MS, false);
+}
+
+function pollEdgeDock() {
+  const settings = loadSettings();
+  if (!settings.edgeDockEnabled || !win || win.isDestroyed()) return;
+
+  edgeGeometry = calculateEdgeGeometry(settings);
+  if (!edgeGeometry) return;
+  const cursor = screen.getCursorScreenPoint();
+  const inTrigger = pointInRect(cursor, edgeGeometry.trigger);
+  const currentPanelBounds = expandRect(win.getBounds(), 6);
+  const inPanel = pointInRect(cursor, currentPanelBounds);
+  const now = Date.now();
+
+  if ((edgeState === "hidden" || edgeState === "hiding") && inTrigger) {
+    revealEdgeDock(false);
+    return;
+  }
+
+  if (edgeState === "showing") {
+    edgeOutsideSince = 0;
+    return;
+  }
+
+  if (edgeState !== "shown") return;
+
+  if (inPanel || inTrigger || now < edgeGraceUntil) {
+    edgeOutsideSince = 0;
+    return;
+  }
+
+  if (!edgeOutsideSince) edgeOutsideSince = now;
+  if (now - edgeOutsideSince >= EDGE_HIDE_DELAY_MS) hideEdgeDock(false);
+}
+
+function startEdgePolling() {
+  if (edgePollTimer) clearInterval(edgePollTimer);
+  edgePollTimer = setInterval(pollEdgeDock, EDGE_POLL_MS);
+}
+
+function stopEdgePolling() {
+  if (edgePollTimer) clearInterval(edgePollTimer);
+  edgePollTimer = null;
+  edgeOutsideSince = 0;
+  edgeGraceUntil = 0;
+}
+
+function configureEdgeDock(settings = loadSettings(), options = {}) {
+  if (!win || win.isDestroyed()) return;
+  cancelEdgeAnimation();
+
+  if (!settings.edgeDockEnabled) {
+    stopEdgePolling();
+    const restore = edgeGeometry && edgeGeometry.shown
+      ? edgeGeometry.shown
+      : clampNormalBounds(win.getBounds(), displayForNormalWindow().workArea, 8);
+    edgeGeometry = null;
+    edgeDisplayId = null;
+    edgeState = "shown";
+    setBoundsImmediately(restore);
+    saveSettings({ position: { x: restore.x, y: restore.y } });
+    return;
+  }
+
+  if (edgeDisplayId == null) {
+    const display = screen.getDisplayMatching(win.getBounds()) || resolveDockDisplay(settings);
+    edgeDisplayId = display.id;
+  }
+  edgeGeometry = calculateEdgeGeometry(settings);
+  startEdgePolling();
+
+  if (!win.isVisible()) win.showInactive();
+  if (options.initialHidden) {
+    setBoundsImmediately(edgeGeometry.hidden);
+    edgeState = "hidden";
+    return;
+  }
+
+  setBoundsImmediately(edgeGeometry.shown);
+  edgeState = "shown";
+  edgeOutsideSince = 0;
+  edgeGraceUntil = Date.now() + 1400;
+}
+
+function showWidget({ focus = true } = {}) {
+  if (!win || win.isDestroyed()) return;
+  const settings = loadSettings();
+  applyAlwaysOnTop(settings.alwaysOnTop);
+
+  if (settings.edgeDockEnabled) {
+    revealEdgeDock(focus);
+    return;
+  }
+
+  win.show();
+  if (focus) win.focus();
+  setImmediate(() => applyAlwaysOnTop(settings.alwaysOnTop));
+}
+
 function createWindow() {
   const settings = loadSettings();
   const display = screen.getPrimaryDisplay().workArea;
   const width = 332;
-  const height = 420;
+  const height = Math.min(420, maxWidgetHeight(display, 10));
   const startX = settings.position?.x ?? display.x + display.width - width - 16;
   const startY = settings.position?.y ?? display.y + 16;
 
@@ -126,7 +341,8 @@ function createWindow() {
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
 
   win.once("ready-to-show", () => {
-    showWidget();
+    if (settings.edgeDockEnabled) configureEdgeDock(settings, { initialHidden: true });
+    else showWidget({ focus: true });
     refreshUsage(true);
   });
 
@@ -135,7 +351,9 @@ function createWindow() {
   });
 
   win.on("moved", () => {
-    if (!win) return;
+    if (!win || win.isDestroyed()) return;
+    const current = loadSettings();
+    if (current.edgeDockEnabled || edgeAnimationTimer) return;
     const [x, y] = win.getPosition();
     saveSettings({ position: { x, y } });
   });
@@ -143,7 +361,8 @@ function createWindow() {
   win.on("close", (event) => {
     if (app.isQuitting) return;
     event.preventDefault();
-    win.hide();
+    if (loadSettings().edgeDockEnabled) hideEdgeDock(true);
+    else win.hide();
   });
 }
 
@@ -153,7 +372,7 @@ function createTray() {
   tray = new Tray(image.resize({ width: 16, height: 16 }));
   tray.setToolTip("AI 토큰 위젯");
   const menu = Menu.buildFromTemplate([
-    { label: "위젯 보기", click: () => showWidget() },
+    { label: "위젯 보기", click: () => showWidget({ focus: true }) },
     { label: "새로고침", click: () => refreshUsage(true) },
     { type: "separator" },
     { label: "종료", click: () => { app.isQuitting = true; app.quit(); } },
@@ -161,8 +380,14 @@ function createTray() {
   tray.setContextMenu(menu);
   tray.on("click", () => {
     if (!win) return;
+    const settings = loadSettings();
+    if (settings.edgeDockEnabled) {
+      if (edgeState === "shown" || edgeState === "showing") hideEdgeDock(false);
+      else revealEdgeDock(true);
+      return;
+    }
     if (win.isVisible()) win.hide();
-    else showWidget();
+    else showWidget({ focus: true });
   });
 }
 
@@ -173,7 +398,7 @@ function mergeCache(providers) {
       cache.set(provider.id, provider);
       return provider;
     }
-    if (prev && prev.status === "ok" && (provider.status === "error")) {
+    if (prev && prev.status === "ok" && provider.status === "error") {
       return { ...prev, stale: true, error: provider.error };
     }
     return provider;
@@ -212,32 +437,82 @@ ipcMain.handle("refresh", async () => {
 });
 ipcMain.handle("get-settings", () => loadSettings());
 ipcMain.handle("save-settings", (_event, patch) => {
+  const prev = loadSettings();
   const next = saveSettings(patch || {});
   if (Object.prototype.hasOwnProperty.call(patch || {}, "alwaysOnTop")) applyAlwaysOnTop(next.alwaysOnTop);
   if (Object.prototype.hasOwnProperty.call(patch || {}, "opacity") && win) win.setOpacity(next.opacity);
-  if (Object.prototype.hasOwnProperty.call(patch || {}, "openAtLogin")) {
-    applyOpenAtLogin(!!next.openAtLogin);
-  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, "openAtLogin")) applyOpenAtLogin(!!next.openAtLogin);
   if (Object.prototype.hasOwnProperty.call(patch || {}, "refreshSeconds")) scheduleRefresh();
+  if (
+    Object.prototype.hasOwnProperty.call(patch || {}, "edgeDockEnabled") ||
+    Object.prototype.hasOwnProperty.call(patch || {}, "edgeDockSide")
+  ) {
+    if (!prev.edgeDockEnabled && next.edgeDockEnabled) edgeDisplayId = null;
+    configureEdgeDock(next, { initialHidden: false });
+  }
   return next;
 });
-ipcMain.handle("hide", () => win?.hide());
+ipcMain.handle("hide", () => {
+  if (!win) return;
+  if (loadSettings().edgeDockEnabled) hideEdgeDock(true);
+  else win.hide();
+});
 ipcMain.handle("quit", () => {
   app.isQuitting = true;
   app.quit();
 });
 ipcMain.handle("resize", (_event, height) => {
-  if (!win) return;
+  if (!win || win.isDestroyed()) return null;
   const requested = Number(height);
-  if (!Number.isFinite(requested) || requested <= 0) return;
+  if (!Number.isFinite(requested) || requested <= 0) return null;
 
-  // The renderer measures the complete card stack. Keep only the minimum
-  // usable height; deliberately do not impose a maximum so additional AI
-  // provider cards can expand the widget to their full content height.
-  const next = Math.max(160, Math.round(requested));
-  const bounds = win.getBounds();
-  if (Math.abs(bounds.height - next) > 4) win.setContentSize(bounds.width, next);
+  const settings = loadSettings();
+  const display = settings.edgeDockEnabled ? resolveDockDisplay(settings) : displayForNormalWindow();
+  const maxHeight = maxWidgetHeight(display.workArea, 10);
+  const nextHeight = Math.min(maxHeight, Math.max(160, Math.round(requested)));
+  const current = win.getBounds();
+  const resized = { ...current, height: nextHeight };
+
+  if (settings.edgeDockEnabled) {
+    setBoundsImmediately(resized);
+    edgeGeometry = calculateEdgeGeometry(settings);
+    if (edgeGeometry) {
+      const target = edgeState === "hidden" || edgeState === "hiding"
+        ? edgeGeometry.hidden
+        : edgeGeometry.shown;
+      cancelEdgeAnimation();
+      setBoundsImmediately(target);
+      edgeState = edgeState === "hidden" || edgeState === "hiding" ? "hidden" : "shown";
+    }
+  } else {
+    const fitted = clampNormalBounds(resized, display.workArea, 8);
+    setBoundsImmediately(fitted);
+  }
+
+  return {
+    requestedHeight: Math.round(requested),
+    height: nextHeight,
+    maxHeight,
+    constrained: requested > maxHeight,
+  };
 });
+
+function refreshForDisplayChange() {
+  if (!win || win.isDestroyed()) return;
+  const settings = loadSettings();
+  if (settings.edgeDockEnabled) {
+    if (!displayById(edgeDisplayId)) edgeDisplayId = null;
+    edgeGeometry = calculateEdgeGeometry(settings);
+    if (!edgeGeometry) return;
+    const target = edgeState === "hidden" || edgeState === "hiding"
+      ? edgeGeometry.hidden
+      : edgeGeometry.shown;
+    setBoundsImmediately(target);
+    return;
+  }
+  const display = displayForNormalWindow();
+  setBoundsImmediately(clampNormalBounds(win.getBounds(), display.workArea, 8));
+}
 
 app.whenReady().then(() => {
   if (!gotTheLock) return;
@@ -246,6 +521,16 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   scheduleRefresh();
+
+  screen.on("display-metrics-changed", refreshForDisplayChange);
+  screen.on("display-added", refreshForDisplayChange);
+  screen.on("display-removed", refreshForDisplayChange);
+});
+
+app.on("before-quit", () => {
+  stopEdgePolling();
+  cancelEdgeAnimation();
+  if (alwaysOnTopRetry) clearTimeout(alwaysOnTopRetry);
 });
 
 app.on("window-all-closed", (event) => {
