@@ -201,10 +201,16 @@ function setBoundsImmediately(bounds) {
   }, false);
 }
 
+function setPositionImmediately(target) {
+  if (!win || win.isDestroyed() || !target) return;
+  win.setPosition(Math.round(target.x), Math.round(target.y), false);
+}
+
 function animateEdgeTo(target, nextState, duration, focusAtEnd = false) {
   if (!win || win.isDestroyed() || !target) return;
   cancelEdgeAnimation();
   const from = win.getBounds();
+  const to = { ...from, x: target.x, y: target.y };
   const started = Date.now();
   const total = Math.max(1, duration);
 
@@ -214,7 +220,7 @@ function animateEdgeTo(target, nextState, duration, focusAtEnd = false) {
       return;
     }
     const progress = Math.min(1, (Date.now() - started) / total);
-    setBoundsImmediately(interpolateBounds(from, target, progress));
+    setPositionImmediately(interpolateBounds(from, to, progress));
     if (progress >= 1) {
       cancelEdgeAnimation();
       edgeState = nextState;
@@ -249,7 +255,7 @@ function hideEdgeDock(immediate = false) {
   edgeOutsideSince = 0;
   if (immediate) {
     cancelEdgeAnimation();
-    setBoundsImmediately(edgeGeometry.hidden);
+    setPositionImmediately(edgeGeometry.hidden);
     edgeState = "hidden";
     return;
   }
@@ -317,7 +323,7 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
     edgeGeometry = null;
     edgeDisplayId = null;
     edgeState = "shown";
-    setBoundsImmediately(restore);
+    setPositionImmediately(restore);
     saveSettings({ position: { x: restore.x, y: restore.y } });
     return;
   }
@@ -333,15 +339,15 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
 
   if (!win.isVisible()) win.showInactive();
   if (options.initialHidden) {
-    setBoundsImmediately(edgeGeometry.hidden);
+    setPositionImmediately(edgeGeometry.hidden);
     edgeState = "hidden";
     return;
   }
 
-  // Direction changes and startup recovery always begin from fully visible
-  // bounds. Never let a persisted hidden/off-screen coordinate be the only
-  // state the user sees after launching a new version.
-  setBoundsImmediately(edgeGeometry.shown);
+  // Edge mode is a native screen-position feature only. Never change the
+  // BrowserWindow content size here; renderer geometry must remain identical
+  // before and after enabling/disabling the dock.
+  setPositionImmediately(edgeGeometry.shown);
   edgeState = "shown";
   edgeOutsideSince = 0;
   edgeGraceUntil = Date.now() + (
@@ -354,12 +360,10 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
 
   if (sideChanged || startupVisible) {
     win.show();
-    if (startupVisible || sideChanged) win.focus();
+    win.focus();
   }
 
   if (sideChanged) {
-    // Re-assert once after Electron/Windows finishes the move. A revision
-    // guard makes rapid consecutive side changes last-selection-wins.
     setImmediate(() => {
       if (revision !== edgeConfigRevision || !win || win.isDestroyed()) return;
       const current = loadSettings();
@@ -367,7 +371,7 @@ function configureEdgeDock(settings = loadSettings(), options = {}) {
       edgeGeometry = calculateEdgeGeometry(current, positionHint);
       if (!edgeGeometry) return;
       cancelEdgeAnimation();
-      setBoundsImmediately(edgeGeometry.shown);
+      setPositionImmediately(edgeGeometry.shown);
       edgeState = "shown";
       edgeOutsideSince = 0;
       edgeGraceUntil = Date.now() + EDGE_SIDE_CHANGE_GRACE_MS;
@@ -496,8 +500,6 @@ async function resetUserSettingsFromTray() {
   win.show();
   win.focus();
 
-  // Reload the renderer so every settings control reflects the reset values,
-  // then repopulate usage from the preserved local account sessions.
   win.webContents.once("did-finish-load", () => refreshUsage(true));
   win.webContents.reloadIgnoringCache();
 }
@@ -613,15 +615,17 @@ ipcMain.handle("resize", (_event, height) => {
   const resized = { ...current, height: nextHeight };
 
   if (settings.edgeDockEnabled) {
+    // Content-driven height changes are allowed, but the subsequent edge snap
+    // changes position only. This prevents dock toggles from becoming implicit
+    // layout resizes while still supporting real card/settings height changes.
     setBoundsImmediately(resized);
     edgeGeometry = calculateEdgeGeometry(settings, stableDockPositionHint(settings));
     if (edgeGeometry) {
-      const target = edgeState === "hidden" || edgeState === "hiding"
-        ? edgeGeometry.hidden
-        : edgeGeometry.shown;
+      const hidden = edgeState === "hidden" || edgeState === "hiding";
+      const target = hidden ? edgeGeometry.hidden : edgeGeometry.shown;
       cancelEdgeAnimation();
-      setBoundsImmediately(target);
-      edgeState = edgeState === "hidden" || edgeState === "hiding" ? "hidden" : "shown";
+      setPositionImmediately(target);
+      edgeState = hidden ? "hidden" : "shown";
     }
   } else {
     const fitted = clampNormalBounds(resized, display.workArea, 8);
@@ -646,7 +650,7 @@ function refreshForDisplayChange() {
     const target = edgeState === "hidden" || edgeState === "hiding"
       ? edgeGeometry.hidden
       : edgeGeometry.shown;
-    setBoundsImmediately(target);
+    setPositionImmediately(target);
     return;
   }
   const display = displayForNormalWindow();
