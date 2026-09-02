@@ -1,0 +1,91 @@
+name: Publish v1.0.14 Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .release-trigger-v1.0.14
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download verified Windows artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 33583773293 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name How-much-is-tokens-windows-portable \
+            --dir release-artifact
+
+      - name: Verify release asset
+        run: |
+          test -f release-artifact/How-much-is-tokens-1.0.14-portable.exe
+          echo "4417cc55aafdf9469b4bbbc851b849f56a7eb46edc775785954b121bfb090290  release-artifact/How-much-is-tokens-1.0.14-portable.exe" | sha256sum -c -
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## How much is tokens v1.0.14
+
+          ### 실행했는데 위젯이 안 보이는 문제 복구
+          - 저장된 위치가 제거된 모니터나 현재 화면 밖 좌표여도 시작 시 가장 가까운 모니터 작업영역 안으로 자동 보정
+          - 일반 `위젯 보기`도 표시 직전 현재 모니터 안으로 한 번 더 보정
+          - 저장된 엣지 숨김 패널 설정이 있어도 재실행 직후 처음부터 hidden 상태로 두지 않음
+          - 엣지 패널은 실행 직후 완전히 화면 안에 표시되고 5초 grace 후 기존 hover-hide 동작으로 전환
+
+          ### 트레이 설정값 초기화
+          - 트레이 메뉴에 `설정값 초기화` 추가
+          - 위치, 엣지 패널, 토큰 영역 최대 높이, 촘촘하게, 시각화, 투명도, 항상 위에, 새로고침 간격, 시작 시 실행 등을 기본값으로 복구
+          - GitHub 토큰과 Cursor 쿠키는 보존해 계정 연결을 다시 입력하지 않아도 됨
+          - 시작 시 실행 등록도 해제하고 위젯을 primary monitor의 안전한 기본 위치로 즉시 복구
+          - renderer를 다시 로드해 설정 화면과 실제 저장값을 즉시 동기화
+
+          ### 유지 기능
+          - 토큰 영역 최대 높이 / 내부 스크롤
+          - 촘촘하게
+          - 상/우/하/좌 엣지 hover 패널
+          - 원형 / 막대 / 숫자 시각화
+          - 5시간 / 주간 quota 동시 표시
+          - Antigravity 자동 `/usage` 갱신
+          - Grok Bot 사용량
+
+          ### 검증
+          이 EXE는 `main` commit `7210527518bf4a850b2547b8f1c37f4eb29d6eea`에서 GitHub Actions Windows runner로 검증된 artifact입니다.
+          - JavaScript syntax check
+          - settings reset credential-preservation/default tests
+          - startup position clamp / edge startup-visible recovery tests
+          - 기존 Antigravity / Grok Bot / quota / visualization / always-on-top / edge tests
+          - Antigravity Windows bridge smoke test
+          - electron-builder Windows portable build
+
+          SHA-256: `4417cc55aafdf9469b4bbbc851b849f56a7eb46edc775785954b121bfb090290`
+          EOF
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.14"
+          ASSET="release-artifact/How-much-is-tokens-1.0.14-portable.exe"
+          TARGET="7210527518bf4a850b2547b8f1c37f4eb29d6eea"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$ASSET" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          fi
