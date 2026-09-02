@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
     <title>AI 토큰 위젯</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="edge-layout.css" />
   </head>
   <body>
     <div class="shell">
@@ -33,6 +34,14 @@
               <small>다른 창보다 앞에 고정</small>
             </span>
             <input type="checkbox" id="alwaysOnTop" />
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+          <label class="toggle">
+            <span class="toggle-copy">
+              <b>촘촘하게</b>
+              <small>상세 정보는 유지하고 카드/그룹 여백만 줄임</small>
+            </span>
+            <input type="checkbox" id="denseLayout" />
             <span class="switch" aria-hidden="true"></span>
           </label>
           <label class="toggle">
@@ -79,6 +88,31 @@
               <em id="opacityValue">94%</em>
             </div>
             <input type="range" id="opacity" min="0.55" max="1" step="0.01" />
+          </div>
+        </div>
+
+        <div class="set-group">
+          <h2>화면 가장자리</h2>
+          <label class="toggle edge-toggle">
+            <span class="toggle-copy">
+              <b>엣지 숨김 패널</b>
+              <small>평소 모니터 밖에 숨기고 가장자리 hover 시 표시</small>
+            </span>
+            <input type="checkbox" id="edgeDockEnabled" />
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+          <div id="edgeDockOptions" class="edge-dock-options disabled">
+            <div class="edge-dock-head">
+              <b>마우스 오버 위치</b>
+              <small>패널 위치와 감지 영역을 같은 가장자리에 고정</small>
+            </div>
+            <div class="edge-side-picker" role="radiogroup" aria-label="엣지 패널 위치">
+              <label><input type="radio" name="edgeDockSide" value="top" /><span>상</span></label>
+              <label><input type="radio" name="edgeDockSide" value="right" /><span>우</span></label>
+              <label><input type="radio" name="edgeDockSide" value="bottom" /><span>하</span></label>
+              <label><input type="radio" name="edgeDockSide" value="left" /><span>좌</span></label>
+            </div>
+            <p>감지 영역은 화면 가장자리에 고정되어 패널 애니메이션을 따라 움직이지 않습니다. 패널과 감지 영역 모두에서 마우스가 벗어난 뒤에만 닫혀 반복 열림/닫힘을 방지합니다.</p>
           </div>
         </div>
 
