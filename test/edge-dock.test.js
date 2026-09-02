@@ -107,10 +107,10 @@ const layoutFn = renderer.slice(
 );
 assert.ok(!layoutFn.includes("edgeDockEnabled"), "edge state must not change renderer layout geometry");
 
-const edgeToggleHandler = renderer.slice(
-  renderer.indexOf("edgeDockEnabledEl.onchange"),
-  renderer.indexOf("edgeDockSideInputs.forEach"),
-);
+const edgeToggleStart = renderer.indexOf("edgeDockEnabledEl.onchange");
+const edgeToggleEnd = renderer.indexOf("edgeDockSideInputs.forEach", edgeToggleStart);
+assert.ok(edgeToggleStart >= 0 && edgeToggleEnd > edgeToggleStart, "edge toggle handler bounds not found");
+const edgeToggleHandler = renderer.slice(edgeToggleStart, edgeToggleEnd);
 assert.ok(edgeToggleHandler.includes("resizeSequence += 1"));
 assert.ok(edgeToggleHandler.includes("applyEdgeInteractionSettings(settings)"));
 assert.ok(!edgeToggleHandler.includes("requestResize()"), "edge toggle must not request a content resize");
