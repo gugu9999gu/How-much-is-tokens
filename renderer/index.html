@@ -137,6 +137,35 @@
             </label>
           </div>
 
+          <div class="set-group api-provider-group">
+            <h2>API 공급자</h2>
+            <label class="toggle edge-toggle">
+              <span class="toggle-copy">
+                <b>OpenRouter</b>
+                <small>API Key 사용량과 계정 크레딧 잔액 표시</small>
+              </span>
+              <input type="checkbox" id="openRouterEnabled" />
+              <span class="switch" aria-hidden="true"></span>
+            </label>
+            <div class="api-provider-fields">
+              <label class="field">
+                <span class="field-label">API Key</span>
+                <input class="secret-input" type="password" id="openRouterApiKey" placeholder="sk-or-v1-..." autocomplete="off" spellcheck="false" />
+                <small id="openRouterApiKeyStatus">해당 키의 누적/일간/주간/월간 사용량과 Key 한도를 조회합니다.</small>
+              </label>
+              <label class="field">
+                <span class="field-label">Management Key <em>선택</em></span>
+                <input class="secret-input" type="password" id="openRouterManagementKey" placeholder="계정 크레딧 조회용" autocomplete="off" spellcheck="false" />
+                <small id="openRouterManagementKeyStatus">계정의 총 충전 크레딧과 실제 남은 크레딧을 조회할 때 필요합니다.</small>
+              </label>
+              <div class="api-secret-actions">
+                <button type="button" id="saveOpenRouterKeys" class="btn primary">OpenRouter 키 저장</button>
+                <button type="button" id="clearOpenRouterKeys" class="btn subtle-danger">저장된 키 삭제</button>
+              </div>
+              <p id="openRouterSecureStatus" class="security-note">키 원문은 settings.json에 저장하지 않습니다.</p>
+            </div>
+          </div>
+
           <div class="set-group">
             <h2>연결</h2>
             <label class="field">
@@ -159,5 +188,6 @@
       </div>
     </div>
     <script src="app.js"></script>
+    <script src="openrouter-settings.js"></script>
   </body>
 </html>

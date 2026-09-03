@@ -1,0 +1,74 @@
+.api-provider-fields {
+  padding: 4px 0 2px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.field-label em {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.secret-input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.28);
+  color: var(--text);
+  padding: 0 10px;
+  outline: none;
+  font: 11px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  -webkit-app-region: no-drag;
+}
+
+.secret-input:focus {
+  border-color: rgba(62, 224, 160, 0.45);
+  outline: 3px solid rgba(62, 224, 160, 0.12);
+}
+
+.secret-input::placeholder {
+  color: rgba(154, 163, 181, 0.7);
+}
+
+.api-secret-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+}
+
+.api-secret-actions .btn {
+  min-width: 0;
+  height: 32px;
+  font-size: 10px;
+}
+
+.btn.subtle-danger {
+  background: transparent;
+  color: #ff9aa5;
+  border: 1px solid rgba(255, 107, 122, 0.24);
+}
+
+.btn.subtle-danger:hover {
+  background: rgba(255, 107, 122, 0.08);
+}
+
+button:disabled,
+.secret-input:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.security-note {
+  margin: 2px 6px 6px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.security-note.warning {
+  color: var(--warn);
+}

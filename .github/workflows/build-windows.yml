@@ -39,6 +39,7 @@ jobs:
           node --check lib/usage-cache.js
           node --check lib/codex-app-server.js
           node --check lib/settings.js
+          node --check lib/secure-secrets.js
           node --check lib/window-behavior.js
           node --check lib/edge-dock.js
           node --check lib/antigravity-bridge.js
@@ -50,12 +51,18 @@ jobs:
           node --check lib/providers/cursor.js
           node --check lib/providers/grok.js
           node --check lib/providers/grokbot.js
+          node --check lib/providers/openrouter.js
           node --check renderer/app.js
+          node --check renderer/openrouter-settings.js
           node --check test/renderer-layout-smoke.js
           node --check test/renderer-layout-preload.js
+          node --check test/secure-secrets-smoke.js
 
       - name: Run tests
         run: npm test
+
+      - name: Smoke test Windows secure secret storage
+        run: npm run test:secure-secrets
 
       - name: Smoke test renderer titlebar isolation
         run: npm run test:renderer-layout
