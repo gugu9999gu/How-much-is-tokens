@@ -1,3 +1,8 @@
+const openRouterStyle = document.createElement("link");
+openRouterStyle.rel = "stylesheet";
+openRouterStyle.href = "openrouter-settings.css";
+document.head.appendChild(openRouterStyle);
+
 const openRouterEnabledEl = document.getElementById("openRouterEnabled");
 const openRouterApiKeyEl = document.getElementById("openRouterApiKey");
 const openRouterManagementKeyEl = document.getElementById("openRouterManagementKey");
@@ -29,6 +34,8 @@ function applyOpenRouterSettings(settings = {}, message = "") {
   );
 
   saveOpenRouterKeysEl.disabled = !secureAvailable;
+  openRouterApiKeyEl.disabled = !secureAvailable;
+  openRouterManagementKeyEl.disabled = !secureAvailable;
   openRouterSecureStatusEl.classList.toggle("warning", !secureAvailable);
   openRouterSecureStatusEl.textContent = message || (secureAvailable
     ? "키는 운영체제 보안 저장소로 암호화됩니다. Windows에서는 DPAPI를 사용하며 settings.json에는 원문을 기록하지 않습니다."
@@ -75,7 +82,8 @@ saveOpenRouterKeysEl.onclick = async () => {
   } catch (err) {
     await reloadOpenRouterSettings(err.message || String(err));
   } finally {
-    saveOpenRouterKeysEl.disabled = false;
+    const current = await window.tokenWidget.getSettings();
+    applyOpenRouterSettings(current);
   }
 };
 
