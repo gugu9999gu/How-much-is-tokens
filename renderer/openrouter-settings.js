@@ -71,29 +71,28 @@ saveOpenRouterKeysEl.onclick = async () => {
 
   saveOpenRouterKeysEl.disabled = true;
   try {
-    const patch = {};
+    const patch = { openRouterEnabled: true };
     if (apiKey) patch.openRouterApiKey = apiKey;
     if (managementKey) patch.openRouterManagementKey = managementKey;
     const settings = await window.tokenWidget.saveSettings(patch);
     openRouterApiKeyEl.value = "";
     openRouterManagementKeyEl.value = "";
-    applyOpenRouterSettings(settings, "OpenRouter 키를 운영체제 보안 저장소에 암호화해 저장했습니다.");
+    applyOpenRouterSettings(settings, "OpenRouter 키를 운영체제 보안 저장소에 암호화해 저장하고 공급자를 활성화했습니다.");
     window.tokenWidget.refresh();
   } catch (err) {
     await reloadOpenRouterSettings(err.message || String(err));
   } finally {
-    const current = await window.tokenWidget.getSettings();
-    applyOpenRouterSettings(current);
+    saveOpenRouterKeysEl.disabled = false;
   }
 };
 
 clearOpenRouterKeysEl.onclick = async () => {
   clearOpenRouterKeysEl.disabled = true;
   try {
-    const settings = await window.tokenWidget.saveSettings({ clearOpenRouterSecrets: true });
+    const settings = await window.tokenWidget.saveSettings({ clearOpenRouterSecrets: true, openRouterEnabled: false });
     openRouterApiKeyEl.value = "";
     openRouterManagementKeyEl.value = "";
-    applyOpenRouterSettings(settings, "저장된 OpenRouter API Key와 Management Key를 삭제했습니다.");
+    applyOpenRouterSettings(settings, "저장된 OpenRouter 키를 삭제하고 공급자를 비활성화했습니다.");
     window.tokenWidget.refresh();
   } catch (err) {
     await reloadOpenRouterSettings(err.message || String(err));
