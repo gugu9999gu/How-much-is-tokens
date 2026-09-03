@@ -1,0 +1,90 @@
+name: Publish v1.0.19 Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .release-trigger-v1.0.19
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download verified Windows artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 33742772528 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name How-much-is-tokens-windows-portable \
+            --dir release-artifact
+
+      - name: Verify release asset
+        run: |
+          test -f release-artifact/How-much-is-tokens-1.0.19-portable.exe
+          echo "3e9ee434ab2ace6a123ea5f43deba5a054a9d427884c3d74932643b0f6f0df80  release-artifact/How-much-is-tokens-1.0.19-portable.exe" | sha256sum -c -
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## How much is tokens v1.0.19
+
+          ### OpenRouter API 공급자 추가
+          - 설정에 `API 공급자 > OpenRouter` 추가
+          - 일반 API Key로 `/api/v1/key`를 조회해 Key 누적/오늘/이번 주/이번 달 사용액과 Key spending limit/remaining 표시
+          - Management Key(선택)로 `/api/v1/credits`를 조회해 계정 총 충전 크레딧, 총 사용액, 실제 잔여 크레딧 표시
+          - 계정 크레딧과 API Key spending limit는 서로 다른 잔액이므로 별도 quota로 표시
+          - Management Key가 없어도 일반 API Key 사용량은 표시 가능
+          - API Key가 없어도 Management Key만 있으면 계정 크레딧 표시 가능
+          - Key spending limit이 없으면 존재하지 않는 퍼센트 quota를 만들지 않음
+          - OpenRouter stale snapshot은 최대 15분만 재사용
+
+          ### API Key 보안 저장
+          - OpenRouter API Key / Management Key를 `settings.json`에 평문 저장하지 않음
+          - Electron `safeStorage`를 통해 운영체제 보안 저장소로 암호화
+          - Windows에서는 DPAPI를 사용하고 `secrets.json`에는 encrypted blob만 저장
+          - OS 보안 저장소를 사용할 수 없으면 평문 fallback 없이 키 저장 자체를 거부
+          - 설정 화면에는 키 원문을 다시 노출하지 않고 `저장된 키 있음` 상태만 표시
+          - `저장된 키 삭제` 버튼으로 암호화된 OpenRouter 키를 명시적으로 제거 가능
+
+          ### 검증
+          이 EXE는 `main` commit `c98e597808b6326ae85f8bd74da4887bf84c97a3`에서 GitHub Actions Windows runner로 검증된 artifact입니다.
+          - OpenRouter `/key` parser / key-limit tests
+          - OpenRouter `/credits` 잔여 크레딧 계산 tests
+          - unlimited-key / provider-grouping tests
+          - Windows Electron safeStorage/DPAPI 실제 저장·복호화 smoke test
+          - `settings.json` / `secrets.json` 키 원문 미포함 검증
+          - 실제 Electron renderer titlebar isolation smoke test
+          - 기존 provider / quota / visualization / edge / usage-cache tests
+          - Antigravity Windows bridge smoke test
+          - electron-builder Windows portable build
+
+          SHA-256: `3e9ee434ab2ace6a123ea5f43deba5a054a9d427884c3d74932643b0f6f0df80`
+          EOF
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.19"
+          ASSET="release-artifact/How-much-is-tokens-1.0.19-portable.exe"
+          TARGET="c98e597808b6326ae85f8bd74da4887bf84c97a3"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$ASSET" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          fi
