@@ -74,5 +74,38 @@ assert.strictEqual(missing.status, "missing", "explicit logout/missing credentia
 const afterAllResets = applyUsageFallback({ id: "claude", name: "Claude", status: "login" }, now + 90_000_000, file);
 assert.strictEqual(afterAllResets.status, "login", "expired quota snapshots must not be shown as current gauges");
 
+// v1.0.17 and older saved Grok productUsage rows as independent remaining
+// quotas. A stale fallback on v1.0.18 must keep only the real shared weekly
+// quota and discard misleading GrokChat/GrokAppBuilder/GrokBuild windows.
+const grokFile = path.join(dir, "grok-usage-cache.json");
+fs.writeFileSync(grokFile, JSON.stringify({
+  version: 1,
+  providers: {
+    grok: {
+      savedAt: now,
+      provider: {
+        id: "grok",
+        name: "Grok",
+        status: "ok",
+        remainingPct: 0,
+        usedPct: 100,
+        resetAt: now + 86_400_000,
+        windows: [
+          { id: "weekly", label: "주간", remainingPct: 0, usedPct: 100, resetAt: now + 86_400_000 },
+          { id: "grokbuild", label: "GrokBuild", remainingPct: 5, usedPct: 95, resetAt: now + 86_400_000 },
+          { id: "grokchat", label: "GrokChat", remainingPct: 97, usedPct: 3, resetAt: now + 86_400_000 },
+          { id: "grokappbuilder", label: "GrokAppBuilder", remainingPct: 98, usedPct: 2, resetAt: now + 86_400_000 },
+        ],
+      },
+    },
+  },
+}, null, 2));
+
+const migratedGrok = loadProviderSnapshot("grok", now + 1_000, grokFile);
+assert.ok(migratedGrok);
+assert.deepStrictEqual(migratedGrok.windows.map((win) => win.id), ["weekly"]);
+assert.strictEqual(migratedGrok.remainingPct, 0);
+assert.strictEqual(migratedGrok.usedPct, 100);
+
 fs.rmSync(dir, { recursive: true, force: true });
 console.log("persistent usage cache tests passed");
