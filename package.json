@@ -1,6 +1,6 @@
 {
   "name": "how-much-is-tokens",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "화면에 남는 AI 구독 잔여량 위젯",
   "main": "main.js",
   "author": "gugu9999gu",
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "probe": "node --experimental-sqlite lib/cli.js",
-    "test": "node test/antigravity.test.js && node test/antigravity-cli.test.js && node test/grokbot.test.js && node test/provider-grouping.test.js && node test/quota-windows.test.js && node test/visualization.test.js && node test/window-behavior.test.js && node test/edge-dock.test.js && node test/settings-reset.test.js && node test/usage-cache.test.js && node test/codex-app-server.test.js",
+    "test": "node test/antigravity.test.js && node test/antigravity-cli.test.js && node test/grok.test.js && node test/grokbot.test.js && node test/provider-grouping.test.js && node test/quota-windows.test.js && node test/visualization.test.js && node test/window-behavior.test.js && node test/edge-dock.test.js && node test/settings-reset.test.js && node test/usage-cache.test.js && node test/codex-app-server.test.js",
     "test:renderer-layout": "electron test/renderer-layout-smoke.js --disable-gpu",
     "dist": "electron-builder --win portable"
   },
