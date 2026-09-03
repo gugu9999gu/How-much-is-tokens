@@ -56,9 +56,13 @@ jobs:
           node --check renderer/openrouter-settings.js
           node --check test/renderer-layout-smoke.js
           node --check test/renderer-layout-preload.js
+          node --check test/secure-secrets-smoke.js
 
       - name: Run tests
         run: npm test
+
+      - name: Smoke test Windows secure secret storage
+        run: npm run test:secure-secrets
 
       - name: Smoke test renderer titlebar isolation
         run: npm run test:renderer-layout
