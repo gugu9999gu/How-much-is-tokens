@@ -39,6 +39,7 @@ jobs:
           node --check lib/usage-cache.js
           node --check lib/codex-app-server.js
           node --check lib/settings.js
+          node --check lib/secure-secrets.js
           node --check lib/window-behavior.js
           node --check lib/edge-dock.js
           node --check lib/antigravity-bridge.js
@@ -50,7 +51,9 @@ jobs:
           node --check lib/providers/cursor.js
           node --check lib/providers/grok.js
           node --check lib/providers/grokbot.js
+          node --check lib/providers/openrouter.js
           node --check renderer/app.js
+          node --check renderer/openrouter-settings.js
           node --check test/renderer-layout-smoke.js
           node --check test/renderer-layout-preload.js
 
