@@ -1,0 +1,21 @@
+{
+  "_comment": "leerness 비시크릿 설정. AI 에이전트가 읽을 수 있는 위치 (git checked-in). 시크릿(TOKEN/SECRET/PASSWORD)은 .env 사용.",
+  "_docs": "https://github.com/gugu9999gu/leerness#config",
+  "_version": "1.36.184",
+  "LEERNESS_SKILL_DISCOVER_URL": "",
+  "LEERNESS_SKILL_AUTO_DISCOVER": "0",
+  "LEERNESS_SKILL_AUTO_INSTALL": "0",
+  "LEERNESS_SKILL_AUTO_PRESETS": "vercel,anthropic",
+  "LEERNESS_OLLAMA_BASE_URL": "",
+  "LEERNESS_OLLAMA_MODEL": "",
+  "LEERNESS_ENABLE_CLAUDE": "0",
+  "LEERNESS_ENABLE_CODEX": "0",
+  "LEERNESS_ENABLE_AGY": "0",
+  "LEERNESS_ENABLE_GROK": "0",
+  "LEERNESS_ENABLE_OPENCODE": "0",
+  "LEERNESS_ENABLE_QWEN": "0",
+  "LEERNESS_ENABLE_AIDER": "0",
+  "LEERNESS_ENABLE_GOOSE": "0",
+  "LEERNESS_ENABLE_COPILOT": "0",
+  "LEERNESS_ENABLE_OLLAMA": "0"
+}
