@@ -35,6 +35,8 @@ assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32
 assert.strictEqual(interactiveStartCommand("bad\npath.cmd", "cmd.exe"), null, "shell paths with line breaks must be rejected");
 assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", limitReached: true }).limitReached, true,
   "persistent cache must retain the server-classified reached state used by terminal routing");
+assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", remainingPct: 90, routingRemainingPct: 12 }).routingRemainingPct, 12,
+  "persistent cache must retain the conservative routing quota independently of the display gauge");
 
 const profile = normalizeAccountProfiles([
   { providerId: "codex", label: "GPT 2번", configDir: path.join(os.tmpdir(), "launcher-codex-2") },
@@ -81,6 +83,7 @@ const cacheProvider = {
   name: "Codex",
   status: "ok",
   remainingPct: 55,
+  routingRemainingPct: 55,
   windows: [{ id: "session", label: "5시간", remainingPct: 55, usedPct: 45, resetAt: cacheNow + 60_000 }],
 };
 assert.strictEqual(saveProviderSnapshot(cacheProvider, cacheNow, cacheFile), true);
@@ -95,7 +98,7 @@ assert.strictEqual(fallback.stale, true);
 let routeEntry = readStore(cacheFile).providers["codex:routing-test"];
 assert.strictEqual(routeEntry.routeBlockedAt, cacheNow + 100, "last-good quota must be route-blocked after a live error");
 assert.strictEqual(routeEntry.lastLiveStatus, "error");
-assert.strictEqual(saveProviderSnapshot({ ...cacheProvider, remainingPct: 54 }, cacheNow + 200, cacheFile), true);
+assert.strictEqual(saveProviderSnapshot({ ...cacheProvider, remainingPct: 54, routingRemainingPct: 54 }, cacheNow + 200, cacheFile), true);
 routeEntry = readStore(cacheFile).providers["codex:routing-test"];
 assert.strictEqual(Object.prototype.hasOwnProperty.call(routeEntry, "routeBlockedAt"), false,
   "a successful provider refresh must clear the standalone routing block");
@@ -113,6 +116,7 @@ assert.ok(ps.includes("settings.json"));
 assert.ok(ps.includes("usage-cache.json"));
 assert.ok(ps.includes("fixed-primary"));
 assert.ok(ps.includes("max-remaining"));
+assert.ok(ps.includes("routingRemainingPct"), "terminal routing must prefer the conservative routing metric over the display gauge");
 assert.ok(ps.includes("Sort-Object Order"), "default routing branch must preserve account priority order");
 assert.ok(ps.includes("$Remaining -gt $Threshold"), "automatic routing must enforce the configured threshold");
 assert.ok(ps.includes("routeBlockedAt"), "terminal routing must reject accounts whose latest live check failed");
@@ -155,7 +159,14 @@ if (process.platform === "win32") {
     providers: {
       "codex:default-fixture": {
         savedAt: fixtureNow,
-        provider: { id: "codex", name: "Codex", status: "ok", remainingPct: 0, limitReached: false },
+        provider: {
+          id: "codex",
+          name: "Codex",
+          status: "ok",
+          remainingPct: 90,
+          routingRemainingPct: 0,
+          limitReached: false,
+        },
       },
       [profileKey]: {
         savedAt: fixtureNow,
@@ -164,7 +175,8 @@ if (process.platform === "win32") {
           instanceKey: profileKey,
           name: "Codex",
           status: "ok",
-          remainingPct: 63,
+          remainingPct: 99,
+          routingRemainingPct: 63,
           limitReached: false,
         },
       },
@@ -187,7 +199,7 @@ if (process.platform === "win32") {
     timeout: 5_000,
   });
   assert.strictEqual(fs.readFileSync(outputFile, "utf8").trim().toLowerCase(), profile.configDir.toLowerCase(),
-    "standalone priority routing must select the next usable profile and inject CODEX_HOME");
+    "standalone routing must ignore a high display gauge when the default account's conservative routing quota is exhausted");
 
   fixtureCache.providers[profileKey].routeBlockedAt = Date.now();
   fs.writeFileSync(cacheFile, JSON.stringify(fixtureCache, null, 2));
