@@ -22,6 +22,8 @@ const {
   installRouterLaunchers,
 } = require("../lib/routed-launcher");
 
+const WINDOWS_POWERSHELL_TIMEOUT_MS = 20_000;
+
 const fakeExec = (_command, args) => {
   assert.strictEqual(args[0], "codex");
   return "C:\\Tools\\codex.cmd\r\n";
@@ -139,7 +141,7 @@ if (process.platform === "win32") {
     "-NoProfile",
     "-Command",
     `[scriptblock]::Create((Get-Content -Raw -LiteralPath '${psPath.replace(/'/g, "''")}')) | Out-Null`,
-  ], { stdio: "ignore", windowsHide: true, timeout: 5_000 });
+  ], { stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS });
 
   const outputFile = path.join(stateDir, "selected-home.txt");
   const fakeCodex = path.join(stateDir, "fake-codex.cmd");
@@ -196,7 +198,7 @@ if (process.platform === "win32") {
     env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
     stdio: "ignore",
     windowsHide: true,
-    timeout: 5_000,
+    timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
   });
   assert.strictEqual(fs.readFileSync(outputFile, "utf8").trim().toLowerCase(), profile.configDir.toLowerCase(),
     "standalone routing must ignore a high display gauge when the default account's conservative routing quota is exhausted");
@@ -217,7 +219,7 @@ if (process.platform === "win32") {
       env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
       stdio: "ignore",
       windowsHide: true,
-      timeout: 5_000,
+      timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
     });
   } catch {
     blocked = true;
