@@ -127,6 +127,16 @@
           </div>
 
           <div class="set-group">
+            <h2>다계정 프로필</h2>
+            <label class="field">
+              <span class="field-label">격리 로그인 프로필</span>
+              <textarea id="accountProfiles" rows="6" placeholder="codex|GPT 2번|C:\\AI-Profiles\\codex-2&#10;claude|Claude 업무|D:\\AI-Profiles\\claude-work&#10;grok|Grok 2번|D:\\AI-Profiles\\grok-2" spellcheck="false"></textarea>
+              <small>한 줄에 <b>provider|표시 이름|설정 디렉터리</b> 형식으로 입력합니다. 현재 지원: codex, claude, grok. 기본 로그인 디렉터리는 자동으로 표시되므로 여기에 다시 추가하지 않습니다.</small>
+            </label>
+            <p class="security-note">인증 파일을 복사하거나 교체하지 않습니다. 각 경로는 기존 CLI가 별도로 로그인해 둔 CODEX_HOME / CLAUDE_CONFIG_DIR / GROK_CONFIG_DIR 디렉터리여야 합니다.</p>
+          </div>
+
+          <div class="set-group">
             <h2>자동화</h2>
             <label class="toggle">
               <span class="toggle-copy">
@@ -136,7 +146,7 @@
               <input type="checkbox" id="codexAutoUseReset" />
               <span class="switch" aria-hidden="true"></span>
             </label>
-            <p class="security-note">기본값은 꺼짐입니다. 0% 반올림이나 오래된 캐시만으로 티켓을 사용하지 않으며, 같은 한도 구간에서 중복 사용을 방지합니다.</p>
+            <p class="security-note">기본값은 꺼짐입니다. 0% 반올림이나 오래된 캐시만으로 티켓을 사용하지 않으며, 같은 한도 구간에서 중복 사용을 방지합니다. v1.0.22에서는 추가 Codex 프로필은 조회 전용이며 자동 리셋은 기본 계정에만 적용됩니다.</p>
           </div>
 
           <div class="set-group">
