@@ -4,7 +4,12 @@ const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const { normalizeAccountProfiles, defaultConfigDir } = require("../lib/account-profiles");
-const { sanitizeProvider } = require("../lib/usage-cache");
+const {
+  sanitizeProvider,
+  saveProviderSnapshot,
+  applyUsageFallback,
+  readStore,
+} = require("../lib/usage-cache");
 const {
   resolveProviderExecutable,
   interactiveStartCommand,
@@ -64,6 +69,33 @@ assert.strictEqual(defaultLaunch.ok, true);
 assert.strictEqual(captured.options.env.CODEX_HOME, defaultConfigDir("codex"), "default selection must not inherit an unrelated shell CODEX_HOME");
 
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-router-state-"));
+const cacheFile = path.join(stateDir, "usage-cache.json");
+const cacheNow = Date.now();
+const cacheProvider = {
+  id: "codex",
+  accountKey: "codex:routing-test",
+  name: "Codex",
+  status: "ok",
+  remainingPct: 55,
+  windows: [{ id: "session", label: "5시간", remainingPct: 55, usedPct: 45, resetAt: cacheNow + 60_000 }],
+};
+assert.strictEqual(saveProviderSnapshot(cacheProvider, cacheNow, cacheFile), true);
+const fallback = applyUsageFallback({
+  id: "codex",
+  accountKey: "codex:routing-test",
+  name: "Codex",
+  status: "error",
+  error: "network",
+}, cacheNow + 100, cacheFile);
+assert.strictEqual(fallback.stale, true);
+let routeEntry = readStore(cacheFile).providers["codex:routing-test"];
+assert.strictEqual(routeEntry.routeBlockedAt, cacheNow + 100, "last-good quota must be route-blocked after a live error");
+assert.strictEqual(routeEntry.lastLiveStatus, "error");
+assert.strictEqual(saveProviderSnapshot({ ...cacheProvider, remainingPct: 54 }, cacheNow + 200, cacheFile), true);
+routeEntry = readStore(cacheFile).providers["codex:routing-test"];
+assert.strictEqual(Object.prototype.hasOwnProperty.call(routeEntry, "routeBlockedAt"), false,
+  "a successful provider refresh must clear the standalone routing block");
+
 const binDir = path.join(stateDir, "router-bin");
 const installed = installRouterLaunchers({ stateDir, binDir });
 assert.strictEqual(installed.ok, true);
@@ -79,6 +111,7 @@ assert.ok(ps.includes("fixed-primary"));
 assert.ok(ps.includes("max-remaining"));
 assert.ok(ps.includes("Sort-Object Order"), "default routing branch must preserve account priority order");
 assert.ok(ps.includes("$Remaining -gt $Threshold"), "automatic routing must enforce the configured threshold");
+assert.ok(ps.includes("routeBlockedAt"), "terminal routing must reject accounts whose latest live check failed");
 assert.ok(ps.includes("provider.limitReached"), "terminal routing must reject persisted limit-reached accounts");
 assert.ok(ps.includes("CODEX_HOME"));
 assert.ok(ps.includes("CLAUDE_CONFIG_DIR"));
