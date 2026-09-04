@@ -4,6 +4,7 @@ const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const { normalizeAccountProfiles, defaultConfigDir } = require("../lib/account-profiles");
+const { sanitizeProvider } = require("../lib/usage-cache");
 const {
   resolveProviderExecutable,
   interactiveStartCommand,
@@ -23,6 +24,8 @@ assert.strictEqual(
 assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32\\cmd.exe").startsWith("start \"\""));
 assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32\\cmd.exe").includes(" /k call "));
 assert.strictEqual(interactiveStartCommand("bad\npath.cmd", "cmd.exe"), null, "shell paths with line breaks must be rejected");
+assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", limitReached: true }).limitReached, true,
+  "persistent cache must retain the server-classified reached state used by terminal routing");
 
 const profile = normalizeAccountProfiles([
   { providerId: "codex", label: "GPT 2번", configDir: path.join(os.tmpdir(), "launcher-codex-2") },
@@ -76,6 +79,7 @@ assert.ok(ps.includes("fixed-primary"));
 assert.ok(ps.includes("max-remaining"));
 assert.ok(ps.includes("Sort-Object Order"), "default routing branch must preserve account priority order");
 assert.ok(ps.includes("$Remaining -gt $Threshold"), "automatic routing must enforce the configured threshold");
+assert.ok(ps.includes("provider.limitReached"), "terminal routing must reject persisted limit-reached accounts");
 assert.ok(ps.includes("CODEX_HOME"));
 assert.ok(ps.includes("CLAUDE_CONFIG_DIR"));
 assert.ok(ps.includes("GROK_HOME"));
