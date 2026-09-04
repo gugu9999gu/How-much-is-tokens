@@ -3,6 +3,7 @@ const {
   cursorChecksum,
   parseSandUsage,
   parsePeriodUsage,
+  periodCreditBalance,
   resultFromPayloads,
 } = require("../lib/providers/grokbot");
 const { tokenFromCookie } = require("../lib/providers/cursor-auth");
@@ -41,6 +42,14 @@ assert.strictEqual(period.remaining, 3766);
 assert.strictEqual(Math.round(period.usedPct * 100) / 100, 24.68);
 assert.strictEqual(period.plan, "ultra");
 
+const credit = periodCreditBalance(period);
+assert.ok(credit);
+assert.strictEqual(credit.used, 12.34);
+assert.strictEqual(credit.limit, 50);
+assert.strictEqual(credit.balance, 37.66);
+assert.ok(Math.abs(credit.remainingPct - 75.32) < 0.001);
+assert.strictEqual(credit.currency, "USD");
+
 const result = resultFromPayloads(
   {
     usagePercent: 42,
@@ -61,7 +70,13 @@ assert.strictEqual(result.remainingPct, 58);
 assert.strictEqual(result.windows.length, 2);
 assert.strictEqual(result.windows[0].label, "주간");
 assert.strictEqual(result.windows[1].label, "On-demand 한도");
-assert.ok(result.extras.some((item) => item.label === "On-demand 사용" && item.value === "$25.00"));
-assert.ok(result.extras.some((item) => item.label === "On-demand 잔여" && item.value === "$75.00"));
+assert.strictEqual(result.creditBalances.length, 1);
+assert.strictEqual(result.creditBalances[0].label, "On-demand 크레딧");
+assert.strictEqual(result.creditBalances[0].used, 25);
+assert.strictEqual(result.creditBalances[0].limit, 100);
+assert.strictEqual(result.creditBalances[0].balance, 75);
+assert.ok(!result.extras.some((item) => /On-demand (사용|잔여|한도)/.test(item.label)), "money details must use the common credit model, not duplicate chips");
+assert.ok(result.extras.some((item) => item.label === "계정" && item.value === "Cursor"));
 
-console.log("grok bot provider tests passed");
+assert.strictEqual(periodCreditBalance(null), null);
+console.log("grok bot provider / credit tests passed");
