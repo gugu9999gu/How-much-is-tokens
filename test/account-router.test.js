@@ -54,6 +54,28 @@ assert.strictEqual(defaults.codex.policy, "priority-fallback");
 assert.strictEqual(defaults.codex.thresholdPct, 0);
 assert.strictEqual(remainingPct({ remainingPct: null }), null, "unknown quota must not be coerced to zero");
 assert.strictEqual(remainingPct({ remainingPct: "" }), null, "empty quota must remain unknown");
+assert.strictEqual(remainingPct({
+  id: "codex",
+  remainingPct: 80,
+  windows: [
+    { id: "session", remainingPct: 80 },
+    { id: "weekly", remainingPct: 0 },
+  ],
+}), 0, "Codex routing must stop on an exhausted global weekly quota even if the session gauge remains high");
+assert.strictEqual(remainingPct({
+  id: "claude",
+  remainingPct: 80,
+  windows: [
+    { id: "session", remainingPct: 80 },
+    { id: "weekly-all", remainingPct: 70 },
+    { id: "weekly-scoped-fable", remainingPct: 0 },
+  ],
+}), 70, "Claude model-scoped meters such as Fable must not block generic account routing");
+assert.strictEqual(remainingPct({
+  id: "claude",
+  routingRemainingPct: 25,
+  remainingPct: 80,
+}), 25, "persisted conservative routing quota must take precedence over the display summary gauge");
 
 const disabled = selectRoute("codex", providers, defaults);
 assert.strictEqual(disabled.ok, false);
