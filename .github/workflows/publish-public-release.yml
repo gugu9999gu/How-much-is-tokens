@@ -72,7 +72,7 @@ jobs:
       - name: Build Windows portable executable
         run: npm run dist
 
-      - name: Generate release checksum and notes
+      - name: Generate release checksum and public notes
         shell: pwsh
         run: |
           $artifacts = @(Get-ChildItem -LiteralPath "dist" -Filter "*-portable.exe" -File)
@@ -84,7 +84,10 @@ jobs:
           $hash = (Get-FileHash -LiteralPath $artifact.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $($artifact.Name)" | Set-Content -LiteralPath "dist\SHA256SUMS.txt" -Encoding ascii
 
-          $notesSource = "docs\v$env:VERSION.md"
+          # Only notes intentionally placed under public-release-notes may cross
+          # the private-development/public-release boundary. Never publish
+          # internal docs/v*.md automatically.
+          $notesSource = "docs\public-release-notes\v$env:VERSION.md"
           $notesTarget = "dist\RELEASE_NOTES.md"
           if (Test-Path -LiteralPath $notesSource) {
             Copy-Item -LiteralPath $notesSource -Destination $notesTarget -Force
@@ -92,7 +95,7 @@ jobs:
             @(
               "# How much is tokens $env:RELEASE_TAG",
               "",
-              "Windows portable release built from the private development repository.",
+              "Windows portable release.",
               "",
               "Verify the executable with the attached SHA256SUMS.txt before running it."
             ) | Set-Content -LiteralPath $notesTarget -Encoding utf8
