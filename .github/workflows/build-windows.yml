@@ -37,8 +37,12 @@ jobs:
           node --check preload.js
           node --check lib/usage.js
           node --check lib/usage-cache.js
+          node --check lib/account-identity.js
+          node --check lib/credit-balances.js
           node --check lib/codex-app-server.js
           node --check lib/codex-rate-limits.js
+          node --check lib/codex-reset-credit.js
+          node --check lib/codex-auto-reset.js
           node --check lib/settings.js
           node --check lib/secure-secrets.js
           node --check lib/window-behavior.js
@@ -48,6 +52,7 @@ jobs:
           node --check lib/providers/antigravity.js
           node --check lib/providers/claude.js
           node --check lib/providers/codex.js
+          node --check lib/providers/copilot.js
           node --check lib/providers/cursor-auth.js
           node --check lib/providers/cursor.js
           node --check lib/providers/grok.js
@@ -55,6 +60,11 @@ jobs:
           node --check lib/providers/openrouter.js
           node --check renderer/app.js
           node --check renderer/openrouter-settings.js
+          node --check test/claude-usage.test.js
+          node --check test/cursor-credits.test.js
+          node --check test/copilot-credits.test.js
+          node --check test/codex-credits.test.js
+          node --check test/codex-auto-reset.test.js
           node --check test/renderer-layout-smoke.js
           node --check test/renderer-layout-preload.js
           node --check test/secure-secrets-smoke.js

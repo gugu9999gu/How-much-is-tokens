@@ -6,6 +6,7 @@ const shellEl = document.querySelector(".shell");
 const alwaysOnTopEl = document.getElementById("alwaysOnTop");
 const denseLayoutEl = document.getElementById("denseLayout");
 const tokenAreaMaxHeightEl = document.getElementById("tokenAreaMaxHeight");
+const codexAutoUseResetEl = document.getElementById("codexAutoUseReset");
 const edgeDockEnabledEl = document.getElementById("edgeDockEnabled");
 const edgeDockOptionsEl = document.getElementById("edgeDockOptions");
 const edgeDockSideInputs = [...document.querySelectorAll('input[name="edgeDockSide"]')];
@@ -161,8 +162,45 @@ function renderSummaryVisual(provider) {
   `;
 }
 
+function creditAmount(value, balance) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  if (balance.currency) {
+    if (String(balance.currency).toUpperCase() === "USD") return `$${number.toFixed(2)}`;
+    return `${String(balance.currency).toUpperCase()} ${number.toFixed(2)}`;
+  }
+  const rounded = Math.round(number * 100) / 100;
+  return balance.unit ? `${rounded} ${balance.unit}` : String(rounded);
+}
+
+function creditBalanceText(balance) {
+  if (balance.unlimited === true) return "무제한";
+  const remaining = creditAmount(balance.balance, balance);
+  const used = creditAmount(balance.used, balance);
+  const limit = creditAmount(balance.limit, balance);
+  if (remaining) return `잔여 ${remaining}`;
+  if (used && limit) return `사용 ${used} / ${limit}`;
+  if (limit) return `한도 ${limit}`;
+  if (used) return `사용 ${used}`;
+  return "";
+}
+
+function renderCreditBalances(provider) {
+  const balances = Array.isArray(provider.creditBalances) ? provider.creditBalances : [];
+  const visible = balances.slice(0, compact ? 1 : 4);
+  if (!visible.length) return "";
+  return `<div class="credit-balances">${visible.map((balance) => {
+    const text = creditBalanceText(balance);
+    const reset = resetText(balance.resetAt);
+    const pct = Number.isFinite(Number(balance.remainingPct)) ? `${Math.round(Number(balance.remainingPct))}%` : "";
+    const detail = [text, pct, reset].filter(Boolean).join(" · ");
+    return `<span class="credit-chip"><b>${balance.label || "크레딧"}</b>${detail ? `<small>${detail}</small>` : ""}</span>`;
+  }).join("")}</div>`;
+}
+
 function renderProviderCard(provider) {
   const plan = provider.plan ? ` · ${provider.plan}` : "";
+  const account = provider.accountLabel ? ` · ${provider.accountLabel}` : "";
   const statusLine =
     provider.status === "ok"
       ? resetText(provider.resetAt)
@@ -173,24 +211,27 @@ function renderProviderCard(provider) {
           : provider.error || "오류";
   const quotaWindows = compact ? [] : (provider.windows || []);
   const showQuotaVisuals = quotaWindows.length >= 2;
+  const maxExtras = Number.isFinite(Number(provider.maxExtras)) ? Math.max(0, Number(provider.maxExtras)) : 4;
   const extras = (provider.extras || [])
-    .filter((item) => String(item.value || "").length < 28)
-    .slice(0, compact ? 0 : 4)
+    .filter((item) => String(item.value || "").length < 36)
+    .slice(0, compact ? 0 : maxExtras)
     .map((item) => `<span class="chip">${item.label} ${item.value}</span>`)
     .join("");
   const quotaChips = showQuotaVisuals
     ? ""
     : quotaWindows.map((win) => `<span class="chip">${win.label} ${pctLabel(win.remainingPct)}%</span>`).join("");
   const chips = `${quotaChips}${extras}`;
+  const credits = renderCreditBalances(provider);
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
 
   if (showQuotaVisuals) {
     return `
       <article class="row multi-quota visual-${visualization}">
         <div class="meta">
-          <b>${provider.name}${plan}</b>
+          <b>${provider.name}${account}${plan}</b>
           <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
           <div class="quota-visuals quota-${visualization}s">${quotaWindows.map(renderQuotaVisual).join("")}</div>
+          ${credits}
           ${extras ? `<div class="windows">${extras}</div>` : ""}
           ${hint}
         </div>
@@ -202,8 +243,9 @@ function renderProviderCard(provider) {
     <article class="row visual-${visualization} ${compact ? "compact" : ""}">
       ${renderSummaryVisual(provider)}
       <div class="meta">
-        <b>${provider.name}${plan}</b>
+        <b>${provider.name}${account}${plan}</b>
         <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
+        ${credits}
         ${chips ? `<div class="windows">${chips}</div>` : ""}
         ${hint}
       </div>
@@ -219,9 +261,6 @@ function applyContentLayoutSettings(settings = {}) {
 }
 
 function applyEdgeInteractionSettings(settings = {}) {
-  // Edge docking changes only the native window's screen position. Keep every
-  // geometry-affecting renderer style independent so toggling edge mode cannot
-  // move, shrink, or clip the titlebar/cards inside the rounded shell.
   shellEl.classList.toggle("edge-dock-enabled", settings.edgeDockEnabled === true);
 }
 
@@ -350,6 +389,7 @@ function fillSettings(settings) {
   alwaysOnTopEl.checked = !!settings.alwaysOnTop;
   denseLayoutEl.checked = settings.denseLayout === true;
   tokenAreaMaxHeightEl.value = normalizeTokenAreaMaxHeight(settings.tokenAreaMaxHeight);
+  codexAutoUseResetEl.checked = settings.codexAutoUseReset === true;
   document.getElementById("openAtLogin").checked = !!settings.openAtLogin;
   document.getElementById("hideMissing").checked = settings.hideMissing !== false;
   setVisualizationUi(settings.visualization || "ring");
@@ -390,14 +430,17 @@ tokenAreaMaxHeightEl.onchange = async () => {
   applyContentLayoutSettings(settings);
   requestResize();
 };
+codexAutoUseResetEl.onchange = async () => {
+  const settings = await window.tokenWidget.saveSettings({ codexAutoUseReset: !!codexAutoUseResetEl.checked });
+  codexAutoUseResetEl.checked = settings.codexAutoUseReset === true;
+  mergePayloadSettings({ codexAutoUseReset: settings.codexAutoUseReset === true });
+  window.tokenWidget.refresh();
+};
 edgeDockEnabledEl.onchange = async () => {
   const patch = {
     edgeDockEnabled: !!edgeDockEnabledEl.checked,
     edgeDockSide: selectedEdgeDockSide(),
   };
-
-  // Invalidate any renderer resize callback already in flight. Edge ON/OFF is
-  // position-only and must not itself trigger a BrowserWindow content resize.
   resizeSequence += 1;
   edgeDockEnabledEl.disabled = true;
   try {
@@ -431,6 +474,7 @@ document.getElementById("saveBtn").onclick = async () => {
     alwaysOnTop: alwaysOnTopEl.checked,
     denseLayout: denseLayoutEl.checked,
     tokenAreaMaxHeight: normalizeTokenAreaMaxHeight(tokenAreaMaxHeightEl.value),
+    codexAutoUseReset: codexAutoUseResetEl.checked,
     edgeDockEnabled: edgeDockEnabledEl.checked,
     edgeDockSide: selectedEdgeDockSide(),
     openAtLogin: document.getElementById("openAtLogin").checked,
