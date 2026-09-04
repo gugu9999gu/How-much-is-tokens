@@ -72,3 +72,51 @@ button:disabled,
 .security-note.warning {
   color: var(--warn);
 }
+
+.smart-route-list {
+  display: grid;
+  gap: 8px;
+  margin: 6px;
+}
+
+.smart-route-card {
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.025);
+}
+
+.smart-route-field {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.smart-route-field select {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.28);
+  color: var(--text);
+  padding: 0 9px;
+  outline: none;
+  font-size: 10px;
+  -webkit-app-region: no-drag;
+}
+
+.smart-route-field select:focus {
+  border-color: rgba(62, 224, 160, 0.45);
+  outline: 3px solid rgba(62, 224, 160, 0.12);
+}
+
+.smart-route-launch {
+  margin: 4px 6px 6px;
+  height: 32px;
+  font-size: 10px;
+}
+
+.smart-route-actions {
+  grid-template-columns: 1fr;
+}
