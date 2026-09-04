@@ -6,6 +6,7 @@ const shellEl = document.querySelector(".shell");
 const alwaysOnTopEl = document.getElementById("alwaysOnTop");
 const denseLayoutEl = document.getElementById("denseLayout");
 const tokenAreaMaxHeightEl = document.getElementById("tokenAreaMaxHeight");
+const accountProfilesEl = document.getElementById("accountProfiles");
 const codexAutoUseResetEl = document.getElementById("codexAutoUseReset");
 const edgeDockEnabledEl = document.getElementById("edgeDockEnabled");
 const edgeDockOptionsEl = document.getElementById("edgeDockOptions");
@@ -16,6 +17,7 @@ const visualizationInputs = [...document.querySelectorAll('input[name="visualiza
 
 const VISUALIZATION_MODES = new Set(["ring", "bar", "number"]);
 const EDGE_DOCK_SIDES = new Set(["top", "right", "bottom", "left"]);
+const MULTI_ACCOUNT_PROVIDERS = new Set(["codex", "claude", "grok"]);
 const TOKEN_AREA_MIN_HEIGHT = 120;
 const TOKEN_AREA_MAX_HEIGHT = 2000;
 
@@ -37,6 +39,32 @@ function normalizeTokenAreaMaxHeight(value) {
   const height = Number(value);
   if (!Number.isFinite(height) || height <= 0) return 0;
   return Math.max(TOKEN_AREA_MIN_HEIGHT, Math.min(TOKEN_AREA_MAX_HEIGHT, Math.round(height)));
+}
+
+function formatAccountProfiles(profiles) {
+  if (!Array.isArray(profiles)) return "";
+  return profiles
+    .filter((profile) => profile && profile.enabled !== false)
+    .map((profile) => [profile.providerId, profile.label, profile.configDir].map((value) => String(value || "").trim()).join("|"))
+    .filter((line) => line.replace(/\|/g, "").trim())
+    .join("\n");
+}
+
+function parseAccountProfiles(text) {
+  const rows = [];
+  for (const sourceLine of String(text || "").split(/\r?\n/)) {
+    const line = sourceLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const first = line.indexOf("|");
+    const second = first < 0 ? -1 : line.indexOf("|", first + 1);
+    if (first <= 0 || second <= first + 1) continue;
+    const providerId = line.slice(0, first).trim().toLowerCase();
+    const label = line.slice(first + 1, second).trim();
+    const configDir = line.slice(second + 1).trim();
+    if (!MULTI_ACCOUNT_PROVIDERS.has(providerId) || !label || !configDir) continue;
+    rows.push({ providerId, label, configDir, enabled: true });
+  }
+  return rows;
 }
 
 function tone(pct) {
@@ -389,6 +417,7 @@ function fillSettings(settings) {
   alwaysOnTopEl.checked = !!settings.alwaysOnTop;
   denseLayoutEl.checked = settings.denseLayout === true;
   tokenAreaMaxHeightEl.value = normalizeTokenAreaMaxHeight(settings.tokenAreaMaxHeight);
+  accountProfilesEl.value = formatAccountProfiles(settings.accountProfiles);
   codexAutoUseResetEl.checked = settings.codexAutoUseReset === true;
   document.getElementById("openAtLogin").checked = !!settings.openAtLogin;
   document.getElementById("hideMissing").checked = settings.hideMissing !== false;
@@ -474,6 +503,7 @@ document.getElementById("saveBtn").onclick = async () => {
     alwaysOnTop: alwaysOnTopEl.checked,
     denseLayout: denseLayoutEl.checked,
     tokenAreaMaxHeight: normalizeTokenAreaMaxHeight(tokenAreaMaxHeightEl.value),
+    accountProfiles: parseAccountProfiles(accountProfilesEl.value),
     codexAutoUseReset: codexAutoUseResetEl.checked,
     edgeDockEnabled: edgeDockEnabledEl.checked,
     edgeDockSide: selectedEdgeDockSide(),

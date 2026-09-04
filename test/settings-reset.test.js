@@ -1,14 +1,16 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 const {
   DEFAULTS,
   RESET_PRESERVED_FIELDS,
   resetSettingsValues,
 } = require("../lib/settings");
 
-assert.deepStrictEqual(RESET_PRESERVED_FIELDS, ["githubToken", "cursorCookie"]);
+assert.deepStrictEqual(RESET_PRESERVED_FIELDS, ["githubToken", "cursorCookie", "accountProfiles"]);
 assert.strictEqual(DEFAULTS.codexAutoUseReset, false, "automatic reset-ticket consumption must be opt-in");
+assert.deepStrictEqual(DEFAULTS.accountProfiles, [], "multi-account profiles must be opt-in");
 
 const current = {
   alwaysOnTop: false,
@@ -27,6 +29,9 @@ const current = {
   position: { x: 9000, y: -4000 },
   githubToken: "github-secret",
   cursorCookie: "cursor-secret",
+  accountProfiles: [
+    { providerId: "codex", label: "GPT 2번", configDir: path.join(os.tmpdir(), "codex-2") },
+  ],
 };
 
 const safeReset = resetSettingsValues(current, { preserveCredentials: true });
@@ -37,6 +42,8 @@ for (const [key, value] of Object.entries(DEFAULTS)) {
 assert.strictEqual(safeReset.codexAutoUseReset, false, "settings reset must turn destructive automation back off");
 assert.strictEqual(safeReset.githubToken, "github-secret");
 assert.strictEqual(safeReset.cursorCookie, "cursor-secret");
+assert.strictEqual(safeReset.accountProfiles.length, 1, "isolated login profile paths should survive a safe settings reset");
+assert.strictEqual(safeReset.accountProfiles[0].label, "GPT 2번");
 
 const fullReset = resetSettingsValues(current, { preserveCredentials: false });
 assert.deepStrictEqual(fullReset, DEFAULTS);
@@ -53,6 +60,8 @@ const html = fs.readFileSync(path.join(__dirname, "..", "renderer", "index.html"
 const renderer = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
 assert.ok(html.includes('id="codexAutoUseReset"'), "Codex auto reset toggle must exist");
 assert.ok(html.includes("기본값은 꺼짐"));
+assert.ok(html.includes('id="accountProfiles"'), "multi-account profile editor must exist");
+assert.ok(renderer.includes("parseAccountProfiles"), "multi-account profile editor must be wired to settings");
 assert.ok(renderer.includes("codexAutoUseReset"));
 assert.ok(renderer.includes("creditBalances"), "shared credit balance rendering must be wired");
 
