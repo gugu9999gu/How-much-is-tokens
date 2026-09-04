@@ -3,7 +3,11 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
-const { normalizeAccountProfiles, defaultConfigDir } = require("../lib/account-profiles");
+const {
+  normalizeAccountProfiles,
+  defaultConfigDir,
+  profileInstanceKey,
+} = require("../lib/account-profiles");
 const {
   sanitizeProvider,
   saveProviderSnapshot,
@@ -132,6 +136,81 @@ if (process.platform === "win32") {
     "-Command",
     `[scriptblock]::Create((Get-Content -Raw -LiteralPath '${psPath.replace(/'/g, "''")}')) | Out-Null`,
   ], { stdio: "ignore", windowsHide: true, timeout: 5_000 });
+
+  const outputFile = path.join(stateDir, "selected-home.txt");
+  const fakeCodex = path.join(stateDir, "fake-codex.cmd");
+  fs.writeFileSync(fakeCodex, "@echo off\r\n>\"%ROUTER_TEST_OUTPUT%\" echo %CODEX_HOME%\r\nexit /b 0\r\n", "utf8");
+
+  const fixtureNow = Date.now();
+  fs.writeFileSync(path.join(stateDir, "settings.json"), JSON.stringify({
+    refreshSeconds: 60,
+    smartRouting: {
+      codex: { enabled: true, policy: "priority-fallback", thresholdPct: 0 },
+    },
+    accountProfiles: [profile],
+  }, null, 2));
+  const profileKey = profileInstanceKey(profile);
+  const fixtureCache = {
+    version: 1,
+    providers: {
+      "codex:default-fixture": {
+        savedAt: fixtureNow,
+        provider: { id: "codex", name: "Codex", status: "ok", remainingPct: 0, limitReached: false },
+      },
+      [profileKey]: {
+        savedAt: fixtureNow,
+        provider: {
+          id: profileKey,
+          instanceKey: profileKey,
+          name: "Codex",
+          status: "ok",
+          remainingPct: 63,
+          limitReached: false,
+        },
+      },
+    },
+  };
+  fs.writeFileSync(cacheFile, JSON.stringify(fixtureCache, null, 2));
+
+  execFileSync("powershell.exe", [
+    "-NoLogo",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    psPath,
+    "codex",
+  ], {
+    env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
+    stdio: "ignore",
+    windowsHide: true,
+    timeout: 5_000,
+  });
+  assert.strictEqual(fs.readFileSync(outputFile, "utf8").trim().toLowerCase(), profile.configDir.toLowerCase(),
+    "standalone priority routing must select the next usable profile and inject CODEX_HOME");
+
+  fixtureCache.providers[profileKey].routeBlockedAt = Date.now();
+  fs.writeFileSync(cacheFile, JSON.stringify(fixtureCache, null, 2));
+  let blocked = false;
+  try {
+    execFileSync("powershell.exe", [
+      "-NoLogo",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      psPath,
+      "codex",
+    ], {
+      env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
+      stdio: "ignore",
+      windowsHide: true,
+      timeout: 5_000,
+    });
+  } catch {
+    blocked = true;
+  }
+  assert.strictEqual(blocked, true, "standalone routing must fail closed when every automatic candidate is exhausted or route-blocked");
 }
 
 fs.rmSync(stateDir, { recursive: true, force: true });
