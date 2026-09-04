@@ -38,6 +38,7 @@ jobs:
           node --check lib/usage.js
           node --check lib/usage-cache.js
           node --check lib/account-identity.js
+          node --check lib/account-profiles.js
           node --check lib/credit-balances.js
           node --check lib/codex-app-server.js
           node --check lib/codex-rate-limits.js
@@ -65,6 +66,7 @@ jobs:
           node --check test/copilot-credits.test.js
           node --check test/codex-credits.test.js
           node --check test/codex-auto-reset.test.js
+          node --check test/multi-account.test.js
           node --check test/renderer-layout-smoke.js
           node --check test/renderer-layout-preload.js
           node --check test/secure-secrets-smoke.js
