@@ -8,6 +8,7 @@ const {
 } = require("../lib/settings");
 
 assert.deepStrictEqual(RESET_PRESERVED_FIELDS, ["githubToken", "cursorCookie"]);
+assert.strictEqual(DEFAULTS.codexAutoUseReset, false, "automatic reset-ticket consumption must be opt-in");
 
 const current = {
   alwaysOnTop: false,
@@ -21,6 +22,8 @@ const current = {
   edgeDockEnabled: true,
   edgeDockSide: "bottom",
   tokenAreaMaxHeight: 480,
+  codexAutoUseReset: true,
+  openRouterEnabled: true,
   position: { x: 9000, y: -4000 },
   githubToken: "github-secret",
   cursorCookie: "cursor-secret",
@@ -31,6 +34,7 @@ for (const [key, value] of Object.entries(DEFAULTS)) {
   if (RESET_PRESERVED_FIELDS.includes(key)) continue;
   assert.deepStrictEqual(safeReset[key], value, `expected ${key} to reset to default`);
 }
+assert.strictEqual(safeReset.codexAutoUseReset, false, "settings reset must turn destructive automation back off");
 assert.strictEqual(safeReset.githubToken, "github-secret");
 assert.strictEqual(safeReset.cursorCookie, "cursor-secret");
 
@@ -45,4 +49,11 @@ assert.ok(main.includes('label: "설정값 초기화"'), "tray reset menu must e
 assert.ok(main.includes("resetSettings({ preserveCredentials: true })"), "tray reset must preserve account credentials");
 assert.ok(main.includes("reloadIgnoringCache"), "renderer settings should refresh after reset");
 
-console.log("settings reset and startup recovery tests passed");
+const html = fs.readFileSync(path.join(__dirname, "..", "renderer", "index.html"), "utf8");
+const renderer = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
+assert.ok(html.includes('id="codexAutoUseReset"'), "Codex auto reset toggle must exist");
+assert.ok(html.includes("기본값은 꺼짐"));
+assert.ok(renderer.includes("codexAutoUseReset"));
+assert.ok(renderer.includes("creditBalances"), "shared credit balance rendering must be wired");
+
+console.log("settings reset / startup recovery / safe automation defaults tests passed");
