@@ -6,6 +6,7 @@ const { execFileSync } = require("child_process");
 const { normalizeAccountProfiles, defaultConfigDir } = require("../lib/account-profiles");
 const {
   resolveProviderExecutable,
+  interactiveStartCommand,
   launchRoutedCli,
   powershellRouterScript,
   installRouterLaunchers,
@@ -19,6 +20,9 @@ assert.strictEqual(
   resolveProviderExecutable("codex", { platform: "win32", execFileSyncImpl: fakeExec, env: {} }),
   "C:\\Tools\\codex.cmd",
 );
+assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32\\cmd.exe").startsWith("start \"\""));
+assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32\\cmd.exe").includes(" /k call "));
+assert.strictEqual(interactiveStartCommand("bad\npath.cmd", "cmd.exe"), null, "shell paths with line breaks must be rejected");
 
 const profile = normalizeAccountProfiles([
   { providerId: "codex", label: "GPT 2번", configDir: path.join(os.tmpdir(), "launcher-codex-2") },
@@ -41,7 +45,9 @@ assert.strictEqual(launched.accountLabel, "GPT 2번");
 assert.strictEqual(captured.command, "cmd.exe");
 assert.strictEqual(captured.options.env.CODEX_HOME, profile.configDir);
 assert.strictEqual(captured.options.detached, true);
-assert.strictEqual(captured.options.windowsHide, false);
+assert.strictEqual(captured.options.windowsHide, true, "only the short-lived parent shell should be hidden");
+assert.ok(captured.args.join(" ").includes("start \"\""), "parent shell must START a separate interactive console");
+assert.ok(captured.args.join(" ").includes(" /k call "), "interactive console must stay open while the CLI runs");
 assert.ok(captured.args.join(" ").includes("codex.cmd"));
 
 captured = null;
