@@ -1,0 +1,104 @@
+name: Publish v1.0.21 Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .release-trigger-v1.0.21
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download verified Windows artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 33868806819 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name How-much-is-tokens-windows-portable \
+            --dir release-artifact
+
+      - name: Verify release asset
+        run: |
+          test -f release-artifact/How-much-is-tokens-1.0.21-portable.exe
+          echo "77caa9a26d0659910f48bcfdd058c62441cc733d2e6d1a2f2d9b61bc996ac58f  release-artifact/How-much-is-tokens-1.0.21-portable.exe" | sha256sum -c -
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## How much is tokens v1.0.21
+
+          ### Codex / Work 자동 리셋
+          - 설정에 `한도 도달 시 Codex 리셋 티켓 자동 사용` 추가, 기본값 OFF
+          - 공식 app-server가 실제 `rate_limit_reached`를 반환할 때만 동작
+          - 0% 반올림/오래된 캐시만으로는 티켓을 사용하지 않음
+          - 사용 가능한 티켓 중 만료가 가장 가까운 티켓을 우선 사용
+          - 동일 quota epoch에서 중복 사용을 막는 persistent fingerprint/idempotency guard 적용
+          - consume 성공 후 app-server rate limits와 WHAM usage를 재조회해 실제 복구 확인
+
+          ### 플랫폼별 크레딧 / 보유량 표시
+          실제 provider 응답에 존재하는 값만 공통 `creditBalances` 모델로 표시합니다.
+          - Codex / Work: 보유 크레딧, 월간 크레딧 한도
+          - Claude: Usage Credits / spend limit
+          - Cursor: 포함 크레딧, On-demand, 팀 공유/팀 On-demand
+          - Grok: 선불 크레딧, On-demand 한도
+          - Grok Bot: Cursor billing On-demand 크레딧
+          - OpenRouter: 계정 크레딧, API Key spending cap
+          - Copilot: Premium Request entitlement/remaining (`요청` 단위)
+          - Antigravity: 별도 credit balance가 없으면 값을 만들지 않음
+
+          ### Claude Fable / 별도 모델 quota
+          - Claude OAuth usage의 현재 `limits[]`를 canonical source로 사용
+          - `weekly_scoped` + `scope.model.display_name`을 독립 quota로 표시
+          - Fable뿐 아니라 향후 별도 named model quota도 자동 표시
+          - `seven_day_fable` / `seven_day_overage_included` 호환 처리
+          - 내부 codename을 임의 모델명으로 추정하지 않음
+
+          ### 다계정 기반
+          - provider별 raw account ID 대신 SHA-256 기반 `accountKey` 사용
+          - persistent quota/credit cache와 Codex auto-reset 상태를 계정별로 격리
+          - raw account ID/OAuth token은 cache에 저장하지 않음
+          - 실제 여러 isolated login profile의 자동 전환 router는 후속 범위이며 이번 버전은 데이터/상태 기반을 마련함
+
+          ### 검증
+          이 EXE는 `main` commit `0f4200e13223365264b82b9170ab78aac5cd7410`에서 GitHub Actions Windows runner로 검증된 artifact입니다.
+          - Codex auto-reset OFF / actual reached / no credit / same epoch / new epoch / idempotent retry tests
+          - reset consume transport / earliest-expiring credit tests
+          - Claude Fable/current limits/legacy fallback/no-fabrication/Usage Credits tests
+          - Codex/Cursor/Copilot/Grok/Grok Bot/OpenRouter credit fixtures
+          - account-isolated persistent cache tests
+          - OpenRouter Windows DPAPI secure storage smoke test
+          - 실제 Electron renderer titlebar isolation smoke test
+          - Antigravity Windows bridge smoke test
+          - electron-builder Windows portable build
+
+          SHA-256: `77caa9a26d0659910f48bcfdd058c62441cc733d2e6d1a2f2d9b61bc996ac58f`
+          EOF
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.21"
+          ASSET="release-artifact/How-much-is-tokens-1.0.21-portable.exe"
+          TARGET="0f4200e13223365264b82b9170ab78aac5cd7410"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$ASSET" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          fi
