@@ -35,9 +35,13 @@ assert.strictEqual(profiles[1].label, "Claude 업무", "profile labels must not 
 assert.strictEqual(profiles[0].id, stableProfileId("codex", codexTwo));
 assert.strictEqual(profileInstanceKey(profiles[0]), `codex:profile:${profiles[0].id}`);
 
-const env = profileEnvironment(profiles[0]);
-assert.strictEqual(env.CODEX_HOME, profiles[0].configDir);
-assert.notStrictEqual(env, process.env, "explicit profile runtime must use an isolated environment object");
+const codexEnv = profileEnvironment(profiles[0]);
+const claudeEnv = profileEnvironment(profiles[1]);
+const grokEnv = profileEnvironment(profiles[2]);
+assert.strictEqual(codexEnv.CODEX_HOME, profiles[0].configDir);
+assert.strictEqual(claudeEnv.CLAUDE_CONFIG_DIR, profiles[1].configDir);
+assert.strictEqual(grokEnv.GROK_HOME, profiles[2].configDir);
+assert.notStrictEqual(codexEnv, process.env, "explicit profile runtime must use an isolated environment object");
 
 const oldCodexHome = process.env.CODEX_HOME;
 process.env.CODEX_HOME = codexTwo;
