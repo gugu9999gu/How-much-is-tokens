@@ -24,6 +24,8 @@ assert.ok(workflow.includes("RELEASE_REPO: gugu9999gu/How-much-is-tokens-release
 assert.ok(workflow.includes("secrets.RELEASE_REPO_TOKEN"), "cross-repository publishing must use a dedicated secret");
 assert.ok(workflow.includes("dist\\SHA256SUMS.txt"), "public release must include a checksum");
 assert.ok(workflow.includes("$env:ARTIFACT_PATH"), "public release must upload the built portable executable");
+assert.ok(workflow.includes("docs\\public-release-notes\\v$env:VERSION.md"), "only explicitly public release notes may cross the repository boundary");
+assert.ok(!workflow.includes("docs\\v$env:VERSION.md"), "private development release notes must never be auto-published");
 assert.ok(!/gh\s+repo\s+clone/i.test(workflow), "release workflow must not clone/mirror the public repository source tree");
 assert.ok(!/git\s+push/i.test(workflow), "release workflow must not push the private development Git history to the public repository");
 assert.ok(!/\.leerness[^\n]*upload/i.test(workflow), "Leerness development state must never be uploaded as a public release asset");
