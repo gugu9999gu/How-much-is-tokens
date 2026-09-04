@@ -6,6 +6,9 @@ const {
   readAccountRateLimits,
 } = require("../lib/codex-rate-limits");
 const {
+  consumeAccountRateLimitResetCredit,
+} = require("../lib/codex-reset-credit");
+const {
   ticketExpiryText,
   resetTicketExtras,
 } = require("../lib/providers/codex");
@@ -73,7 +76,7 @@ assert.strictEqual(extras[0].label, "Codex/Work 리셋");
 assert.strictEqual(extras[0].value, "3개");
 assert.ok(extras[1].value.startsWith("D-2 · "));
 
-function fakeSpawn() {
+function fakeReadSpawn() {
   const child = new EventEmitter();
   child.stdout = new PassThrough();
   child.stderr = new PassThrough();
@@ -98,16 +101,56 @@ function fakeSpawn() {
   return child;
 }
 
+function fakeConsumeSpawn() {
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  child.kill = () => true;
+  child.stdin = {
+    write(line) {
+      const msg = JSON.parse(String(line).trim());
+      if (msg.method === "initialize") {
+        setImmediate(() => child.stdout.write(`${JSON.stringify({ id: 0, result: { userAgent: "codex-test" } })}\n`));
+      }
+      if (msg.method === "account/rateLimitResetCredit/consume") {
+        assert.deepStrictEqual(msg.params, {
+          idempotencyKey: "idempotency-test-key",
+          creditId: "sooner",
+        });
+        setImmediate(() => child.stdout.write(`${JSON.stringify({ id: 1, result: { outcome: "reset" } })}\n`));
+      }
+      if (msg.method === "account/rateLimits/read") {
+        throw new Error("consume transport must not issue unrelated read requests");
+      }
+      return true;
+    },
+    end() {},
+  };
+  return child;
+}
+
 (async () => {
-  const result = await readAccountRateLimits({
+  const readResult = await readAccountRateLimits({
     executable: "codex-test-bin",
-    spawnImpl: fakeSpawn,
+    spawnImpl: fakeReadSpawn,
     timeoutMs: 2_000,
   });
-  assert.strictEqual(result.ok, true);
-  assert.strictEqual(result.resetTickets.availableCount, 3);
-  assert.strictEqual(result.response.rateLimits.planType, "pro");
-  console.log("Codex banked reset ticket tests passed");
+  assert.strictEqual(readResult.ok, true);
+  assert.strictEqual(readResult.resetTickets.availableCount, 3);
+  assert.strictEqual(readResult.response.rateLimits.planType, "pro");
+
+  const consumeResult = await consumeAccountRateLimitResetCredit({
+    executable: "codex-test-bin",
+    spawnImpl: fakeConsumeSpawn,
+    timeoutMs: 2_000,
+    idempotencyKey: "idempotency-test-key",
+    creditId: "sooner",
+  });
+  assert.strictEqual(consumeResult.ok, true);
+  assert.strictEqual(consumeResult.outcome, "reset");
+  assert.strictEqual(consumeResult.idempotencyKey, "idempotency-test-key");
+  assert.strictEqual(consumeResult.creditId, "sooner");
+  console.log("Codex banked reset ticket read/consume transport tests passed");
 })().catch((err) => {
   console.error(err);
   process.exitCode = 1;
