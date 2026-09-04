@@ -3,6 +3,7 @@ const path = require("path");
 const os = require("os");
 const {
   normalizeSmartRouting,
+  remainingPct,
   selectRoute,
   profileForSelection,
 } = require("../lib/account-router");
@@ -51,6 +52,8 @@ const defaults = normalizeSmartRouting();
 assert.strictEqual(defaults.codex.enabled, false, "routing must be opt-in");
 assert.strictEqual(defaults.codex.policy, "priority-fallback");
 assert.strictEqual(defaults.codex.thresholdPct, 0);
+assert.strictEqual(remainingPct({ remainingPct: null }), null, "unknown quota must not be coerced to zero");
+assert.strictEqual(remainingPct({ remainingPct: "" }), null, "empty quota must remain unknown");
 
 const disabled = selectRoute("codex", providers, defaults);
 assert.strictEqual(disabled.ok, false);
@@ -98,6 +101,13 @@ const noUsable = selectRoute("codex", providers.map((provider) => ({ ...provider
 assert.strictEqual(noUsable.ok, false);
 assert.strictEqual(noUsable.reason, "no-usable-account");
 
+const unknownFirst = providers.map((provider) => ({ ...provider }));
+unknownFirst[1].remainingPct = null;
+const unknownSkipped = selectRoute("codex", unknownFirst, {
+  codex: { enabled: true, policy: "priority-fallback", thresholdPct: 0 },
+});
+assert.strictEqual(unknownSkipped.accountLabel, "GPT 3번", "unknown quota must never be treated as an automatic routing candidate");
+
 const reached = providers.map((provider) => ({ ...provider }));
 reached[1].limitReached = true;
 reached[2].remainingPct = 0;
@@ -105,5 +115,13 @@ const reachedSkipped = selectRoute("codex", reached, {
   codex: { enabled: true, policy: "priority-fallback", thresholdPct: 0 },
 });
 assert.strictEqual(reachedSkipped.ok, false, "server-classified limit reached accounts must not be auto-selected");
+
+const reachedExtra = providers.map((provider) => ({ ...provider }));
+reachedExtra[1].extras = [{ label: "상태", value: "한도 도달" }];
+reachedExtra[2].remainingPct = 0;
+const extraSkipped = selectRoute("codex", reachedExtra, {
+  codex: { enabled: true, policy: "priority-fallback", thresholdPct: 0 },
+});
+assert.strictEqual(extraSkipped.ok, false, "provider status marker must also block automatic routing");
 
 console.log("smart account routing policy tests passed");
