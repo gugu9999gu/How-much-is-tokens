@@ -141,7 +141,7 @@ if (process.platform === "win32") {
     "-NoProfile",
     "-Command",
     `[scriptblock]::Create((Get-Content -Raw -LiteralPath '${psPath.replace(/'/g, "''")}')) | Out-Null`,
-  ], { stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS });
+  ], { stdio: "inherit", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS });
 
   const outputFile = path.join(stateDir, "selected-home.txt");
   const fakeCodex = path.join(stateDir, "fake-codex.cmd");
