@@ -54,6 +54,7 @@ const all = allUsageWindows({
 });
 assert.strictEqual(all.filter((win) => /Fable/.test(win.label)).length, 1, "structured + flat Fable rows must deduplicate");
 assert.strictEqual(all.filter((win) => win.label === "주간 한도").length, 1, "weekly compatibility row must deduplicate");
+assert.strictEqual(all.filter((win) => /세션|5시간/.test(win.label)).length, 1, "session compatibility row must deduplicate");
 
 const noFable = allUsageWindows({
   limits: [
@@ -63,18 +64,22 @@ const noFable = allUsageWindows({
 });
 assert.ok(!noFable.some((win) => /fable/i.test(win.id) || /fable/i.test(win.label)), "Fable quota must never be fabricated");
 
-// Future flat seven_day_* model rows should remain visible even before the
-// application knows that model name explicitly.
-const futureFlat = allUsageWindows({
-  seven_day_nebula: {
+// Current clients can expose the same Fable meter through this known flat
+// compatibility key. It is explicitly mapped; arbitrary seven_day_* codenames
+// must not be guessed as model names.
+const legacyFable = allUsageWindows({
+  seven_day_overage_included: {
     utilization: 12,
     resets_at: reset,
-    display_name: "Nebula",
+  },
+  seven_day_omelette: {
+    utilization: 99,
+    resets_at: reset,
   },
 });
-assert.strictEqual(futureFlat.length, 1);
-assert.strictEqual(futureFlat[0].label, "Nebula 주간 한도");
-assert.strictEqual(futureFlat[0].remainingPct, 88);
+assert.strictEqual(legacyFable.length, 1);
+assert.strictEqual(legacyFable[0].label, "Fable 주간 한도");
+assert.strictEqual(legacyFable[0].remainingPct, 88);
 
 const extra = extraUsageCreditBalance({
   is_enabled: true,
@@ -82,6 +87,7 @@ const extra = extraUsageCreditBalance({
   used_credits: 1250,
   utilization: 25,
   currency: "usd",
+  decimal_places: 2,
   resets_at: "2026-10-01T00:00:00Z",
 });
 assert.ok(extra);
