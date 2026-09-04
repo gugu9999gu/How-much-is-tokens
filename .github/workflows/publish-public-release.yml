@@ -1,0 +1,159 @@
+name: Publish Public Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (blank = v<package.json version>)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_REPO: gugu9999gu/How-much-is-tokens-releases
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout private development source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install pinned dependencies
+        run: npm ci
+
+      - name: Run regression tests
+        run: npm test
+
+      - name: Smoke test Windows secure secret storage
+        run: npm run test:secure-secrets
+
+      - name: Smoke test renderer
+        run: npm run test:renderer-layout
+
+      - name: Resolve release metadata
+        shell: pwsh
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+        run: |
+          $version = (node -p "require('./package.json').version").Trim()
+          if (!$version) { throw "package.json version is empty" }
+
+          $tag = [string]$env:REQUESTED_TAG
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            if ($env:GITHUB_REF_TYPE -eq "tag") { $tag = $env:GITHUB_REF_NAME }
+            else { $tag = "v$version" }
+          }
+
+          if ($tag -ne "v$version") {
+            throw "Release tag $tag does not match package.json version v$version"
+          }
+
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build Windows portable executable
+        run: npm run dist
+
+      - name: Generate release checksum and notes
+        shell: pwsh
+        run: |
+          $artifacts = @(Get-ChildItem -LiteralPath "dist" -Filter "*-portable.exe" -File)
+          if ($artifacts.Count -ne 1) {
+            throw "Expected exactly one portable EXE, found $($artifacts.Count)"
+          }
+
+          $artifact = $artifacts[0]
+          $hash = (Get-FileHash -LiteralPath $artifact.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($artifact.Name)" | Set-Content -LiteralPath "dist\SHA256SUMS.txt" -Encoding ascii
+
+          $notesSource = "docs\v$env:VERSION.md"
+          $notesTarget = "dist\RELEASE_NOTES.md"
+          if (Test-Path -LiteralPath $notesSource) {
+            Copy-Item -LiteralPath $notesSource -Destination $notesTarget -Force
+          } else {
+            @(
+              "# How much is tokens $env:RELEASE_TAG",
+              "",
+              "Windows portable release built from the private development repository.",
+              "",
+              "Verify the executable with the attached SHA256SUMS.txt before running it."
+            ) | Set-Content -LiteralPath $notesTarget -Encoding utf8
+          }
+
+          "ARTIFACT_PATH=$($artifact.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Verify public release repository and bootstrap README
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
+            throw "RELEASE_REPO_TOKEN is not configured in the private development repository"
+          }
+
+          & gh api "repos/$env:RELEASE_REPO" --silent
+          if ($LASTEXITCODE -ne 0) {
+            throw "Cannot access $env:RELEASE_REPO. Create the public release repository and verify RELEASE_REPO_TOKEN permissions."
+          }
+
+          & gh api "repos/$env:RELEASE_REPO/contents/README.md" --silent 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            $readme = Get-Content -Raw -LiteralPath "docs\release-repository-README.md"
+            $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($readme))
+            & gh api --method PUT "repos/$env:RELEASE_REPO/contents/README.md" `
+              -f message="docs: initialize public release repository" `
+              -f content="$encoded" | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Failed to initialize public release README" }
+          }
+
+      - name: Publish release assets only
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          $releaseExists = $false
+          & gh release view $env:RELEASE_TAG --repo $env:RELEASE_REPO *> $null
+          if ($LASTEXITCODE -eq 0) { $releaseExists = $true }
+
+          if ($releaseExists) {
+            & gh release edit $env:RELEASE_TAG `
+              --repo $env:RELEASE_REPO `
+              --title "How much is tokens $env:RELEASE_TAG" `
+              --notes-file "dist\RELEASE_NOTES.md"
+            if ($LASTEXITCODE -ne 0) { throw "Failed to update release notes" }
+
+            & gh release upload $env:RELEASE_TAG `
+              "$env:ARTIFACT_PATH" `
+              "dist\SHA256SUMS.txt" `
+              --repo $env:RELEASE_REPO `
+              --clobber
+            if ($LASTEXITCODE -ne 0) { throw "Failed to upload release assets" }
+          } else {
+            & gh release create $env:RELEASE_TAG `
+              "$env:ARTIFACT_PATH" `
+              "dist\SHA256SUMS.txt" `
+              --repo $env:RELEASE_REPO `
+              --title "How much is tokens $env:RELEASE_TAG" `
+              --notes-file "dist\RELEASE_NOTES.md"
+            if ($LASTEXITCODE -ne 0) { throw "Failed to create public release" }
+          }
+
+          Write-Host "Published $env:RELEASE_TAG to $env:RELEASE_REPO"
