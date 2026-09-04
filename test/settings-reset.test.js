@@ -11,6 +11,9 @@ const {
 assert.deepStrictEqual(RESET_PRESERVED_FIELDS, ["githubToken", "cursorCookie", "accountProfiles"]);
 assert.strictEqual(DEFAULTS.codexAutoUseReset, false, "automatic reset-ticket consumption must be opt-in");
 assert.deepStrictEqual(DEFAULTS.accountProfiles, [], "multi-account profiles must be opt-in");
+assert.strictEqual(DEFAULTS.smartRouting.codex.enabled, false, "smart routing must be opt-in");
+assert.strictEqual(DEFAULTS.smartRouting.claude.enabled, false, "smart routing must be opt-in");
+assert.strictEqual(DEFAULTS.smartRouting.grok.enabled, false, "smart routing must be opt-in");
 
 const current = {
   alwaysOnTop: false,
@@ -25,6 +28,10 @@ const current = {
   edgeDockSide: "bottom",
   tokenAreaMaxHeight: 480,
   codexAutoUseReset: true,
+  smartRouting: {
+    codex: { enabled: true, policy: "max-remaining", thresholdPct: 5 },
+    claude: { enabled: true, policy: "priority-fallback", thresholdPct: 1 },
+  },
   openRouterEnabled: true,
   position: { x: 9000, y: -4000 },
   githubToken: "github-secret",
@@ -40,6 +47,7 @@ for (const [key, value] of Object.entries(DEFAULTS)) {
   assert.deepStrictEqual(safeReset[key], value, `expected ${key} to reset to default`);
 }
 assert.strictEqual(safeReset.codexAutoUseReset, false, "settings reset must turn destructive automation back off");
+assert.strictEqual(safeReset.smartRouting.codex.enabled, false, "settings reset must disable automatic account routing");
 assert.strictEqual(safeReset.githubToken, "github-secret");
 assert.strictEqual(safeReset.cursorCookie, "cursor-secret");
 assert.strictEqual(safeReset.accountProfiles.length, 1, "isolated login profile paths should survive a safe settings reset");
@@ -58,11 +66,17 @@ assert.ok(main.includes("reloadIgnoringCache"), "renderer settings should refres
 
 const html = fs.readFileSync(path.join(__dirname, "..", "renderer", "index.html"), "utf8");
 const renderer = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
+const providerSettings = fs.readFileSync(path.join(__dirname, "..", "renderer", "openrouter-settings.js"), "utf8");
+const preload = fs.readFileSync(path.join(__dirname, "..", "preload.js"), "utf8");
 assert.ok(html.includes('id="codexAutoUseReset"'), "Codex auto reset toggle must exist");
 assert.ok(html.includes("기본값은 꺼짐"));
 assert.ok(html.includes('id="accountProfiles"'), "multi-account profile editor must exist");
 assert.ok(renderer.includes("parseAccountProfiles"), "multi-account profile editor must be wired to settings");
 assert.ok(renderer.includes("codexAutoUseReset"));
 assert.ok(renderer.includes("creditBalances"), "shared credit balance rendering must be wired");
+assert.ok(providerSettings.includes("Smart Routing"), "Smart Routing settings UI must be installed");
+assert.ok(providerSettings.includes("data-route-launch"), "Smart Routing launch buttons must exist");
+assert.ok(preload.includes("routeLaunch"), "preload must expose constrained routed launches");
+assert.ok(preload.includes("installSmartRoutingLaunchers"), "preload must expose launcher installation");
 
 console.log("settings reset / startup recovery / safe automation defaults tests passed");
