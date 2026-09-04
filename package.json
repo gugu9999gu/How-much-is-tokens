@@ -20,7 +20,8 @@
     "leerness:status": "leerness status . --json",
     "leerness:handoff": "leerness handoff . --quiet --no-drift-check",
     "leerness:doctor": "leerness doctor . --json",
-    "leerness:finish": "leerness finish ."
+    "leerness:gate": "leerness gate .",
+    "leerness:close": "leerness session close ."
   },
   "devDependencies": {
     "electron": "^37.2.6",
