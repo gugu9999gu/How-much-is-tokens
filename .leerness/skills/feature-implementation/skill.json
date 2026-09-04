@@ -1,0 +1,25 @@
+{
+  "name": "feature-implementation",
+  "displayNameKo": "기능 구현 표준 스킬",
+  "displayNameEn": "Feature implementation standard skill",
+  "description": "새 기능 구현을 시작할 때 사용 — feature-contract 작성, 재사용 우선 검사, 테스트 증거 수집이 필요한 구현 작업일 때. Use when starting to implement a new feature.",
+  "version": "1.0.0",
+  "lastUpdated": "2026-05-08",
+  "verification": {
+    "status": "unverified",
+    "method": "leerness-curated"
+  },
+  "capabilities": [
+    "feature-contracts 작성",
+    "재사용 우선 검사",
+    "테스트 증거 수집",
+    "핸드오프 트리거"
+  ],
+  "capabilitiesEn": [
+    "feature contract authoring",
+    "reuse-first checks",
+    "test evidence collection",
+    "handoff triggers"
+  ],
+  "_source": "builtin"
+}
