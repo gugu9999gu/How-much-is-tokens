@@ -38,6 +38,7 @@ jobs:
           node --check lib/usage.js
           node --check lib/usage-cache.js
           node --check lib/codex-app-server.js
+          node --check lib/codex-rate-limits.js
           node --check lib/settings.js
           node --check lib/secure-secrets.js
           node --check lib/window-behavior.js
