@@ -14,12 +14,21 @@ ipcRenderer.on("usage", (_event, payload) => {
   }
 });
 
+function freshUsagePayload(settings) {
+  if (!lastUsagePayload || !Number.isFinite(Number(lastUsagePayload.fetchedAt))) return null;
+  const refreshSeconds = Math.max(20, Number(settings && settings.refreshSeconds) || 60);
+  const maxAgeMs = Math.max(120_000, refreshSeconds * 3_000);
+  return Date.now() - Number(lastUsagePayload.fetchedAt) <= maxAgeMs ? lastUsagePayload : null;
+}
+
 async function routeLaunch(providerId) {
   await ipcRenderer.invoke("refresh");
   const settings = await ipcRenderer.invoke("get-settings");
-  const providers = lastUsagePayload && Array.isArray(lastUsagePayload.providers)
-    ? lastUsagePayload.providers
-    : [];
+  const payload = freshUsagePayload(settings);
+  if (!payload) {
+    return { ok: false, providerId, reason: "usage-too-old" };
+  }
+  const providers = Array.isArray(payload.providers) ? payload.providers : [];
   const selection = selectRoute(providerId, providers, settings.smartRouting);
   if (!selection.ok) return selection;
 
