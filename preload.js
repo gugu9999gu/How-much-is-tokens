@@ -7,8 +7,22 @@ const { launchRoutedCli, installRouterLaunchers } = require("./lib/routed-launch
 let lastUsagePayload = null;
 const usageListeners = new Set();
 
+function openRouterMetrics(payload) {
+  const providers = Array.isArray(payload && payload.providers) ? payload.providers : [];
+  return providers
+    .filter((provider) => provider && provider.providerId === "openrouter" && provider.profileId)
+    .map((provider) => ({
+      providerId: "openrouter",
+      profileId: provider.profileId,
+      remainingPct: provider.remainingPct,
+      routingRemainingPct: provider.routingRemainingPct,
+      status: provider.status,
+    }));
+}
+
 ipcRenderer.on("usage", (_event, payload) => {
   lastUsagePayload = payload;
+  ipcRenderer.invoke("update-openrouter-router-metrics", openRouterMetrics(payload)).catch(() => {});
   for (const listener of usageListeners) {
     try { listener(payload); } catch {}
   }
@@ -59,6 +73,11 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   refresh: () => ipcRenderer.invoke("refresh"),
   getSettings: () => ipcRenderer.invoke("get-settings"),
   saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),
+  getOpenRouterRouterStatus: () => ipcRenderer.invoke("get-openrouter-router-status"),
+  configureOpenRouterRouter: () => ipcRenderer.invoke("configure-openrouter-router"),
+  saveOpenRouterProfileSecrets: (profileId, patch) => ipcRenderer.invoke("save-openrouter-profile-secrets", profileId, patch),
+  clearOpenRouterProfileSecrets: (profileId) => ipcRenderer.invoke("clear-openrouter-profile-secrets", profileId),
+  copyOpenRouterRouterToken: () => ipcRenderer.invoke("copy-openrouter-router-token"),
   routeLaunch,
   installSmartRoutingLaunchers,
   hide: () => ipcRenderer.invoke("hide"),
