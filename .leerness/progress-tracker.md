@@ -22,4 +22,4 @@ Status values: requested, planned, in-progress, waiting, on-hold, blocked, incom
 | ID | Status | Request | Evidence | Next Action | Updated |
 |---|---|---|---|---|---|
 | T-0001 | done | Private 개발/Public Release 분리 및 Leerness 운영 경계 | plan:M-0001 · release-token run 33894555788 · PR #24/#25 | 유지보수 | 2026-09-05 |
-| T-0002 | in-progress | v1.0.24 OpenRouter secure multi-key localhost smart router | plan:M-0002 · pre-PR validation run 33980655618 success | 정식 PR Windows CI 후 병합/공개 Release | 2026-09-06 |
+| T-0002 | done | v1.0.24 OpenRouter secure multi-key localhost smart router | plan:M-0002 · PR #26 CI 33981095152 · main CI 33981334811 · release run 33981622986 · public v1.0.24 SHA-256 d0397fc8e158559f333d0c5b4b2329646a36825021c656c831104d8794a10211 | 운영 피드백 확인 후 다음 milestone 정의 | 2026-09-06 |

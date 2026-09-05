@@ -33,4 +33,12 @@ Verification command/result history. Append-only.
 - Security tests verify raw API/Management/local router tokens are not persisted in `settings.json`, secret ciphertext is stored through Electron safeStorage, the renderer has no raw-token getter, and the localhost token is copied from main-process code only.
 - After pre-PR validation, request forwarding was further hardened to strip client credential-style headers (`x-api-key`, `api-key`, OpenAI key headers, cookie) and unauthenticated `/health` output was reduced to non-sensitive status only.
 - Network replay policy was further tightened: explicit 401/402/403/429 may fail over before response commit; network failure only retries idempotent/safe GET/HEAD/OPTIONS, while ambiguous POST failures return 502 without trying another key. Unit coverage was added for both paths.
-- The final header/health/network replay hardening is pending formal PR #26 Windows CI before merge and must not be treated as release-validated until that run succeeds.
+
+## 2026-09-06 — v1.0.24 formal CI, merge, and public release
+- PR #26 formal Windows CI run `33981095152`: dependency install, pinned Leerness workspace, syntax checks, complete regression suite, Leerness gate, Windows DPAPI multi-profile secure-storage smoke, renderer smoke, Antigravity smoke, and v1.0.24 portable EXE build all succeeded. This run included the final credential-header stripping, minimal `/health`, POST network no-replay, and safe GET network failover tests.
+- PR #26 was squash-merged to main as commit `0e80f71efbd4b8665f3fab19015d8ec39fea3b13`.
+- Main post-merge Windows CI run `33981334811`: complete regression suite, Leerness gate, Windows secure-storage/renderer/Antigravity smoke, v1.0.24 portable build, and main artifact upload all succeeded.
+- The existing `Publish Public Release` workflow was dispatched for `v1.0.24`; release run `33981622986` succeeded through private source checkout, regression tests, secure-storage/renderer smoke, metadata validation, reproducible portable build, SHA-256 generation, public repository access, and release-asset-only publishing.
+- Public latest Release is `v1.0.24` in `gugu9999gu/How-much-is-tokens-releases` and contains exactly the intended release assets: `How-much-is-tokens-1.0.24-portable.exe` and `SHA256SUMS.txt` plus public release notes metadata.
+- Published EXE SHA-256: `d0397fc8e158559f333d0c5b4b2329646a36825021c656c831104d8794a10211`.
+- The one-time workflow used only to dispatch v1.0.24 was removed from main after successful dispatch; the persistent `publish-public-release.yml` remains the release path.

@@ -50,8 +50,8 @@ Tasks:
 - [x] v1.0.23 portable EXE/체크섬 공개 배포 경로 검증
 
 ### M-0002. v1.0.24 OpenRouter secure multi-key localhost router
-Status: in-progress
-Progress: 90%
+Status: done
+Progress: 100%
 
 Tasks:
 - [x] OpenRouter API/Management Key를 프로필별 safeStorage 암호문으로 격리
@@ -59,8 +59,10 @@ Tasks:
 - [x] 프로필별 usage/credit 카드 표시
 - [x] 127.0.0.1 전용 OpenAI-compatible `/v1` request router 구현
 - [x] 별도 로컬 Bearer 인증 토큰 및 client credential 헤더 비전달
-- [x] priority fallback / max remaining 정책, 429·인증 실패 cooldown, 503 fail-closed 구현
+- [x] priority fallback / max remaining 정책, 401/402/403/429 cooldown/failover, 503 fail-closed 구현
+- [x] 비멱등 POST network failure의 502/no-replay 및 안전 메서드 network failover 구현
 - [x] 응답 commit 이후 streaming replay 금지
 - [x] unit/security/DPAPI/renderer 사전 검증
-- [ ] 정식 PR Windows CI 및 portable EXE build 통과
-- [ ] main 병합 후 Public v1.0.24 Release 게시
+- [x] PR #26 정식 Windows CI 및 portable EXE build 통과
+- [x] main squash merge 및 post-merge Windows CI 통과
+- [x] Public v1.0.24 Release에 portable EXE/`SHA256SUMS.txt`/명시적 공개 노트만 게시
