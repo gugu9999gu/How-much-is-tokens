@@ -73,6 +73,67 @@ button:disabled,
   color: var(--warn);
 }
 
+.openrouter-profile-editor,
+.openrouter-router-card {
+  display: grid;
+  gap: 6px;
+  margin: 6px;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.025);
+}
+
+.openrouter-profile-editor textarea,
+.openrouter-profile-editor select,
+.openrouter-router-card select,
+.openrouter-router-card input[type="number"] {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.28);
+  color: var(--text);
+  padding: 7px 9px;
+  outline: none;
+  font-size: 10px;
+  -webkit-app-region: no-drag;
+}
+
+.openrouter-profile-editor textarea {
+  min-height: 76px;
+  resize: vertical;
+  font: 10px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+.openrouter-profile-editor select,
+.openrouter-router-card select,
+.openrouter-router-card input[type="number"] {
+  height: 32px;
+}
+
+.openrouter-profile-actions,
+.openrouter-router-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.openrouter-profile-actions .btn,
+.openrouter-router-card .btn {
+  height: 32px;
+  font-size: 10px;
+}
+
+.openrouter-router-endpoint {
+  margin: 0;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: rgba(0,0,0,0.22);
+  color: var(--text);
+  font: 10px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  word-break: break-all;
+}
+
 .smart-route-list {
   display: grid;
   gap: 8px;
