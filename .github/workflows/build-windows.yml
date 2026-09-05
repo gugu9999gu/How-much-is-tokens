@@ -82,12 +82,21 @@ jobs:
           node --check test/multi-account.test.js
           node --check test/account-router.test.js
           node --check test/routed-launcher.test.js
+          node --check test/repository-split-leerness.test.js
           node --check test/renderer-layout-smoke.js
           node --check test/renderer-layout-preload.js
           node --check test/secure-secrets-smoke.js
 
       - name: Run tests
         run: npm test
+
+      - name: Run Leerness gate
+        shell: pwsh
+        env:
+          LEERNESS_NO_PROMPT: "1"
+          LEERNESS_NO_AUTOCHCP: "1"
+          LEERNESS_NO_DRIFT_CHECK: "1"
+        run: npm run leerness:gate
 
       - name: Smoke test Windows secure secret storage
         run: npm run test:secure-secrets
