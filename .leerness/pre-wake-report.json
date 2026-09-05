@@ -1,0 +1,25 @@
+{
+  "reports": [
+    {
+      "auditedAt": "2026-09-05T13:03:41.518Z",
+      "auditVersion": "1.36.184",
+      "findings": {
+        "critical": [],
+        "warning": [],
+        "info": [
+          {
+            "kind": "no-auto-resume-plan",
+            "detail": "auto-resume-plan.json 없음 — 다음 라운드 진입 시 manual context"
+          }
+        ]
+      },
+      "summary": {
+        "criticalCount": 0,
+        "warningCount": 0,
+        "infoCount": 1,
+        "needsAttention": false
+      }
+    }
+  ],
+  "updatedAt": "2026-09-05T13:03:41.521Z"
+}
