@@ -133,9 +133,11 @@ jobs:
         run: npm run dist
 
       - name: Upload portable build
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: How-much-is-tokens-windows-portable
           path: dist/*-portable.exe
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 3
