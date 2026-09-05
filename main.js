@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, dialog } =
 const fs = require("fs");
 const path = require("path");
 const { loadSettings, saveSettings, resetSettings } = require("./lib/settings");
+require("./lib/openrouter-main-integration");
 const { fetchAll } = require("./lib/usage");
 const { applyAlwaysOnTop: setWindowAlwaysOnTop } = require("./lib/window-behavior");
 const {

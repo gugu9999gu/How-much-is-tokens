@@ -4,6 +4,9 @@ openRouterStyle.href = "openrouter-settings.css";
 document.head.appendChild(openRouterStyle);
 
 const openRouterEnabledEl = document.getElementById("openRouterEnabled");
+const openRouterProfilesEl = document.getElementById("openRouterProfiles");
+const saveOpenRouterProfilesEl = document.getElementById("saveOpenRouterProfiles");
+const openRouterProfileSelectEl = document.getElementById("openRouterProfileSelect");
 const openRouterApiKeyEl = document.getElementById("openRouterApiKey");
 const openRouterManagementKeyEl = document.getElementById("openRouterManagementKey");
 const openRouterApiKeyStatusEl = document.getElementById("openRouterApiKeyStatus");
@@ -11,40 +14,150 @@ const openRouterManagementKeyStatusEl = document.getElementById("openRouterManag
 const openRouterSecureStatusEl = document.getElementById("openRouterSecureStatus");
 const saveOpenRouterKeysEl = document.getElementById("saveOpenRouterKeys");
 const clearOpenRouterKeysEl = document.getElementById("clearOpenRouterKeys");
+const openRouterRouterEnabledEl = document.getElementById("openRouterRouterEnabled");
+const openRouterRouterPortEl = document.getElementById("openRouterRouterPort");
+const openRouterRouterPolicyEl = document.getElementById("openRouterRouterPolicy");
+const openRouterRouterEndpointEl = document.getElementById("openRouterRouterEndpoint");
+const openRouterRouterStatusEl = document.getElementById("openRouterRouterStatus");
+const copyOpenRouterRouterTokenEl = document.getElementById("copyOpenRouterRouterToken");
+
+function cleanProfileId(value) {
+  const id = String(value || "").trim().toLowerCase();
+  return /^[a-z0-9][a-z0-9_-]{0,31}$/.test(id) ? id : null;
+}
+
+function parseOpenRouterProfiles(text) {
+  const rows = [];
+  const seen = new Set();
+  for (const line of String(text || "").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const [idRaw, labelRaw, priorityRaw, enabledRaw] = trimmed.split("|").map((part) => part.trim());
+    const id = cleanProfileId(idRaw);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const priority = Number(priorityRaw);
+    const disabled = ["off", "false", "0", "disabled"].includes(String(enabledRaw || "").toLowerCase());
+    rows.push({
+      id,
+      label: labelRaw || id,
+      priority: Number.isFinite(priority) ? Math.max(0, Math.min(9999, Math.round(priority))) : (rows.length + 1) * 10,
+      enabled: !disabled,
+    });
+    if (rows.length >= 16) break;
+  }
+  return rows;
+}
+
+function formatOpenRouterProfiles(profiles) {
+  return (Array.isArray(profiles) ? profiles : []).map((profile) =>
+    `${profile.id}|${profile.label || profile.id}|${Number(profile.priority) || 0}|${profile.enabled === false ? "off" : "on"}`,
+  ).join("\n");
+}
+
+function profileStatuses(settings = {}) {
+  return Array.isArray(settings.openRouterProfileStatuses) ? settings.openRouterProfileStatuses : [];
+}
+
+function selectedProfileStatus(settings = {}) {
+  const id = openRouterProfileSelectEl.value;
+  return profileStatuses(settings).find((item) => item.id === id) || { id, apiKeyConfigured: false, managementKeyConfigured: false };
+}
 
 function configuredCopy(configured, fallback) {
   return configured ? "저장된 키 있음 · 새 값을 입력하면 교체됩니다." : fallback;
 }
 
-function applyOpenRouterSettings(settings = {}, message = "") {
-  openRouterEnabledEl.checked = settings.openRouterEnabled === true;
-  const apiConfigured = settings.openrouterApiKeyConfigured === true;
-  const managementConfigured = settings.openrouterManagementKeyConfigured === true;
-  const secureAvailable = settings.secureStorageAvailable === true;
+function syncProfileSelect(settings = {}) {
+  const profiles = Array.isArray(settings.openRouterProfiles) ? settings.openRouterProfiles : [];
+  const previous = openRouterProfileSelectEl.value;
+  openRouterProfileSelectEl.replaceChildren();
+  for (const profile of profiles) {
+    const option = document.createElement("option");
+    option.value = profile.id;
+    option.textContent = `${profile.label || profile.id} · 우선순위 ${profile.priority}`;
+    openRouterProfileSelectEl.appendChild(option);
+  }
+  if (profiles.some((profile) => profile.id === previous)) openRouterProfileSelectEl.value = previous;
+  else if (profiles.length) openRouterProfileSelectEl.value = profiles[0].id;
+}
 
-  openRouterApiKeyEl.placeholder = apiConfigured ? "저장됨 · 새 API Key 입력 시 교체" : "sk-or-v1-...";
-  openRouterManagementKeyEl.placeholder = managementConfigured ? "저장됨 · 새 Management Key 입력 시 교체" : "계정 크레딧 조회용";
+function applySelectedProfileStatus(settings = {}) {
+  const status = selectedProfileStatus(settings);
+  const hasSelection = !!openRouterProfileSelectEl.value;
+  openRouterApiKeyEl.placeholder = status.apiKeyConfigured ? "저장됨 · 새 API Key 입력 시 교체" : "OpenRouter API Key";
+  openRouterManagementKeyEl.placeholder = status.managementKeyConfigured ? "저장됨 · 새 Management Key 입력 시 교체" : "계정 크레딧 조회용";
   openRouterApiKeyStatusEl.textContent = configuredCopy(
-    apiConfigured,
-    "해당 키의 누적/일간/주간/월간 사용량과 Key 한도를 조회합니다.",
+    status.apiKeyConfigured,
+    hasSelection ? "선택 프로필의 요청/사용량 조회 및 localhost 라우팅에 사용합니다." : "먼저 키 프로필을 추가하세요.",
   );
   openRouterManagementKeyStatusEl.textContent = configuredCopy(
-    managementConfigured,
-    "계정의 총 충전 크레딧과 실제 남은 크레딧을 조회할 때 필요합니다.",
+    status.managementKeyConfigured,
+    "계정의 총 충전 크레딧과 실제 남은 크레딧 조회에만 사용합니다.",
   );
+}
 
-  saveOpenRouterKeysEl.disabled = !secureAvailable;
-  openRouterApiKeyEl.disabled = !secureAvailable;
-  openRouterManagementKeyEl.disabled = !secureAvailable;
+function applyOpenRouterSettings(settings = {}, message = "") {
+  openRouterEnabledEl.checked = settings.openRouterEnabled === true;
+  const secureAvailable = settings.secureStorageAvailable === true;
+  if (document.activeElement !== openRouterProfilesEl) {
+    openRouterProfilesEl.value = formatOpenRouterProfiles(settings.openRouterProfiles);
+  }
+  syncProfileSelect(settings);
+  applySelectedProfileStatus(settings);
+
+  const router = settings.openRouterRouter || {};
+  openRouterRouterEnabledEl.checked = router.enabled === true;
+  openRouterRouterPortEl.value = Number(router.port) || 43123;
+  openRouterRouterPolicyEl.value = router.policy === "max-remaining" ? "max-remaining" : "priority-fallback";
+
+  const hasProfile = !!openRouterProfileSelectEl.value;
+  saveOpenRouterKeysEl.disabled = !secureAvailable || !hasProfile;
+  clearOpenRouterKeysEl.disabled = !secureAvailable || !hasProfile;
+  openRouterApiKeyEl.disabled = !secureAvailable || !hasProfile;
+  openRouterManagementKeyEl.disabled = !secureAvailable || !hasProfile;
+  copyOpenRouterRouterTokenEl.disabled = !secureAvailable;
   openRouterSecureStatusEl.classList.toggle("warning", !secureAvailable);
   openRouterSecureStatusEl.textContent = message || (secureAvailable
-    ? "키는 운영체제 보안 저장소로 암호화됩니다. Windows에서는 DPAPI를 사용하며 settings.json에는 원문을 기록하지 않습니다."
-    : "운영체제 보안 저장소를 사용할 수 없어 키 저장이 비활성화되었습니다. 평문 저장으로 우회하지 않습니다.");
+    ? "각 프로필 키와 localhost 인증 토큰은 운영체제 safeStorage로 암호화되며 settings.json에는 원문을 기록하지 않습니다."
+    : "운영체제 보안 저장소를 사용할 수 없어 키/라우터 토큰 저장이 비활성화되었습니다. 평문 저장으로 우회하지 않습니다.");
+}
+
+function routerErrorCopy(code) {
+  if (code === "port-in-use") return "지정한 포트를 다른 프로그램이 사용 중입니다.";
+  if (code === "secure-local-auth-unavailable") return "OS 보안 저장소에서 로컬 인증 토큰을 준비하지 못했습니다.";
+  if (code === "listen-failed") return "localhost 라우터를 시작하지 못했습니다.";
+  return code || "";
+}
+
+function applyOpenRouterRouterStatus(status = {}) {
+  const endpoint = status.endpoint || `http://127.0.0.1:${Number(openRouterRouterPortEl.value) || 43123}/v1`;
+  openRouterRouterEndpointEl.textContent = endpoint;
+  const profileStates = Array.isArray(status.profiles) ? status.profiles : [];
+  const usable = profileStates.filter((profile) => profile.apiKeyConfigured && !profile.cooldownUntil).length;
+  const cooling = profileStates.filter((profile) => profile.cooldownUntil).length;
+  if (status.running) {
+    openRouterRouterStatusEl.textContent = `실행 중 · 사용 가능 키 ${usable}개${cooling ? ` · 쿨다운 ${cooling}개` : ""} · 외부 인터페이스에는 바인딩하지 않습니다.`;
+    openRouterRouterStatusEl.classList.remove("warning");
+  } else if (status.enabled) {
+    openRouterRouterStatusEl.textContent = `시작 실패 · ${routerErrorCopy(status.lastError) || "설정을 확인하세요."}`;
+    openRouterRouterStatusEl.classList.add("warning");
+  } else {
+    openRouterRouterStatusEl.textContent = "라우터 꺼짐 · 활성화하면 127.0.0.1에만 바인딩합니다.";
+    openRouterRouterStatusEl.classList.remove("warning");
+  }
+}
+
+async function refreshOpenRouterRouterStatus() {
+  const status = await window.tokenWidget.getOpenRouterRouterStatus();
+  applyOpenRouterRouterStatus(status);
+  return status;
 }
 
 async function reloadOpenRouterSettings(message = "") {
   const settings = await window.tokenWidget.getSettings();
   applyOpenRouterSettings(settings, message);
+  await refreshOpenRouterRouterStatus();
   return settings;
 }
 
@@ -61,9 +174,37 @@ openRouterEnabledEl.onchange = async () => {
   }
 };
 
+saveOpenRouterProfilesEl.onclick = async () => {
+  saveOpenRouterProfilesEl.disabled = true;
+  try {
+    const profiles = parseOpenRouterProfiles(openRouterProfilesEl.value);
+    const settings = await window.tokenWidget.saveSettings({ openRouterProfiles: profiles });
+    applyOpenRouterSettings(settings, `OpenRouter 키 프로필 ${settings.openRouterProfiles.length}개를 저장했습니다.`);
+    await window.tokenWidget.configureOpenRouterRouter();
+    await refreshOpenRouterRouterStatus();
+    window.tokenWidget.refresh();
+  } catch (err) {
+    await reloadOpenRouterSettings(err.message || String(err));
+  } finally {
+    saveOpenRouterProfilesEl.disabled = false;
+  }
+};
+
+openRouterProfileSelectEl.onchange = async () => {
+  const settings = await window.tokenWidget.getSettings();
+  openRouterApiKeyEl.value = "";
+  openRouterManagementKeyEl.value = "";
+  applySelectedProfileStatus(settings);
+};
+
 saveOpenRouterKeysEl.onclick = async () => {
+  const profileId = openRouterProfileSelectEl.value;
   const apiKey = openRouterApiKeyEl.value.trim();
   const managementKey = openRouterManagementKeyEl.value.trim();
+  if (!profileId) {
+    await reloadOpenRouterSettings("먼저 OpenRouter 키 프로필을 추가하세요.");
+    return;
+  }
   if (!apiKey && !managementKey) {
     await reloadOpenRouterSettings("새로 저장할 키를 입력하세요. 기존 키는 빈 입력으로 삭제되지 않습니다.");
     return;
@@ -71,13 +212,14 @@ saveOpenRouterKeysEl.onclick = async () => {
 
   saveOpenRouterKeysEl.disabled = true;
   try {
-    const patch = { openRouterEnabled: true };
-    if (apiKey) patch.openRouterApiKey = apiKey;
-    if (managementKey) patch.openRouterManagementKey = managementKey;
-    const settings = await window.tokenWidget.saveSettings(patch);
+    const patch = {};
+    if (apiKey) patch.apiKey = apiKey;
+    if (managementKey) patch.managementKey = managementKey;
+    const settings = await window.tokenWidget.saveOpenRouterProfileSecrets(profileId, patch);
+    if (!settings.openRouterEnabled) await window.tokenWidget.saveSettings({ openRouterEnabled: true });
     openRouterApiKeyEl.value = "";
     openRouterManagementKeyEl.value = "";
-    applyOpenRouterSettings(settings, "OpenRouter 키를 운영체제 보안 저장소에 암호화해 저장하고 공급자를 활성화했습니다.");
+    await reloadOpenRouterSettings(`${profileId} 프로필 키를 OS 보안 저장소에 암호화해 저장했습니다.`);
     window.tokenWidget.refresh();
   } catch (err) {
     await reloadOpenRouterSettings(err.message || String(err));
@@ -87,12 +229,14 @@ saveOpenRouterKeysEl.onclick = async () => {
 };
 
 clearOpenRouterKeysEl.onclick = async () => {
+  const profileId = openRouterProfileSelectEl.value;
+  if (!profileId) return;
   clearOpenRouterKeysEl.disabled = true;
   try {
-    const settings = await window.tokenWidget.saveSettings({ clearOpenRouterSecrets: true, openRouterEnabled: false });
+    await window.tokenWidget.clearOpenRouterProfileSecrets(profileId);
     openRouterApiKeyEl.value = "";
     openRouterManagementKeyEl.value = "";
-    applyOpenRouterSettings(settings, "저장된 OpenRouter 키를 삭제하고 공급자를 비활성화했습니다.");
+    await reloadOpenRouterSettings(`${profileId} 프로필의 저장된 키를 삭제했습니다.`);
     window.tokenWidget.refresh();
   } catch (err) {
     await reloadOpenRouterSettings(err.message || String(err));
@@ -101,14 +245,48 @@ clearOpenRouterKeysEl.onclick = async () => {
   }
 };
 
+async function saveOpenRouterRouterSettings() {
+  const patch = {
+    enabled: !!openRouterRouterEnabledEl.checked,
+    port: Number(openRouterRouterPortEl.value),
+    policy: openRouterRouterPolicyEl.value,
+  };
+  const settings = await window.tokenWidget.saveSettings({ openRouterRouter: patch });
+  applyOpenRouterSettings(settings);
+  const status = await window.tokenWidget.configureOpenRouterRouter();
+  applyOpenRouterRouterStatus(status);
+  return settings;
+}
+
+[openRouterRouterEnabledEl, openRouterRouterPortEl, openRouterRouterPolicyEl].forEach((element) => {
+  element.addEventListener("change", async () => {
+    try {
+      await saveOpenRouterRouterSettings();
+    } catch (err) {
+      await reloadOpenRouterSettings(err.message || String(err));
+    }
+  });
+});
+
+copyOpenRouterRouterTokenEl.onclick = async () => {
+  copyOpenRouterRouterTokenEl.disabled = true;
+  try {
+    await window.tokenWidget.copyOpenRouterRouterToken();
+    openRouterSecureStatusEl.classList.remove("warning");
+    openRouterSecureStatusEl.textContent = "localhost 라우터 Bearer 토큰을 클립보드에 복사했습니다. 이 토큰은 OpenRouter 원본 API Key와 별개입니다.";
+    await refreshOpenRouterRouterStatus();
+  } catch (err) {
+    await reloadOpenRouterSettings(err.message || String(err));
+  } finally {
+    copyOpenRouterRouterTokenEl.disabled = false;
+  }
+};
+
 reloadOpenRouterSettings().catch((err) => {
   openRouterSecureStatusEl.classList.add("warning");
   openRouterSecureStatusEl.textContent = err.message || String(err);
 });
 
-// Smart Routing is intentionally wired from the existing settings-side script
-// so the renderer remains context-isolated. The only privileged operations are
-// the provider-enum launch/install functions exposed by preload.js.
 const SMART_ROUTE_PROVIDERS = [
   { id: "codex", label: "Codex" },
   { id: "claude", label: "Claude" },
