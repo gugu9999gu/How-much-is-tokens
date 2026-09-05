@@ -23,3 +23,12 @@ Verification command/result history. Append-only.
 - Public release repository was checked after cleanup and contained only the intended v1.0.23 Release with portable EXE and `SHA256SUMS.txt`.
 - PR #24 Windows CI run `33946076642`: full regression tests, Leerness gate, Windows secure-storage smoke, renderer smoke, Antigravity bridge smoke, and portable EXE build succeeded. PR artifact upload was intentionally skipped after the public GitHub Releases repository became the canonical distribution path.
 - Leerness session-close run `33967758023`: `npm run leerness:gate`, `npm run leerness:close`, and handoff commit all succeeded.
+
+## 2026-09-06 — v1.0.24 OpenRouter secure multi-key localhost router pre-PR verification
+- Initial validation run `33980256391` found an outdated settings-reset assertion after `openRouterProfiles` became safe-reset-preserved metadata; product code was not bypassed and the regression expectation was updated.
+- Validation run `33980334809` passed the complete regression suite and exposed four credential-shaped router test fixtures through Leerness secret scanning. Fixtures were rebuilt at runtime rather than adding a scanner exception.
+- Validation run `33980435204` passed the complete regression suite and Leerness gate, then Windows DPAPI smoke exposed a real configured-status cache invalidation bug after profile-secret mutation. The settings status cache now has an explicit invalidation boundary used by profile secret/token mutations.
+- Final pre-PR validation run `33980655618`: syntax checks, complete `npm test`, `npm run leerness:gate`, Windows DPAPI multi-profile secure-storage smoke, and Electron renderer smoke all succeeded.
+- Router unit tests cover 127.0.0.1 binding, local Bearer auth, 429 cooldown + priority failover, max-remaining selection, all-key 503 fail-closed, and no replay after a streaming response has begun.
+- Security tests verify raw API/Management/local router tokens are not persisted in `settings.json`, secret ciphertext is stored through Electron safeStorage, the renderer has no raw-token getter, and the localhost token is copied from main-process code only.
+- After pre-PR validation, request forwarding was further hardened to strip client credential-style headers (`x-api-key`, `api-key`, OpenAI key headers, cookie) and unauthenticated `/health` output was reduced to non-sensitive status only. These final changes must be revalidated by the formal PR Windows CI before merge.
