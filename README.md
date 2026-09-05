@@ -6,7 +6,7 @@
 
 ## 포터블 실행 파일
 
-설치 없이 [Releases](https://github.com/gugu9999gu/How-much-is-tokens/releases) 또는 GitHub Actions의 Windows build artifact에서 `How-much-is-tokens-*-portable.exe`를 받아 실행하세요.
+설치 없이 [Releases](https://github.com/gugu9999gu/How-much-is-tokens-releases/releases) 또는 GitHub Actions의 Windows build artifact에서 `How-much-is-tokens-*-portable.exe`를 받아 실행하세요.
 
 - 설치 마법사 없음
 - 작업 표시줄 없이 트레이/위젯으로만 표시
@@ -37,7 +37,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.13-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.23-portable.exe`입니다.
 
 ## 사용
 
