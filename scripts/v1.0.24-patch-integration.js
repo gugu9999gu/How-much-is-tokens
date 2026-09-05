@@ -28,7 +28,7 @@ const replacement = `          <div class="set-group api-provider-group">
                 <label class="field">
                   <span class="field-label">키 프로필</span>
                   <textarea id="openRouterProfiles" rows="4" placeholder="primary|주 키|10|on&#10;backup|백업 키|20|on" spellcheck="false"></textarea>
-                  <small>한 줄에 <b>id|표시 이름|우선순위|on/off</b>. id는 영문 소문자/숫자/\\`_\\`/\\`-\\`, 최대 16개. 키 원문은 여기에 저장하지 않습니다.</small>
+                  <small>한 줄에 <b>id|표시 이름|우선순위|on/off</b>. id는 영문 소문자/숫자/underscore/hyphen, 최대 16개. 키 원문은 여기에 저장하지 않습니다.</small>
                 </label>
                 <div class="openrouter-profile-actions">
                   <button type="button" id="saveOpenRouterProfiles" class="btn primary">프로필 목록 저장</button>
