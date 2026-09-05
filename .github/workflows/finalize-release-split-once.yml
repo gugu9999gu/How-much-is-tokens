@@ -1,0 +1,83 @@
+name: Finalize Release Split Once
+
+on:
+  push:
+    branches:
+      - chore/finalize-private-public-split
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/finalize-private-public-split
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update public release references
+        shell: pwsh
+        run: |
+          $path = "README.md"
+          $text = Get-Content -Raw -LiteralPath $path
+          $text = $text.Replace(
+            "https://github.com/gugu9999gu/How-much-is-tokens/releases",
+            "https://github.com/gugu9999gu/How-much-is-tokens-releases/releases"
+          )
+          $text = $text.Replace(
+            "dist/How-much-is-tokens-1.0.13-portable.exe",
+            "dist/How-much-is-tokens-1.0.23-portable.exe"
+          )
+          [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding($false)))
+
+      - name: Run regression tests
+        run: npm test
+
+      - name: Smoke test Windows secure storage
+        run: npm run test:secure-secrets
+
+      - name: Verify Leerness workspace
+        shell: pwsh
+        env:
+          LEERNESS_NO_PROMPT: "1"
+          LEERNESS_NO_AUTOCHCP: "1"
+          LEERNESS_NO_DRIFT_CHECK: "1"
+        run: |
+          npx --no-install leerness --version
+          npm run leerness:status
+
+      - name: Run Leerness gate
+        shell: pwsh
+        env:
+          LEERNESS_NO_PROMPT: "1"
+          LEERNESS_NO_AUTOCHCP: "1"
+          LEERNESS_NO_DRIFT_CHECK: "1"
+        run: npm run leerness:gate
+
+      - name: Commit README update
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if (git diff --cached --quiet) {
+            Write-Host "README already points to the public release repository."
+            exit 0
+          }
+          git commit -m "docs: point downloads to public release repository"
+          git push origin HEAD:chore/finalize-private-public-split
