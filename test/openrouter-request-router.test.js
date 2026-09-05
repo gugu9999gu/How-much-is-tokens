@@ -145,6 +145,58 @@ function request(port, options = {}) {
   assert.strictEqual(maxRemaining.status, 200);
   assert.deepStrictEqual(calls, [bearer(BACKUP_KEY)], "max-remaining must prefer higher remaining profile");
 
+  let ambiguousPostCalls = 0;
+  const ambiguousPost = new OpenRouterRequestRouter({
+    loadProfileSecrets: (id) => secrets[id] || {},
+    fetchImpl: async () => {
+      ambiguousPostCalls += 1;
+      throw new Error("synthetic-network-failure");
+    },
+    now: () => now,
+  });
+  ambiguousPost.settings = {
+    ...router.settings,
+    openRouterRouter: { enabled: true, port: 43123, policy: "priority-fallback" },
+  };
+  ambiguousPost.localToken = LOCAL_TOKEN;
+  await ambiguousPost.start(0);
+  const ambiguousFailure = await request(ambiguousPost.server.address().port, {
+    headers: { authorization: bearer(LOCAL_TOKEN), "content-type": "application/json" },
+    body: "{}",
+  });
+  assert.strictEqual(ambiguousFailure.status, 502);
+  assert.ok(ambiguousFailure.body.includes("upstream_network_error"));
+  assert.strictEqual(ambiguousPostCalls, 1, "ambiguous POST network failure must never be replayed on a second key");
+  await ambiguousPost.stop();
+
+  let safeGetCalls = 0;
+  const safeGet = new OpenRouterRequestRouter({
+    loadProfileSecrets: (id) => secrets[id] || {},
+    fetchImpl: async () => {
+      safeGetCalls += 1;
+      if (safeGetCalls === 1) throw new Error("synthetic-network-failure");
+      return new Response(JSON.stringify({ data: [] }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+    now: () => now,
+  });
+  safeGet.settings = {
+    openRouterProfiles: [
+      { id: "primary", label: "Primary", priority: 10, enabled: true },
+      { id: "backup", label: "Backup", priority: 20, enabled: true },
+    ],
+    openRouterRouter: { enabled: true, port: 43123, policy: "priority-fallback" },
+  };
+  safeGet.localToken = LOCAL_TOKEN;
+  await safeGet.start(0);
+  const safeGetResult = await request(safeGet.server.address().port, {
+    path: "/v1/models",
+    method: "GET",
+    headers: { authorization: bearer(LOCAL_TOKEN) },
+  });
+  assert.strictEqual(safeGetResult.status, 200);
+  assert.strictEqual(safeGetCalls, 2, "idempotent GET may fail over after a network failure");
+  await safeGet.stop();
+
   const alwaysLimited = new OpenRouterRequestRouter({
     loadProfileSecrets: (id) => secrets[id] || {},
     fetchImpl: async () => new Response("limited", { status: 429 }),
