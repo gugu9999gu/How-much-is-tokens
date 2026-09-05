@@ -15,10 +15,10 @@ doNotStore:
 <!-- leerness:managed -->
 # Current State
 
-Updated: 2026-09-06
+Updated: 2026-09-05
 
 ## Now
-- v1.0.24 OpenRouter secure multi-key profile 및 localhost request router 구현·검증·공개 배포 완료. <!-- leerness:auto -->
+- 대기 중 <!-- leerness:auto -->
 - 개발 저장소 `gugu9999gu/How-much-is-tokens`는 Private, `gugu9999gu/How-much-is-tokens-releases`는 Public 바이너리 배포 전용으로 운영 중.
 - Leerness v1.36.184를 고정 설치하고 Windows CI에서 `leerness gate`를 필수 검증으로 실행함.
 - OpenRouter API/Management Key는 `openrouterProfile:<id>:...` 단위로 Electron safeStorage에 암호화 저장하며 기존 단일 key는 `default` 프로필로 호환함.
@@ -34,7 +34,7 @@ Updated: 2026-09-06
 - 배포를 위해 사용한 one-time dispatcher workflow는 main에서 제거함.
 
 ## Next
-- v1.0.24 운영 피드백/실사용 문제를 확인한 뒤 다음 milestone을 정의. <!-- leerness:auto -->
+- 계획된 작업 없음 <!-- leerness:auto -->
 - 새 기능 작업 시 기존 secure profile/loopback/no-replay 경계를 깨지 않도록 회귀 테스트부터 갱신.
 - 모든 개발 세션은 시작 시 handoff, 완료 전 gate, 종료 시 session close 절차를 사용.
 
