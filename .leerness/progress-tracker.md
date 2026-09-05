@@ -21,4 +21,5 @@ Status values: requested, planned, in-progress, waiting, on-hold, blocked, incom
 
 | ID | Status | Request | Evidence | Next Action | Updated |
 |---|---|---|---|---|---|
-| T-0001 | planned | 프로젝트 계획 정리 | init default plan:M-0001 | project-brief.md를 실제 목적으로 업데이트 | 2026-09-04 |
+| T-0001 | done | Private 개발/Public Release 분리 및 Leerness 운영 경계 | plan:M-0001 · release-token run 33894555788 · PR #24/#25 | 유지보수 | 2026-09-05 |
+| T-0002 | in-progress | v1.0.24 OpenRouter secure multi-key localhost smart router | plan:M-0002 · pre-PR validation run 33980655618 success | 정식 PR Windows CI 후 병합/공개 Release | 2026-09-06 |
