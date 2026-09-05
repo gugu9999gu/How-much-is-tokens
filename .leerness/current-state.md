@@ -18,7 +18,7 @@ doNotStore:
 Updated: 2026-09-06
 
 ## Now
-- v1.0.24 OpenRouter secure multi-key profile 및 localhost request router 구현 완료, PR #26 정식 Windows CI 검증 중. <!-- leerness:auto -->
+- v1.0.24 OpenRouter secure multi-key profile 및 localhost request router 구현·검증·공개 배포 완료. <!-- leerness:auto -->
 - 개발 저장소 `gugu9999gu/How-much-is-tokens`는 Private, `gugu9999gu/How-much-is-tokens-releases`는 Public 바이너리 배포 전용으로 운영 중.
 - Leerness v1.36.184를 고정 설치하고 Windows CI에서 `leerness gate`를 필수 검증으로 실행함.
 - OpenRouter API/Management Key는 `openrouterProfile:<id>:...` 단위로 Electron safeStorage에 암호화 저장하며 기존 단일 key는 `default` 프로필로 호환함.
@@ -29,12 +29,14 @@ Updated: 2026-09-06
 - key 선택은 `priority-fallback` 또는 `max-remaining`; 401/402/403/429는 응답 commit 전 cooldown/failover하며 모든 key가 불가하면 503 fail-closed.
 - network failure는 key를 cooldown하되 GET/HEAD/OPTIONS만 다음 key로 재시도하고, POST 등 비멱등 요청은 upstream 처리 여부가 불명확하므로 502로 중단하고 자동 replay하지 않음.
 - upstream 응답을 client에 전달하기 시작한 뒤 stream 실패 시 다른 key로 요청을 replay하지 않음.
-- 사전 Windows 검증 run `33980655618`에서 syntax, 전체 회귀 테스트, Leerness gate, DPAPI multi-profile secure-storage smoke, renderer smoke가 모두 성공함. 이후 credential header stripping, health 최소화, 비멱등 network no-replay 변경은 PR #26 정식 CI에서 재검증함.
+- PR #26 Windows CI run `33981095152`, main post-merge CI run `33981334811`, public release run `33981622986`이 모두 성공함.
+- Public v1.0.24 Release 자산: `How-much-is-tokens-1.0.24-portable.exe`, `SHA256SUMS.txt`; EXE SHA-256 `d0397fc8e158559f333d0c5b4b2329646a36825021c656c831104d8794a10211`.
+- 배포를 위해 사용한 one-time dispatcher workflow는 main에서 제거함.
 
 ## Next
-- PR #26 Windows full CI/portable EXE build 성공 확인 후 squash merge. <!-- leerness:auto -->
-- main 병합 후 v1.0.24 공개 Release를 `How-much-is-tokens-releases`에 EXE/체크섬/명시적 공개 노트만 게시.
-- 릴리스 후 Leerness evidence/handoff를 갱신하고 session close 수행.
+- v1.0.24 운영 피드백/실사용 문제를 확인한 뒤 다음 milestone을 정의. <!-- leerness:auto -->
+- 새 기능 작업 시 기존 secure profile/loopback/no-replay 경계를 깨지 않도록 회귀 테스트부터 갱신.
+- 모든 개발 세션은 시작 시 handoff, 완료 전 gate, 종료 시 session close 절차를 사용.
 
 ## Blockers
 - (없음) <!-- leerness:auto -->
