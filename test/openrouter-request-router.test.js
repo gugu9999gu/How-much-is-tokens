@@ -3,6 +3,7 @@ const http = require("http");
 const {
   LOOPBACK_HOST,
   constantTimeEqual,
+  copyRequestHeaders,
   parseRetryAfter,
   upstreamUrl,
   OpenRouterRequestRouter,
@@ -55,6 +56,19 @@ function request(port, options = {}) {
   assert.strictEqual(upstreamUrl("/not-v1"), null);
   assert.strictEqual(parseRetryAfter("2", 1000), 2000);
 
+  const sanitizedHeaders = copyRequestHeaders({
+    authorization: bearer(LOCAL_TOKEN),
+    "x-api-key": LOCAL_TOKEN,
+    "api-key": LOCAL_TOKEN,
+    cookie: `session=${LOCAL_TOKEN}`,
+    "content-type": "application/json",
+    "http-referer": "https://example.test",
+  });
+  assert.deepStrictEqual(sanitizedHeaders, {
+    "content-type": "application/json",
+    "http-referer": "https://example.test",
+  }, "client credential headers must not be forwarded upstream");
+
   let now = 1_000_000;
   const calls = [];
   const secrets = {
@@ -94,6 +108,10 @@ function request(port, options = {}) {
   assert.strictEqual(address.address, LOOPBACK_HOST, "router must bind only to IPv4 loopback");
   const port = address.port;
 
+  const health = await request(port, { path: "/health", method: "GET" });
+  assert.strictEqual(health.status, 200);
+  assert.deepStrictEqual(JSON.parse(health.body), { ok: true, running: true });
+
   const unauthorized = await request(port, {
     headers: { "content-type": "application/json" },
     body: "{}",
@@ -125,7 +143,7 @@ function request(port, options = {}) {
     body: "{}",
   });
   assert.strictEqual(maxRemaining.status, 200);
-  assert.deepStrictEqual(calls, [bearer(BACKUP_KEY)], "max-remaining must prefer fresher higher remaining profile");
+  assert.deepStrictEqual(calls, [bearer(BACKUP_KEY)], "max-remaining must prefer higher remaining profile");
 
   const alwaysLimited = new OpenRouterRequestRouter({
     loadProfileSecrets: (id) => secrets[id] || {},
