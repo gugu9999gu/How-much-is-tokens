@@ -15,3 +15,6 @@ doNotStore:
 
 ## 2026-09-04
 - Leerness v1.36.184 initialized.
+
+## 2026-09-05 session-close
+- Generated session-handoff.md and refreshed current-state.md.

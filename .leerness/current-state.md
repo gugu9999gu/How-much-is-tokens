@@ -18,6 +18,7 @@ doNotStore:
 Updated: 2026-09-05
 
 ## Now
+- 대기 중 <!-- leerness:auto -->
 - `gugu9999gu/How-much-is-tokens` 개발 저장소는 Private으로 운영 중.
 - Leerness v1.36.184 소스 커밋을 고정 설치하고 minimal `.leerness` 워크스페이스를 사용 중.
 - 공개 바이너리 배포 저장소 `gugu9999gu/How-much-is-tokens-releases`는 Public으로 운영하며 `main`에는 배포 안내용 `README.md`만 유지함.
@@ -28,9 +29,11 @@ Updated: 2026-09-05
 - 개발 저장소 Actions secret `RELEASE_REPO_TOKEN`이 등록되었고, 2026-09-05 실제 Actions에서 공개 release 저장소에 대한 read/write 권한을 검증함. 검증은 임시 draft Release 생성 후 삭제 방식으로 완료했으며 자격증명 원문은 저장하지 않음.
 
 ## Next
+- 프로젝트 계획 정리 <!-- leerness:auto -->
 - 이후 릴리스는 private 개발 저장소의 `.github/workflows/publish-public-release.yml`에서 공개 release 저장소로 EXE/체크섬/명시적 공개 릴리스 노트만 게시.
 - 다음 기능 개발은 v1.0.24 OpenRouter/API request-level localhost smart router와 secure multi-key profile을 우선 진행.
 - 모든 개발 세션은 시작 시 handoff, 완료 전 gate, 종료 시 session close 절차를 사용.
 
 ## Blockers
+- (없음) <!-- leerness:auto -->
 - private 개발 / public release 분리 및 cross-repository 자동 배포 권한과 관련된 현재 blocker 없음.

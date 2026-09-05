@@ -1,0 +1,14 @@
+{
+  "commands": {
+    "gate": 1,
+    "session": 1
+  },
+  "drift": {
+    "criticalSeen": 0,
+    "skipped": 0,
+    "autoResolved": 0
+  },
+  "since": "2026-09-05",
+  "lastCommand": "session",
+  "lastAt": "2026-09-05T13:03:40.595Z"
+}
