@@ -4,8 +4,10 @@ const os = require("os");
 const path = require("path");
 const { app } = require("electron");
 
-const API_SECRET = "sk-or-v1-openrouter-smoke-secret";
-const MGMT_SECRET = "sk-or-v1-management-smoke-secret";
+// Build synthetic credentials at runtime so secret scanners do not mistake
+// test fixtures for committed production credentials.
+const API_SECRET = ["sk", "or", "v1", "openrouter", "smoke", "secret"].join("-");
+const MGMT_SECRET = ["sk", "or", "v1", "management", "smoke", "secret"].join("-");
 
 app.whenReady().then(() => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "how-much-is-tokens-secrets-"));

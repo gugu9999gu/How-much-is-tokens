@@ -5,6 +5,7 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "publish-public-release.yml"), "utf8");
 const splitDoc = fs.readFileSync(path.join(root, "docs", "repository-split.md"), "utf8");
+const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
 const agents = fs.readFileSync(path.join(root, "AGENTS.md"), "utf8");
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const lock = JSON.parse(fs.readFileSync(path.join(root, "package-lock.json"), "utf8"));
@@ -17,8 +18,14 @@ assert.ok(fs.existsSync(path.join(root, ".leerness", "current-state.md")), "Leer
 
 assert.ok(agents.includes("npm run leerness:handoff"), "development agents must load Leerness handoff at session start");
 assert.ok(agents.includes("npm run leerness:close"), "development agents must close the Leerness session before handoff");
+assert.ok(agents.includes(".leerness/protected-files.md"), "development agents must honor the protected-file policy");
+assert.ok(agents.includes(".leerness/anti-lazy-work-policy.md"), "development agents must honor the anti-lazy evidence policy");
 assert.ok(pkg.scripts["leerness:gate"], "Leerness evidence gate script must exist");
 assert.ok(pkg.scripts["leerness:close"].includes("session close"), "session close must use the current Leerness session workflow");
+
+const publicReleaseUrl = "https://github.com/gugu9999gu/How-much-is-tokens-releases/releases";
+assert.ok(readme.includes(publicReleaseUrl), "README downloads must point to the public release repository");
+assert.ok(!readme.includes("https://github.com/gugu9999gu/How-much-is-tokens/releases"), "README must not direct users to private development releases");
 
 assert.ok(workflow.includes("RELEASE_REPO: gugu9999gu/How-much-is-tokens-releases"));
 assert.ok(workflow.includes("secrets.RELEASE_REPO_TOKEN"), "cross-repository publishing must use a dedicated secret");
