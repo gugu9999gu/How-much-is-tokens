@@ -65,6 +65,9 @@ app.whenReady().then(() => {
   assert.ok(!settingsRaw.includes("openRouterApiKey"));
   assert.ok(!settingsRaw.includes("openRouterManagementKey"));
 
+  // Direct secure-store mutation is intentionally lower-level than normal IPC.
+  // Invalidate the display-only configured-status cache before reading settings.
+  settings.invalidateSecretStatusCache();
   const status = settings.loadSettings();
   const primaryStatus = status.openRouterProfileStatuses.find((item) => item.id === "primary");
   const backupStatus = status.openRouterProfileStatuses.find((item) => item.id === "backup");
