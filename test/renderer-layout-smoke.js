@@ -55,7 +55,34 @@ app.whenReady().then(async () => {
 
   try {
     await win.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
-    await wait(80);
+    await wait(120);
+
+    const connectionUi = await win.webContents.executeJavaScript(`(() => {
+      const hub = document.getElementById('connectionHub');
+      const advanced = document.getElementById('advancedSettings');
+      const cards = [...document.querySelectorAll('[data-connection-provider]')].map((el) => el.dataset.connectionProvider);
+      const display = document.querySelector('#settings > .set-group:not(#connectionHub)');
+      const manualProfile = document.getElementById('accountProfiles');
+      const apiKey = document.getElementById('openRouterApiKey');
+      return {
+        hub: !!hub,
+        advanced: !!advanced,
+        advancedOpen: !!(advanced && advanced.open),
+        cards,
+        displayOutsideAdvanced: !!(display && !display.closest('#advancedSettings')),
+        manualProfileAdvanced: !!(manualProfile && manualProfile.closest('#advancedSettings')),
+        apiKeyAdvanced: !!(apiKey && apiKey.closest('#advancedSettings')),
+        codexStatus: document.querySelector('[data-connection-status="codex"]')?.textContent || '',
+      };
+    })()`);
+    assert.strictEqual(connectionUi.hub, true, "minimal connection hub must exist");
+    assert.strictEqual(connectionUi.advanced, true, "advanced settings disclosure must exist");
+    assert.strictEqual(connectionUi.advancedOpen, false, "advanced settings must start collapsed");
+    assert.deepStrictEqual(connectionUi.cards, ["codex", "claude", "grok", "cursor", "copilot", "antigravity", "openrouter"]);
+    assert.strictEqual(connectionUi.displayOutsideAdvanced, true, "basic display controls should remain directly accessible");
+    assert.strictEqual(connectionUi.manualProfileAdvanced, true, "raw account profile editor must move under advanced settings");
+    assert.strictEqual(connectionUi.apiKeyAdvanced, true, "manual OpenRouter API key must move under advanced settings");
+    assert.ok(connectionUi.codexStatus.includes("연결됨"), "connection hub should render latest provider state");
 
     await win.webContents.executeJavaScript(`(() => {
       document.getElementById('settingsBtn').click();
@@ -76,6 +103,8 @@ app.whenReady().then(async () => {
     assertSeparated(before, "before edge toggle");
 
     await win.webContents.executeJavaScript(`(() => {
+      const advanced = document.getElementById('advancedSettings');
+      advanced.open = true;
       const toggle = document.getElementById('edgeDockEnabled');
       toggle.checked = true;
       toggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -119,7 +148,7 @@ app.whenReady().then(async () => {
     assert.strictEqual(disabled.edge, false, "edge class was not disabled");
     assertSeparated(disabled, "edge disabled");
 
-    console.log("renderer titlebar/content viewport smoke test passed");
+    console.log("renderer minimal connection/settings layout smoke test passed");
     win.destroy();
     app.quit();
   } catch (error) {
