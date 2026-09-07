@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { loadSettings, saveSettings, resetSettings } = require("./lib/settings");
 require("./lib/openrouter-main-integration");
+const { loadUsableOAuthSecrets } = require("./lib/provider-auth-main");
 const { fetchAll } = require("./lib/usage");
 const { applyAlwaysOnTop: setWindowAlwaysOnTop } = require("./lib/window-behavior");
 const {
@@ -551,7 +552,8 @@ async function refreshUsage(force) {
   fetching = true;
   try {
     const settings = loadSettings();
-    const result = await fetchAll(settings);
+    const oauthSecrets = await loadUsableOAuthSecrets();
+    const result = await fetchAll(settings, oauthSecrets);
     result.providers = mergeCache(result.providers);
     result.forced = !!force;
     win?.webContents.send("usage", { ...result, settings });

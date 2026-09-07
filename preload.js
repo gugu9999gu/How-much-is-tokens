@@ -83,35 +83,35 @@ function formatAccountProfilesForUi(profiles) {
 async function connectCredential(providerId, options = {}) {
   const id = String(providerId || "").toLowerCase();
   if (id === "openrouter") return ipcRenderer.invoke("connect-openrouter-oauth", options || {});
+  return ipcRenderer.invoke("provider-oauth-login", id, { ...options, addAccount: false });
+}
+
+async function addCredentialAccount(providerId) {
+  const id = String(providerId || "").toLowerCase();
+  if (id === "openrouter") return ipcRenderer.invoke("connect-openrouter-oauth", { createNew: true });
+  return ipcRenderer.invoke("provider-oauth-login", id, { addAccount: true });
+}
+
+async function connectCredentialFallback(providerId, options = {}) {
+  const id = String(providerId || "").toLowerCase();
   const settings = await ipcRenderer.invoke("get-settings");
   const profileId = String((options && options.profileId) || "");
   const profile = profileId ? findProfile(settings, id, profileId) : null;
   return launchCredentialLogin(id, profile);
 }
 
-async function addCredentialAccount(providerId) {
+async function addCredentialAccountFallback(providerId) {
   const id = String(providerId || "").toLowerCase();
-  if (id === "openrouter") return ipcRenderer.invoke("connect-openrouter-oauth", { createNew: true });
-  if (!PROFILE_LOGIN_PROVIDERS.has(id)) {
-    return { ok: false, providerId: id, reason: "profiles-not-supported" };
-  }
-
+  if (!PROFILE_LOGIN_PROVIDERS.has(id)) return { ok: false, providerId: id, reason: "profiles-not-supported" };
   const settings = await ipcRenderer.invoke("get-settings");
   const proposal = nextManagedProfile(settings, id);
   if (!proposal) return { ok: false, providerId: id, reason: "profiles-not-supported" };
   ensureProfileDirectory(proposal);
-
   const merged = [...normalizeAccountProfiles(settings.accountProfiles), proposal];
   const saved = await ipcRenderer.invoke("save-settings", { accountProfiles: merged });
-  const profile = normalizeAccountProfiles(saved.accountProfiles)
-    .find((item) => item.providerId === id && item.configDir === proposal.configDir);
+  const profile = normalizeAccountProfiles(saved.accountProfiles).find((item) => item.providerId === id && item.configDir === proposal.configDir);
   if (!profile) return { ok: false, providerId: id, reason: "profile-save-failed" };
-
-  const result = launchCredentialLogin(id, profile);
-  return {
-    ...result,
-    accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles),
-  };
+  return { ...launchCredentialLogin(id, profile), accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles) };
 }
 
 contextBridge.exposeInMainWorld("tokenWidget", {
@@ -130,6 +130,12 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   copyOpenRouterRouterToken: () => ipcRenderer.invoke("copy-openrouter-router-token"),
   connectCredential,
   addCredentialAccount,
+  connectCredentialFallback,
+  addCredentialAccountFallback,
+  listProviderAccounts: (providerId) => ipcRenderer.invoke("list-provider-oauth-credentials", providerId),
+  useProviderAccount: (providerId, slotId) => ipcRenderer.invoke("set-active-provider-oauth-credential", providerId, slotId),
+  removeProviderAccount: (providerId, slotId) => ipcRenderer.invoke("remove-provider-oauth-credential", providerId, slotId),
+  reauthProviderAccount: (providerId, slotId) => ipcRenderer.invoke("provider-oauth-login", providerId, { slotId, reauth: true }),
   routeLaunch,
   installSmartRoutingLaunchers,
   hide: () => ipcRenderer.invoke("hide"),
