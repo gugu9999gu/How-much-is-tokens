@@ -1,5 +1,7 @@
 const assert = require("assert");
 const {
+  tokenFromGhCli,
+  findToken,
   quotaWindow,
   premiumRequestBalance,
 } = require("../lib/providers/copilot");
@@ -10,6 +12,25 @@ const snapshot = {
   remaining: 75,
   percent_remaining: 25,
 };
+
+const ghToken = ["gh", "oauth", "fixture", "token"].join("-");
+let ghCall = null;
+assert.strictEqual(tokenFromGhCli((command, args, options) => {
+  ghCall = { command, args, options };
+  return `${ghToken}\n`;
+}, {}), ghToken);
+assert.strictEqual(ghCall.command, "gh");
+assert.deepStrictEqual(ghCall.args, ["auth", "token"]);
+assert.strictEqual(ghCall.options.windowsHide, true);
+assert.strictEqual(tokenFromGhCli(() => { throw new Error("not logged in"); }, {}), null);
+
+const foundFromGh = findToken({ githubToken: "" }, {
+  execFileSyncImpl: () => ghToken,
+  env: {},
+});
+assert.ok(foundFromGh);
+assert.strictEqual(foundFromGh.token, ghToken);
+assert.strictEqual(foundFromGh.source, "gh auth");
 
 const window = quotaWindow(snapshot, "premium", "프리미엄", resetAt);
 assert.ok(window);
@@ -37,4 +58,4 @@ assert.strictEqual(unlimited.remainingPct, 100);
 assert.strictEqual(premiumRequestBalance({ entitlement: 0, remaining: 0 }, resetAt), null);
 assert.strictEqual(premiumRequestBalance({}, resetAt), null);
 
-console.log("Copilot premium request balance tests passed");
+console.log("Copilot credential reuse / premium request balance tests passed");
