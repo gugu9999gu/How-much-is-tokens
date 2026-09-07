@@ -27,7 +27,7 @@ doNotStore:
 - Claude, Codex/ChatGPT, Cursor, Copilot, Grok/Grok Bot, Antigravity, OpenRouter의 실제 upstream usage/quota/credit 정보 표시.
 - CLI 계정 프로필과 API 키 프로필을 서로 격리하고 계정별 상태/캐시를 분리.
 - OpenRouter API 키 프로필의 Electron safeStorage 암호화 저장, 사용량 카드, localhost OpenAI-compatible 요청 라우팅.
-- Codex/Claude/Grok/Cursor/Copilot/Antigravity의 기존 공식 CLI/OAuth 로그인 흐름을 앱 설정에서 시작하고, OpenRouter는 localhost OAuth PKCE로 연결.
+- Codex/Claude/Grok/Cursor/Copilot/Antigravity의 기존 공식 CLI/OAuth 로그인 흐름을 앱 설정에서 시작하고, Grok Bot은 Cursor 인증 공유 사실을 명시하며, OpenRouter는 localhost OAuth PKCE로 연결.
 - 수동 profile 경로/API Key/PAT/cookie 및 Smart Routing 세부값은 삭제하지 않고 접힌 고급 설정으로 제공.
 - Windows CI의 회귀 테스트, Leerness gate, secure-storage/renderer/Antigravity smoke, portable EXE build.
 - Private 개발 저장소와 Public 바이너리 Release 저장소의 분리 배포.
@@ -73,17 +73,20 @@ Tasks:
 
 ### M-0003. v1.0.25 미니멀 계정 연결 허브
 Status: in-progress
-Progress: 75%
+Progress: 88%
 
 Tasks:
-- [x] 설정 상단에 Codex/Claude/Grok/Cursor/Copilot/Antigravity/OpenRouter 연결 카드 추가
-- [x] 기존 복잡한 다계정/API/Smart Routing 설정을 접힌 고급 설정으로 이동
+- [x] 설정 상단에 Codex/Claude/Grok/Cursor/Grok Bot/Copilot/Antigravity/OpenRouter 연결 카드 추가
+- [x] 기본 설정을 `계정 연결 + 항상 위에/시작 시 실행/빈 계정 숨기기`로 축소
+- [x] 기존 복잡한 다계정/API/Smart Routing/표시 세부 설정을 접힌 고급 설정으로 이동
 - [x] Codex `codex login`, Claude `claude auth login`, Grok `grok login`, Cursor `cursor-agent login`, Copilot `gh auth login`, Antigravity `agy` 로그인 실행 경로 추가
-- [x] Codex/Claude/Grok 추가 계정의 관리형 격리 config root 자동 생성
+- [x] Grok Bot 카드가 별도 인증을 만들지 않고 Cursor 로그인/자격증명 공유 사실을 표시
+- [x] Codex/Claude/Grok 추가 계정의 관리형 격리 config root 자동 생성 및 filesystem collision avoidance
 - [x] OpenRouter localhost OAuth PKCE 및 main-process-only key exchange/safeStorage 저장 구현
 - [x] GitHub CLI credential-manager 토큰을 Copilot 조회 fallback으로 재사용
 - [x] unit/static/renderer smoke 테스트 범위 추가
-- [ ] Windows 사전 검증에서 전체 회귀/gate/DPAPI/renderer smoke 통과
-- [ ] package/package-lock v1.0.25 동기화
+- [x] Windows 사전 검증 run `34076732991` 및 `34076905507`에서 전체 회귀/gate/DPAPI/renderer smoke 통과
+- [x] package/package-lock v1.0.25를 npm workflow run `34077244587`로 동기화
+- [ ] Grok Bot/collision-avoidance 포함 최종 Windows 사전 검증
 - [ ] 정식 PR Windows CI 및 portable build 통과
-- [ ] main 병합 및 필요 시 Public v1.0.25 Release 게시
+- [ ] main 병합 및 Public v1.0.25 Release 게시
