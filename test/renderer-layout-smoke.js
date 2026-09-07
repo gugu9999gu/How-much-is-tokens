@@ -59,27 +59,42 @@ app.whenReady().then(async () => {
 
     const connectionUi = await win.webContents.executeJavaScript(`(() => {
       const hub = document.getElementById('connectionHub');
+      const basic = document.getElementById('basicSettings');
       const advanced = document.getElementById('advancedSettings');
       const cards = [...document.querySelectorAll('[data-connection-provider]')].map((el) => el.dataset.connectionProvider);
-      const display = document.querySelector('#settings > .set-group:not(#connectionHub)');
       const manualProfile = document.getElementById('accountProfiles');
       const apiKey = document.getElementById('openRouterApiKey');
+      const alwaysOnTop = document.getElementById('alwaysOnTop');
+      const openAtLogin = document.getElementById('openAtLogin');
+      const hideMissing = document.getElementById('hideMissing');
+      const denseLayout = document.getElementById('denseLayout');
+      const opacity = document.getElementById('opacity');
       return {
         hub: !!hub,
+        basic: !!basic,
         advanced: !!advanced,
         advancedOpen: !!(advanced && advanced.open),
         cards,
-        displayOutsideAdvanced: !!(display && !display.closest('#advancedSettings')),
+        alwaysOnTopBasic: !!(alwaysOnTop && alwaysOnTop.closest('#basicSettings')),
+        openAtLoginBasic: !!(openAtLogin && openAtLogin.closest('#basicSettings')),
+        hideMissingBasic: !!(hideMissing && hideMissing.closest('#basicSettings')),
+        denseAdvanced: !!(denseLayout && denseLayout.closest('#advancedSettings')),
+        opacityAdvanced: !!(opacity && opacity.closest('#advancedSettings')),
         manualProfileAdvanced: !!(manualProfile && manualProfile.closest('#advancedSettings')),
         apiKeyAdvanced: !!(apiKey && apiKey.closest('#advancedSettings')),
         codexStatus: document.querySelector('[data-connection-status="codex"]')?.textContent || '',
       };
     })()`);
     assert.strictEqual(connectionUi.hub, true, "minimal connection hub must exist");
+    assert.strictEqual(connectionUi.basic, true, "essential settings group must exist");
     assert.strictEqual(connectionUi.advanced, true, "advanced settings disclosure must exist");
     assert.strictEqual(connectionUi.advancedOpen, false, "advanced settings must start collapsed");
     assert.deepStrictEqual(connectionUi.cards, ["codex", "claude", "grok", "cursor", "copilot", "antigravity", "openrouter"]);
-    assert.strictEqual(connectionUi.displayOutsideAdvanced, true, "basic display controls should remain directly accessible");
+    assert.strictEqual(connectionUi.alwaysOnTopBasic, true, "always-on-top should stay immediately accessible");
+    assert.strictEqual(connectionUi.openAtLoginBasic, true, "startup toggle should stay immediately accessible");
+    assert.strictEqual(connectionUi.hideMissingBasic, true, "hide-missing toggle should stay immediately accessible");
+    assert.strictEqual(connectionUi.denseAdvanced, true, "dense layout should be hidden under advanced settings");
+    assert.strictEqual(connectionUi.opacityAdvanced, true, "opacity should be hidden under advanced settings");
     assert.strictEqual(connectionUi.manualProfileAdvanced, true, "raw account profile editor must move under advanced settings");
     assert.strictEqual(connectionUi.apiKeyAdvanced, true, "manual OpenRouter API key must move under advanced settings");
     assert.ok(connectionUi.codexStatus.includes("연결됨"), "connection hub should render latest provider state");
