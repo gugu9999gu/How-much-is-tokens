@@ -18,7 +18,7 @@ doNotStore:
 Updated: 2026-09-07
 
 ## Now
-- v1.0.25 미니멀 계정 연결 허브 구현 완료, Grok Bot/collision-avoidance 최종 Windows 사전 검증 준비 중. <!-- leerness:auto -->
+- v1.0.25 미니멀 계정 연결 허브 구현 및 feature-head Windows 사전 검증 완료; 정식 PR 준비 중. <!-- leerness:auto -->
 - 개발 저장소 `gugu9999gu/How-much-is-tokens`는 Private, `gugu9999gu/How-much-is-tokens-releases`는 Public 바이너리 배포 전용으로 운영 중.
 - Leerness v1.36.184를 고정 설치하고 Windows CI에서 `leerness gate`를 필수 검증으로 실행함.
 - 기본 설정 UX는 8개 공급자 카드(Codex/Claude/Grok/Cursor/Grok Bot/Copilot/Antigravity/OpenRouter)의 `연결 상태 + 로그인/다시 로그인 + 가능한 경우 계정 추가`와 `항상 위에/시작 시 실행/빈 계정 숨기기` 3개 기본 옵션만 바로 표시함.
@@ -29,13 +29,13 @@ Updated: 2026-09-07
 - Copilot provider는 기존 파일 기반 GitHub 자격증명 외에 `gh auth token`을 credential-manager fallback으로 읽어 `gh auth login` 결과를 수동 PAT 붙여넣기 없이 재사용함.
 - OpenRouter는 공식 localhost OAuth PKCE를 사용하며 callback은 `127.0.0.1` 임의 포트에만 bind함. authorization code exchange와 발급 API Key는 main process에서 처리하고 기존 profile safeStorage 저장 함수로 즉시 암호화함; preload/page에는 raw Key를 반환하지 않음.
 - OpenRouter v1.0.24 localhost request router의 loopback/fail-closed/no-replay 보안 경계는 변경하지 않음.
-- Windows 사전 검증 run `34076732991`과 기본 옵션 축소 후 run `34076905507`에서 syntax, complete `npm test`, Leerness gate, DPAPI secure-storage, renderer minimal-layout smoke가 모두 성공함.
-- package/package-lock은 npm workflow run `34077244587`로 v1.0.25에 동기화했고 일회성 sync workflow는 제거함.
+- Windows validation run `34076732991`, 기본 옵션 축소 후 `34076905507`, Grok Bot/collision-avoidance까지 포함한 최종 run `34077476812`에서 syntax, complete `npm test`, Leerness gate, DPAPI secure-storage, Electron minimal-layout smoke가 모두 성공함.
+- package/package-lock은 npm workflow run `34077244587`로 v1.0.25에 동기화했고 모든 일회성 validation/sync workflow는 feature branch에서 제거함.
 
 ## Next
-- Grok Bot shared-auth 카드와 관리형 profile filesystem collision avoidance까지 포함한 feature head에서 최종 Windows 사전 검증 실행. <!-- leerness:auto -->
-- 성공하면 일회성 검증 workflow를 제거하고 정식 PR Windows CI/portable build 통과 후 squash merge.
-- main post-merge CI 성공 뒤 `docs/public-release-notes/v1.0.25.md`를 사용해 Public v1.0.25 Release 게시.
+- 정식 PR을 열어 Windows full CI에서 complete regression, Leerness gate, DPAPI, renderer, Antigravity smoke, portable EXE build를 검증. <!-- leerness:auto -->
+- 성공한 PR head만 main에 squash merge하고 post-merge CI를 확인.
+- `docs/public-release-notes/v1.0.25.md`를 사용해 Public v1.0.25 Release 게시.
 
 ## Blockers
 - (없음) <!-- leerness:auto -->
