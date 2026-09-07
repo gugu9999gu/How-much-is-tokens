@@ -224,9 +224,30 @@ function renderConnectionStates() {
   });
 }
 
+function moveEssentialSettings(displayGroup, settings, hub) {
+  const basic = document.createElement("div");
+  basic.id = "basicSettings";
+  basic.className = "set-group basic-settings-group";
+  const heading = document.createElement("div");
+  heading.className = "basic-settings-heading";
+  heading.innerHTML = "<h2>기본</h2><p>자주 쓰는 옵션만 표시합니다.</p>";
+  basic.appendChild(heading);
+
+  for (const id of ["alwaysOnTop", "openAtLogin", "hideMissing"]) {
+    const input = document.getElementById(id);
+    const row = input && input.closest("label.toggle");
+    if (row) basic.appendChild(row);
+  }
+  settings.insertBefore(basic, displayGroup || hub.nextSibling);
+  return basic;
+}
+
 function installConnectionHub() {
   const settings = document.getElementById("settings");
   if (!settings || document.getElementById("connectionHub")) return;
+
+  const firstGroup = [...settings.children].find((element) => element.classList && element.classList.contains("set-group"));
+  const displayGroup = firstGroup;
 
   const hub = document.createElement("div");
   hub.id = "connectionHub";
@@ -253,21 +274,20 @@ function installConnectionHub() {
   message.className = "connection-hub-message";
   message.setAttribute("aria-live", "polite");
   hub.append(heading, grid, message);
+  settings.insertBefore(hub, displayGroup || settings.firstChild);
 
-  const firstGroup = [...settings.children].find((element) => element.classList && element.classList.contains("set-group"));
-  settings.insertBefore(hub, firstGroup || settings.firstChild);
+  const basic = moveEssentialSettings(displayGroup, settings, hub);
 
-  const displayGroup = firstGroup;
   const advanced = document.createElement("details");
   advanced.id = "advancedSettings";
   advanced.className = "advanced-settings";
   const summary = document.createElement("summary");
-  summary.innerHTML = "<span><b>고급 설정</b><small>다계정 경로 · Smart Routing · API Key 직접 입력 · 세부 표시</small></span><i>›</i>";
+  summary.innerHTML = "<span><b>고급 설정</b><small>표시 세부값 · 다계정 경로 · Smart Routing · API Key 직접 입력</small></span><i>›</i>";
   const content = document.createElement("div");
   content.className = "advanced-settings-content";
 
   const groups = [...settings.children].filter((element) =>
-    element.classList && element.classList.contains("set-group") && element !== hub && element !== displayGroup,
+    element.classList && element.classList.contains("set-group") && element !== hub && element !== basic,
   );
   groups.forEach((group) => content.appendChild(group));
   advanced.append(summary, content);
