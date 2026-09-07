@@ -282,6 +282,13 @@ function installConnectionHub() {
 }
 
 installConnectionHub();
+const initialConnectionPayload = typeof window.tokenWidget.getLastUsage === "function"
+  ? window.tokenWidget.getLastUsage()
+  : null;
+if (initialConnectionPayload) {
+  latestConnectionPayload = initialConnectionPayload;
+  renderConnectionStates();
+}
 window.tokenWidget.onUsage((payload) => {
   latestConnectionPayload = payload;
   renderConnectionStates();
