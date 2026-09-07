@@ -1,0 +1,59 @@
+name: Validate v1.0.25 Minimal Connection Hub Once
+
+on:
+  push:
+    branches:
+      - feat/v1.0.25-minimal-connection-hub
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 18
+    env:
+      LEERNESS_NO_PROMPT: "1"
+      LEERNESS_NO_AUTOCHCP: "1"
+      LEERNESS_NO_DRIFT_CHECK: "1"
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/v1.0.25-minimal-connection-hub
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check new connection modules
+        shell: pwsh
+        run: |
+          node --check preload.js
+          node --check lib/credential-login.js
+          node --check lib/openrouter-oauth.js
+          node --check lib/openrouter-main-integration.js
+          node --check lib/providers/copilot.js
+          node --check renderer/connection-settings.js
+          node --check test/credential-login.test.js
+          node --check test/openrouter-oauth.test.js
+          node --check test/connection-settings.test.js
+          node --check test/renderer-layout-smoke.js
+          node --check test/renderer-layout-preload.js
+
+      - name: Run complete regression suite
+        run: npm test
+
+      - name: Run Leerness gate
+        run: npm run leerness:gate
+
+      - name: Smoke test Windows secure secret storage
+        run: npm run test:secure-secrets
+
+      - name: Smoke test minimal renderer settings layout
+        run: npm run test:renderer-layout
