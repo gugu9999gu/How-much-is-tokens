@@ -136,11 +136,3 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   quit: () => ipcRenderer.invoke("quit"),
   resize: (height) => ipcRenderer.invoke("resize", height),
 });
-
-window.addEventListener("DOMContentLoaded", () => {
-  if (document.querySelector('script[data-connection-settings="true"]')) return;
-  const script = document.createElement("script");
-  script.src = "connection-settings.js";
-  script.dataset.connectionSettings = "true";
-  document.body.appendChild(script);
-});
