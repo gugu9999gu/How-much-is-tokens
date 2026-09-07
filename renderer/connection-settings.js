@@ -7,10 +7,10 @@ const CONNECTION_PROVIDERS = [
   { id: "codex", label: "Codex", detail: "ChatGPT 계정", multi: true },
   { id: "claude", label: "Claude", detail: "Claude.ai / Console", multi: true },
   { id: "grok", label: "Grok", detail: "xAI 계정", multi: true },
-  { id: "cursor", label: "Cursor", detail: "Cursor 계정", multi: false },
+  { id: "cursor", label: "Cursor", detail: "Cursor 계정", multi: true },
   { id: "grokbot", label: "Grok Bot", detail: "Cursor 계정 공유", authProvider: "cursor", multi: false },
-  { id: "copilot", label: "Copilot", detail: "GitHub OAuth", multi: false },
-  { id: "antigravity", label: "Antigravity", detail: "Google 계정", multi: false },
+  { id: "copilot", label: "Copilot", detail: "GitHub OAuth", multi: true },
+  { id: "antigravity", label: "Antigravity", detail: "Google 계정", multi: true },
   { id: "openrouter", label: "OpenRouter", detail: "OAuth PKCE", multi: true },
 ];
 

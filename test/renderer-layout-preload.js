@@ -39,6 +39,15 @@ let lastPayload = {
   settings: { ...settings },
 };
 const listeners = new Set();
+const oauthAccounts = {
+  codex: [
+    { providerId: "codex", slotId: "fixture-codex-1", label: "d***r@example.com", active: true, needsReauth: false, expiresAt: Date.now() + 3600000, hasRefresh: true },
+    { providerId: "codex", slotId: "fixture-codex-2", label: "w***k@example.com", active: false, needsReauth: false, expiresAt: Date.now() + 7200000, hasRefresh: true },
+  ],
+  cursor: [
+    { providerId: "cursor", slotId: "fixture-cursor-1", label: "c***r@example.com", active: true, needsReauth: false, expiresAt: Date.now() + 3600000, hasRefresh: true },
+  ],
+};
 
 function emit() {
   lastPayload = { ...lastPayload, fetchedAt: Date.now(), settings: { ...settings } };
@@ -84,6 +93,18 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   },
   connectCredential: async (providerId) => ({ ok: false, providerId, reason: "cli-not-found", commands: [providerId] }),
   addCredentialAccount: async (providerId) => ({ ok: false, providerId, reason: "profiles-not-supported" }),
+  listProviderAccounts: async (providerId) => (oauthAccounts[providerId] || []).map((row) => ({ ...row })),
+  useProviderAccount: async (providerId, slotId) => {
+    const rows = oauthAccounts[providerId] || [];
+    rows.forEach((row) => { row.active = row.slotId === slotId; });
+    return rows.map((row) => ({ ...row }));
+  },
+  reauthProviderAccount: async (providerId, slotId) => ({ ok: true, providerId, slotId, accounts: (oauthAccounts[providerId] || []).map((row) => ({ ...row })) }),
+  removeProviderAccount: async (providerId, slotId) => {
+    oauthAccounts[providerId] = (oauthAccounts[providerId] || []).filter((row) => row.slotId !== slotId);
+    if (oauthAccounts[providerId].length && !oauthAccounts[providerId].some((row) => row.active)) oauthAccounts[providerId][0].active = true;
+    return oauthAccounts[providerId].map((row) => ({ ...row }));
+  },
   routeLaunch: async (providerId) => ({ ok: false, providerId, reason: "disabled" }),
   installSmartRoutingLaunchers: async () => ({ ok: false, reason: "unsupported-platform" }),
   onUsage: (callback) => {

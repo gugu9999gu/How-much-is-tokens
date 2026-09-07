@@ -55,7 +55,7 @@ app.whenReady().then(async () => {
 
   try {
     await win.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
-    await wait(120);
+    await wait(180);
 
     const connectionUi = await win.webContents.executeJavaScript(`(() => {
       const hub = document.getElementById('connectionHub');
@@ -83,6 +83,9 @@ app.whenReady().then(async () => {
         manualProfileAdvanced: !!(manualProfile && manualProfile.closest('#advancedSettings')),
         apiKeyAdvanced: !!(apiKey && apiKey.closest('#advancedSettings')),
         codexStatus: document.querySelector('[data-connection-status="codex"]')?.textContent || '',
+        codexAccountSummary: document.querySelector('[data-oauth-accounts="codex"] summary')?.textContent || '',
+        cursorAccountSummary: document.querySelector('[data-oauth-accounts="cursor"] summary')?.textContent || '',
+        rawCredentialControls: document.querySelectorAll('[data-oauth-token], [data-access-token], [data-refresh-token]').length,
       };
     })()`);
     assert.strictEqual(connectionUi.hub, true, "minimal connection hub must exist");
@@ -98,6 +101,10 @@ app.whenReady().then(async () => {
     assert.strictEqual(connectionUi.manualProfileAdvanced, true, "raw account profile editor must move under advanced settings");
     assert.strictEqual(connectionUi.apiKeyAdvanced, true, "manual OpenRouter API key must move under advanced settings");
     assert.ok(connectionUi.codexStatus.includes("연결됨"), "connection hub should render latest provider state");
+    assert.ok(connectionUi.codexAccountSummary.includes("계정 2개"), "managed OAuth account count should render without raw tokens");
+    assert.ok(connectionUi.codexAccountSummary.includes("@example.com"), "masked OAuth identity should be visible");
+    assert.ok(connectionUi.cursorAccountSummary.includes("@example.com"), "Cursor managed OAuth identity should render");
+    assert.strictEqual(connectionUi.rawCredentialControls, 0, "renderer must not expose OAuth token controls");
 
     await win.webContents.executeJavaScript(`(() => {
       document.getElementById('settingsBtn').click();
