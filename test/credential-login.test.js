@@ -1,4 +1,5 @@
 const assert = require("assert");
+const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const {
@@ -34,34 +35,46 @@ assert.ok(commandLine.includes('call "C:\\Tools\\claude.exe" auth login'));
 assert.strictEqual(interactiveLoginCommand("bad\npath", ["login"], "cmd.exe"), null);
 assert.strictEqual(interactiveLoginCommand("tool.exe", ["bad arg"], "cmd.exe"), null);
 
-const root = path.join(os.tmpdir(), "how-tokens-managed-profiles-test");
-const proposal = nextManagedProfile({
-  accountProfiles: [{ providerId: "codex", label: "Codex 2", configDir: path.join(root, "codex", "account-2") }],
-}, "codex", { rootDir: root });
-assert.strictEqual(proposal.label, "Codex 3");
-assert.strictEqual(proposal.configDir, path.join(root, "codex", "account-3"));
-assert.strictEqual(nextManagedProfile({}, "cursor", { rootDir: root }), null);
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-managed-profiles-"));
+try {
+  const existingAccount2 = path.join(root, "codex", "account-2");
+  const proposal = nextManagedProfile({
+    accountProfiles: [{ providerId: "codex", label: "Codex 2", configDir: existingAccount2 }],
+  }, "codex", { rootDir: root });
+  assert.strictEqual(proposal.label, "Codex 3");
+  assert.strictEqual(proposal.configDir, path.join(root, "codex", "account-3"));
 
-let spawnCall = null;
-const profile = {
-  id: "profile-test",
-  providerId: "codex",
-  label: "Codex 2",
-  configDir: path.join(root, "codex", "account-2"),
-};
-const launched = launchCredentialLogin("codex", profile, {
-  platform: "win32",
-  executable: "C:\\Tools\\codex.exe",
-  comspec: "C:\\Windows\\System32\\cmd.exe",
-  spawnImpl(command, args, options) {
-    spawnCall = { command, args, options };
-    return { unref() {} };
-  },
-});
-assert.strictEqual(launched.ok, true);
-assert.strictEqual(launched.profileId, "profile-test");
-assert.strictEqual(spawnCall.options.env.CODEX_HOME, profile.configDir, "isolated login must set CODEX_HOME instead of moving auth files");
-assert.ok(spawnCall.args.join(" ").includes("login"));
+  fs.mkdirSync(path.join(root, "codex", "account-3"), { recursive: true });
+  const collisionSafe = nextManagedProfile({
+    accountProfiles: [{ providerId: "codex", label: "Codex 2", configDir: existingAccount2 }],
+  }, "codex", { rootDir: root });
+  assert.strictEqual(collisionSafe.label, "Codex 4");
+  assert.strictEqual(collisionSafe.configDir, path.join(root, "codex", "account-4"));
+  assert.strictEqual(nextManagedProfile({}, "cursor", { rootDir: root }), null);
+
+  let spawnCall = null;
+  const profile = {
+    id: "profile-test",
+    providerId: "codex",
+    label: "Codex 2",
+    configDir: existingAccount2,
+  };
+  const launched = launchCredentialLogin("codex", profile, {
+    platform: "win32",
+    executable: "C:\\Tools\\codex.exe",
+    comspec: "C:\\Windows\\System32\\cmd.exe",
+    spawnImpl(command, args, options) {
+      spawnCall = { command, args, options };
+      return { unref() {} };
+    },
+  });
+  assert.strictEqual(launched.ok, true);
+  assert.strictEqual(launched.profileId, "profile-test");
+  assert.strictEqual(spawnCall.options.env.CODEX_HOME, profile.configDir, "isolated login must set CODEX_HOME instead of moving auth files");
+  assert.ok(spawnCall.args.join(" ").includes("login"));
+} finally {
+  fs.rmSync(root, { recursive: true, force: true });
+}
 
 const missing = launchCredentialLogin("claude", null, {
   platform: "win32",
