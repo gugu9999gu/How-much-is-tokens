@@ -20,12 +20,12 @@ assert.ok(css.includes(".connection-card"));
 assert.ok(css.includes(".advanced-settings"));
 
 for (const provider of ["codex", "claude", "grok", "cursor", "copilot", "antigravity", "openrouter"]) {
-  assert.ok(ui.includes(`id: \"${provider}\"`), `connection hub missing ${provider}`);
+  assert.ok(ui.includes(`id: "${provider}"`), `connection hub missing ${provider}`);
 }
 
 for (const provider of ["codex", "claude", "grok", "openrouter"]) {
-  const pattern = new RegExp(`id: \\"${provider}\\"[^\\n]+multi: true`);
-  assert.ok(pattern.test(ui), `${provider} should expose simple add-account UI`);
+  const line = ui.split(/\r?\n/).find((row) => row.includes(`id: "${provider}"`));
+  assert.ok(line && line.includes("multi: true"), `${provider} should expose simple add-account UI`);
 }
 
 assert.ok(preload.includes("connectCredential"));
