@@ -52,4 +52,5 @@ Verification command/result history. Append-only.
 - Windows validation run `34076732991`: syntax checks, complete regression suite, Leerness gate, Windows secure-storage smoke, and Electron minimal-settings renderer smoke all succeeded.
 - Windows validation run `34076905507`, after reducing the basic settings surface further, repeated the same complete validation successfully.
 - Package/package-lock version sync run `34077244587` used npm's own version command and succeeded; both files now report `1.0.25`.
-- After those runs, Grok Bot shared-auth presentation and filesystem collision avoidance for managed account directories were added and require one final feature-head validation before PR.
+- Final Windows feature-head validation run `34077476812`, including Grok Bot shared-auth presentation and filesystem collision avoidance for managed login profiles, passed syntax checks, the complete regression suite, Leerness gate, Windows secure-storage smoke, and Electron minimal-settings renderer smoke.
+- All one-time validation/version-sync workflows were deleted from the feature branch before opening the formal PR.
