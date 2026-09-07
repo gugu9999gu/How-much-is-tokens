@@ -1,0 +1,46 @@
+name: Apply v1.0.25 OAuth Manager Integration Once
+
+on:
+  push:
+    branches:
+      - fix/v1.0.25-opencodex-auth-manager
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout correction branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/v1.0.25-opencodex-auth-manager
+          fetch-depth: 0
+
+      - name: Apply integration patch
+        run: node scripts/patch-v1.0.25-auth-manager-once.js
+
+      - name: Validate syntax
+        run: |
+          node --check main.js
+          node --check preload.js
+          node --check lib/usage.js
+          node --check lib/providers/codex.js
+          node --check lib/providers/claude.js
+          node --check lib/providers/grok.js
+          node --check lib/providers/cursor-auth.js
+          node --check lib/providers/cursor.js
+          node --check lib/providers/grokbot.js
+          node --check lib/providers/copilot.js
+          node --check lib/providers/antigravity.js
+
+      - name: Commit patched product files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add main.js preload.js lib/usage.js lib/providers
+          git commit -m "feat: wire internal OAuth accounts into usage providers"
+          git push origin HEAD:fix/v1.0.25-opencodex-auth-manager
