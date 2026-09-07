@@ -52,6 +52,7 @@ jobs:
           node --check lib/account-profiles.js
           node --check lib/account-router.js
           node --check lib/routed-launcher.js
+          node --check lib/credential-login.js
           node --check lib/credit-balances.js
           node --check lib/codex-app-server.js
           node --check lib/codex-rate-limits.js
@@ -61,6 +62,7 @@ jobs:
           node --check lib/secure-secrets.js
           node --check lib/openrouter-profiles.js
           node --check lib/openrouter-request-router.js
+          node --check lib/openrouter-oauth.js
           node --check lib/openrouter-main-integration.js
           node --check lib/window-behavior.js
           node --check lib/edge-dock.js
@@ -77,6 +79,7 @@ jobs:
           node --check lib/providers/openrouter.js
           node --check renderer/app.js
           node --check renderer/openrouter-settings.js
+          node --check renderer/connection-settings.js
           node --check test/claude-usage.test.js
           node --check test/cursor-credits.test.js
           node --check test/copilot-credits.test.js
@@ -85,8 +88,11 @@ jobs:
           node --check test/multi-account.test.js
           node --check test/account-router.test.js
           node --check test/routed-launcher.test.js
+          node --check test/credential-login.test.js
+          node --check test/connection-settings.test.js
           node --check test/openrouter-profiles.test.js
           node --check test/openrouter-request-router.test.js
+          node --check test/openrouter-oauth.test.js
           node --check test/openrouter-security.test.js
           node --check test/repository-split-leerness.test.js
           node --check test/renderer-layout-smoke.js
