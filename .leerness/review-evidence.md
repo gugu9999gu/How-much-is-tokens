@@ -42,3 +42,15 @@ Verification command/result history. Append-only.
 - Public latest Release is `v1.0.24` in `gugu9999gu/How-much-is-tokens-releases` and contains exactly the intended release assets: `How-much-is-tokens-1.0.24-portable.exe` and `SHA256SUMS.txt` plus public release notes metadata.
 - Published EXE SHA-256: `d0397fc8e158559f333d0c5b4b2329646a36825021c656c831104d8794a10211`.
 - The one-time workflow used only to dispatch v1.0.24 was removed from main after successful dispatch; the persistent `publish-public-release.yml` remains the release path.
+
+## 2026-09-07 — v1.0.25 minimal account connection hub pre-PR verification
+- The settings UI was reduced to provider connection cards plus three common toggles; legacy display/routing/manual-credential controls remain available in a collapsed advanced disclosure rather than being removed.
+- Provider login launchers use fixed command/argument mappings and provider-specific config-root environment variables. Codex/Claude/Grok additional accounts allocate app-managed isolated directories; no auth file copy/swap operations are present.
+- Grok Bot is explicitly represented as a separate usage card while reusing Cursor authentication, matching the existing `grokbot` provider implementation.
+- OpenRouter OAuth uses a random IPv4 loopback callback path, S256 PKCE, main-process code exchange, and existing safeStorage profile persistence. The raw OAuth-issued key is not exposed through preload/page APIs.
+- Copilot now reuses `gh auth token` as a credential-manager fallback after existing auth-file checks, so `gh auth login` can be used without requiring a PAT paste into app settings.
+- Windows validation run `34076732991`: syntax checks, complete regression suite, Leerness gate, Windows secure-storage smoke, and Electron minimal-settings renderer smoke all succeeded.
+- Windows validation run `34076905507`, after reducing the basic settings surface further, repeated the same complete validation successfully.
+- Package/package-lock version sync run `34077244587` used npm's own version command and succeeded; both files now report `1.0.25`.
+- Final Windows feature-head validation run `34077476812`, including Grok Bot shared-auth presentation and filesystem collision avoidance for managed login profiles, passed syntax checks, the complete regression suite, Leerness gate, Windows secure-storage smoke, and Electron minimal-settings renderer smoke.
+- All one-time validation/version-sync workflows were deleted from the feature branch before opening the formal PR.
