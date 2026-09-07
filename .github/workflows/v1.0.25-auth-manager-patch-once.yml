@@ -20,6 +20,9 @@ jobs:
           ref: fix/v1.0.25-opencodex-auth-manager
           fetch-depth: 0
 
+      - name: Adapt patch to current Copilot fallback
+        run: node scripts/prepare-auth-patch-once.js
+
       - name: Apply integration patch
         run: node scripts/patch-v1.0.25-auth-manager-once.js
 
