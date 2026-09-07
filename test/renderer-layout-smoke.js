@@ -89,7 +89,7 @@ app.whenReady().then(async () => {
     assert.strictEqual(connectionUi.basic, true, "essential settings group must exist");
     assert.strictEqual(connectionUi.advanced, true, "advanced settings disclosure must exist");
     assert.strictEqual(connectionUi.advancedOpen, false, "advanced settings must start collapsed");
-    assert.deepStrictEqual(connectionUi.cards, ["codex", "claude", "grok", "cursor", "copilot", "antigravity", "openrouter"]);
+    assert.deepStrictEqual(connectionUi.cards, ["codex", "claude", "grok", "cursor", "grokbot", "copilot", "antigravity", "openrouter"]);
     assert.strictEqual(connectionUi.alwaysOnTopBasic, true, "always-on-top should stay immediately accessible");
     assert.strictEqual(connectionUi.openAtLoginBasic, true, "startup toggle should stay immediately accessible");
     assert.strictEqual(connectionUi.hideMissingBasic, true, "hide-missing toggle should stay immediately accessible");
