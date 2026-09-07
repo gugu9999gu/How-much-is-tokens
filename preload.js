@@ -1,8 +1,23 @@
 const path = require("path");
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, shell } = require("electron");
 const { appData } = require("./lib/paths");
 const { selectRoute, profileForSelection } = require("./lib/account-router");
+const { normalizeAccountProfiles } = require("./lib/account-profiles");
+const { normalizeOpenRouterProfiles } = require("./lib/openrouter-profiles");
 const { launchRoutedCli, installRouterLaunchers } = require("./lib/routed-launcher");
+const {
+  PROFILE_LOGIN_PROVIDERS,
+  launchCredentialLogin,
+  nextManagedProfile,
+  ensureProfileDirectory,
+  findProfile,
+} = require("./lib/credential-login");
+const {
+  createPkceMaterial,
+  buildAuthorizationUrl,
+  createLoopbackCallback,
+  exchangeAuthorizationCode,
+} = require("./lib/openrouter-oauth");
 
 let lastUsagePayload = null;
 const usageListeners = new Set();
@@ -65,6 +80,101 @@ function installSmartRoutingLaunchers() {
   });
 }
 
+function formatAccountProfilesForUi(profiles) {
+  return normalizeAccountProfiles(profiles)
+    .filter((profile) => profile.enabled !== false)
+    .map((profile) => `${profile.providerId}|${profile.label}|${profile.configDir}`)
+    .join("\n");
+}
+
+async function connectOpenRouter(options = {}) {
+  let settings = await ipcRenderer.invoke("get-settings");
+  let profiles = normalizeOpenRouterProfiles(settings.openRouterProfiles);
+  const createNew = options && options.createNew === true;
+  let profile = null;
+
+  if (createNew || profiles.length === 0) {
+    const ordinal = profiles.length + 1;
+    let id = profiles.length === 0 ? "default" : `account-${ordinal}`;
+    let suffix = ordinal;
+    while (profiles.some((item) => item.id === id)) {
+      suffix += 1;
+      id = `account-${suffix}`;
+    }
+    profile = {
+      id,
+      label: `OpenRouter ${ordinal}`,
+      priority: ordinal * 10,
+      enabled: true,
+    };
+    settings = await ipcRenderer.invoke("save-settings", {
+      openRouterProfiles: [...profiles, profile],
+      openRouterEnabled: true,
+    });
+    profiles = normalizeOpenRouterProfiles(settings.openRouterProfiles);
+    profile = profiles.find((item) => item.id === id) || profile;
+  } else {
+    const requested = String((options && options.profileId) || "");
+    profile = profiles.find((item) => item.id === requested) || profiles[0];
+  }
+
+  const { verifier, challenge } = createPkceMaterial();
+  const callback = await createLoopbackCallback();
+  try {
+    const authorizationUrl = buildAuthorizationUrl(callback.callbackUrl, challenge);
+    await shell.openExternal(authorizationUrl);
+    const code = await callback.codePromise;
+    const apiKey = await exchangeAuthorizationCode(code, verifier);
+    await ipcRenderer.invoke("save-openrouter-profile-secrets", profile.id, { apiKey });
+    await ipcRenderer.invoke("save-settings", { openRouterEnabled: true });
+    await ipcRenderer.invoke("configure-openrouter-router");
+    return {
+      ok: true,
+      providerId: "openrouter",
+      profileId: profile.id,
+      accountLabel: profile.label,
+      loginKind: "OpenRouter OAuth PKCE",
+      needsRefresh: false,
+    };
+  } finally {
+    callback.close();
+  }
+}
+
+async function connectCredential(providerId, options = {}) {
+  const id = String(providerId || "").toLowerCase();
+  if (id === "openrouter") return connectOpenRouter(options);
+  const settings = await ipcRenderer.invoke("get-settings");
+  const profileId = String((options && options.profileId) || "");
+  const profile = profileId ? findProfile(settings, id, profileId) : null;
+  return launchCredentialLogin(id, profile);
+}
+
+async function addCredentialAccount(providerId) {
+  const id = String(providerId || "").toLowerCase();
+  if (id === "openrouter") return connectOpenRouter({ createNew: true });
+  if (!PROFILE_LOGIN_PROVIDERS.has(id)) {
+    return { ok: false, providerId: id, reason: "profiles-not-supported" };
+  }
+
+  const settings = await ipcRenderer.invoke("get-settings");
+  const proposal = nextManagedProfile(settings, id);
+  if (!proposal) return { ok: false, providerId: id, reason: "profiles-not-supported" };
+  ensureProfileDirectory(proposal);
+
+  const merged = [...normalizeAccountProfiles(settings.accountProfiles), proposal];
+  const saved = await ipcRenderer.invoke("save-settings", { accountProfiles: merged });
+  const profile = normalizeAccountProfiles(saved.accountProfiles)
+    .find((item) => item.providerId === id && item.configDir === proposal.configDir);
+  if (!profile) return { ok: false, providerId: id, reason: "profile-save-failed" };
+
+  const result = launchCredentialLogin(id, profile);
+  return {
+    ...result,
+    accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles),
+  };
+}
+
 contextBridge.exposeInMainWorld("tokenWidget", {
   onUsage: (cb) => {
     usageListeners.add(cb);
@@ -78,6 +188,8 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   saveOpenRouterProfileSecrets: (profileId, patch) => ipcRenderer.invoke("save-openrouter-profile-secrets", profileId, patch),
   clearOpenRouterProfileSecrets: (profileId) => ipcRenderer.invoke("clear-openrouter-profile-secrets", profileId),
   copyOpenRouterRouterToken: () => ipcRenderer.invoke("copy-openrouter-router-token"),
+  connectCredential,
+  addCredentialAccount,
   routeLaunch,
   installSmartRoutingLaunchers,
   hide: () => ipcRenderer.invoke("hide"),
