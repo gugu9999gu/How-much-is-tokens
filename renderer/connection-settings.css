@@ -1,0 +1,192 @@
+.connections-group {
+  display: grid;
+  gap: 12px;
+}
+
+.connections-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.connections-heading h2 {
+  margin-bottom: 3px;
+}
+
+.connections-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.connection-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.connection-card {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) auto;
+  grid-template-areas:
+    "copy status"
+    "copy actions";
+  align-items: center;
+  gap: 5px 10px;
+  padding: 10px 11px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 11px;
+  background: rgba(255,255,255,.025);
+}
+
+.connection-copy {
+  grid-area: copy;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.connection-copy b {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.connection-copy small {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.connection-status {
+  grid-area: status;
+  justify-self: end;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  color: var(--muted);
+}
+
+.connection-status.connected {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+.connection-status.attention {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+
+.connection-actions {
+  grid-area: actions;
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.compact-btn {
+  min-height: 27px !important;
+  padding: 5px 9px !important;
+  font-size: 10px !important;
+  border-radius: 8px !important;
+  width: auto !important;
+}
+
+.btn.subtle {
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--text);
+}
+
+.connection-hub-message {
+  min-height: 15px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.connection-hub-message.warning {
+  color: var(--warn);
+}
+
+.advanced-settings {
+  margin-top: 10px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,.018);
+}
+
+.advanced-settings > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 13px;
+  user-select: none;
+}
+
+.advanced-settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-settings > summary span {
+  display: grid;
+  gap: 2px;
+}
+
+.advanced-settings > summary b {
+  font-size: 11px;
+}
+
+.advanced-settings > summary small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.advanced-settings > summary i {
+  font-style: normal;
+  color: var(--muted);
+  transition: transform .16s ease;
+}
+
+.advanced-settings[open] > summary i {
+  transform: rotate(90deg);
+}
+
+.advanced-settings-content {
+  display: grid;
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+
+.advanced-settings-content > .set-group {
+  margin: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,.02);
+}
+
+.settings > .settings-actions {
+  margin-top: 11px;
+}
+
+@media (max-width: 390px) {
+  .connection-card {
+    grid-template-columns: 1fr auto;
+  }
+
+  .connection-actions {
+    flex-wrap: wrap;
+  }
+
+  .connections-heading {
+    align-items: center;
+  }
+}
