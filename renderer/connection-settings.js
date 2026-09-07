@@ -8,6 +8,7 @@ const CONNECTION_PROVIDERS = [
   { id: "claude", label: "Claude", detail: "Claude.ai / Console", multi: true },
   { id: "grok", label: "Grok", detail: "xAI 계정", multi: true },
   { id: "cursor", label: "Cursor", detail: "Cursor 계정", multi: false },
+  { id: "grokbot", label: "Grok Bot", detail: "Cursor 계정 공유", authProvider: "cursor", multi: false },
   { id: "copilot", label: "Copilot", detail: "GitHub OAuth", multi: false },
   { id: "antigravity", label: "Antigravity", detail: "Google 계정", multi: false },
   { id: "openrouter", label: "OpenRouter", detail: "OAuth PKCE", multi: true },
@@ -125,7 +126,8 @@ async function runConnect(provider, button) {
   button.disabled = true;
   setConnectionMessage(`${provider.label} 로그인 흐름을 시작합니다...`);
   try {
-    const result = await window.tokenWidget.connectCredential(provider.id);
+    const authProvider = provider.authProvider || provider.id;
+    const result = await window.tokenWidget.connectCredential(authProvider);
     if (!result || !result.ok) {
       setConnectionMessage(failureCopy(result, provider), true);
       return;
