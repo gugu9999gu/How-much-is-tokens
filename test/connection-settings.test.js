@@ -19,9 +19,10 @@ assert.ok(ui.includes("API Key 직접 입력"), "manual credential fallback must
 assert.ok(css.includes(".connection-card"));
 assert.ok(css.includes(".advanced-settings"));
 
-for (const provider of ["codex", "claude", "grok", "cursor", "copilot", "antigravity", "openrouter"]) {
+for (const provider of ["codex", "claude", "grok", "cursor", "grokbot", "copilot", "antigravity", "openrouter"]) {
   assert.ok(ui.includes(`id: "${provider}"`), `connection hub missing ${provider}`);
 }
+assert.ok(ui.includes('id: "grokbot", label: "Grok Bot", detail: "Cursor 계정 공유", authProvider: "cursor"'), "Grok Bot must explain and reuse Cursor authentication");
 
 for (const provider of ["codex", "claude", "grok", "openrouter"]) {
   const line = ui.split(/\r?\n/).find((row) => row.includes(`id: "${provider}"`));
