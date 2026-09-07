@@ -1,0 +1,115 @@
+.oauth-account-host {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.oauth-account-host.empty {
+  display: none;
+}
+
+.oauth-account-list {
+  margin-top: 4px;
+  border-top: 1px solid rgba(255,255,255,.055);
+  padding-top: 5px;
+}
+
+.oauth-account-list > summary {
+  list-style: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.oauth-account-list > summary::-webkit-details-marker {
+  display: none;
+}
+
+.oauth-account-list > summary::before {
+  content: "›";
+  display: inline-block;
+  width: 10px;
+  transition: transform .14s ease;
+}
+
+.oauth-account-list[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.oauth-account-rows {
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.oauth-account-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 7px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.025);
+}
+
+.oauth-account-row.active {
+  background: rgba(255,255,255,.045);
+}
+
+.oauth-account-row.reauth {
+  outline: 1px solid color-mix(in srgb, var(--warn) 28%, transparent);
+}
+
+.oauth-account-copy {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.oauth-account-copy b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.oauth-account-copy small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.oauth-account-row.reauth .oauth-account-copy small {
+  color: var(--warn);
+}
+
+.oauth-account-actions {
+  display: flex;
+  gap: 3px;
+}
+
+.oauth-account-action {
+  min-width: 0;
+  min-height: 22px;
+  padding: 3px 6px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 6px;
+  background: rgba(255,255,255,.045);
+  color: var(--text);
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.oauth-account-action.primary {
+  background: rgba(255,255,255,.095);
+}
+
+.oauth-account-action.danger {
+  color: var(--bad);
+}
+
+.oauth-account-action:disabled {
+  opacity: .45;
+  cursor: default;
+}
