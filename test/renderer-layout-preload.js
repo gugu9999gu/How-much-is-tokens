@@ -31,6 +31,7 @@ let lastPayload = {
     { id: "claude", providerId: "claude", name: "Claude", status: "missing" },
     { id: "grok", providerId: "grok", name: "Grok", status: "missing" },
     { id: "cursor", providerId: "cursor", name: "Cursor", status: "missing" },
+    { id: "grokbot", providerId: "grokbot", name: "Grok Bot", status: "missing" },
     { id: "copilot", providerId: "copilot", name: "Copilot", status: "missing" },
     { id: "antigravity", providerId: "antigravity", name: "Antigravity", status: "missing" },
     { id: "openrouter", providerId: "openrouter", name: "OpenRouter", status: "missing" },
