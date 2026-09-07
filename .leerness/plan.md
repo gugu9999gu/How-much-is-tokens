@@ -73,7 +73,7 @@ Tasks:
 
 ### M-0003. v1.0.25 미니멀 계정 연결 허브
 Status: in-progress
-Progress: 88%
+Progress: 92%
 
 Tasks:
 - [x] 설정 상단에 Codex/Claude/Grok/Cursor/Grok Bot/Copilot/Antigravity/OpenRouter 연결 카드 추가
@@ -87,6 +87,6 @@ Tasks:
 - [x] unit/static/renderer smoke 테스트 범위 추가
 - [x] Windows 사전 검증 run `34076732991` 및 `34076905507`에서 전체 회귀/gate/DPAPI/renderer smoke 통과
 - [x] package/package-lock v1.0.25를 npm workflow run `34077244587`로 동기화
-- [ ] Grok Bot/collision-avoidance 포함 최종 Windows 사전 검증
+- [x] Grok Bot/collision-avoidance 포함 최종 Windows 사전 검증 run `34077476812` 통과
 - [ ] 정식 PR Windows CI 및 portable build 통과
 - [ ] main 병합 및 Public v1.0.25 Release 게시
