@@ -1,0 +1,41 @@
+name: Apply v1.0.25 Masked OAuth Account UI Once
+
+on:
+  push:
+    branches:
+      - fix/v1.0.25-opencodex-auth-manager
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout correction branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/v1.0.25-opencodex-auth-manager
+          fetch-depth: 0
+
+      - name: Apply masked account UI patch
+        run: node scripts/patch-v1.0.25-account-ui-once.js
+
+      - name: Validate syntax
+        run: |
+          node --check renderer/oauth-account-manager.js
+          node --check renderer/connection-settings.js
+          node --check lib/usage.js
+          node --check lib/account-router.js
+          node --check test/renderer-layout-preload.js
+          node --check test/renderer-layout-smoke.js
+
+      - name: Commit product/test changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add renderer/index.html renderer/connection-settings.js lib/usage.js lib/account-router.js test/renderer-layout-preload.js test/renderer-layout-smoke.js
+          git commit -m "feat: add masked OAuth account management controls"
+          git push origin HEAD:fix/v1.0.25-opencodex-auth-manager
