@@ -180,6 +180,7 @@ contextBridge.exposeInMainWorld("tokenWidget", {
     usageListeners.add(cb);
     return () => usageListeners.delete(cb);
   },
+  getLastUsage: () => lastUsagePayload,
   refresh: () => ipcRenderer.invoke("refresh"),
   getSettings: () => ipcRenderer.invoke("get-settings"),
   saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),
