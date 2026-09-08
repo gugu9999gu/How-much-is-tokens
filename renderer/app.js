@@ -441,6 +441,7 @@ function mergePayloadSettings(settings) {
 function setSettingsOpen(open) {
   settingsEl.classList.toggle("hidden", !open);
   settingsBtn.classList.toggle("active", open);
+  settingsBtn.setAttribute("aria-expanded", open ? "true" : "false");
   shellEl.classList.toggle("settings-open", open);
   requestResize();
 }

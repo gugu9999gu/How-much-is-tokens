@@ -179,7 +179,7 @@
 
 .advanced-settings-content {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   padding: 0 10px 10px;
 }
 
@@ -187,6 +187,94 @@
   margin: 0;
   border-radius: 10px;
   background: rgba(255,255,255,.02);
+}
+
+/* Advanced area is a scannable accordion: each subsection collapses on its own
+   so entering values / editing profiles is one focused click away. Uses a
+   button + body toggler (not nested <details>) to avoid a Chromium auto-height
+   bug when nesting <details> inside an open <details>. */
+.settings-section {
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 11px;
+  background: rgba(255,255,255,.02);
+  overflow: hidden;
+}
+
+.settings-section-summary {
+  width: 100%;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  text-align: left;
+  color: var(--text);
+}
+.settings-section-summary:hover { background: rgba(255,255,255,.035); }
+
+.settings-section-body { display: none; }
+.settings-section.is-open > .settings-section-body { display: block; }
+.settings-section.is-open > .settings-section-summary {
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.settings-section-icon {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255,255,255,.05);
+  color: var(--ok);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.settings-section-copy {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.settings-section-copy b { font-size: 12px; font-weight: 650; }
+.settings-section-copy small { color: var(--muted); font-size: 10px; }
+
+.settings-section-caret {
+  flex: 0 0 auto;
+  font-style: normal;
+  color: var(--muted);
+  font-size: 16px;
+  transition: transform .16s ease;
+}
+
+.settings-section.is-open > .settings-section-summary .settings-section-caret {
+  transform: rotate(90deg);
+}
+
+/* The nested group provides the body; its own uppercase heading is redundant
+   with the summary title, so hide it while keeping it for older tooling. */
+.settings-section-body > .set-group {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 8px 10px;
+}
+.set-group h2.section-embedded-title { display: none; }
+
+/* Consistent, visible keyboard focus across every settings control. */
+.settings :focus-visible,
+.connection-card :focus-visible,
+.settings-section-summary:focus-visible,
+.advanced-settings > summary:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 .settings > .settings-actions {

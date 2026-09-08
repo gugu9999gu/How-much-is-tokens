@@ -378,15 +378,16 @@ button:hover { background: rgba(255,255,255,0.12); }
 .shell.settings-open .list { display: none; }
 
 .settings {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: block;
   max-height: 520px;
   overflow: auto;
   padding-right: 2px;
   -webkit-app-region: no-drag;
   user-select: text;
 }
+/* Block layout (not flex): a <details> flex item does not size to its
+   disclosed content in Chromium, which collapsed the advanced panel. */
+.settings > * + * { margin-top: 8px; }
 .settings.hidden { display: none; }
 .settings::-webkit-scrollbar { width: 6px; }
 .settings::-webkit-scrollbar-thumb {
@@ -598,6 +599,36 @@ button:hover { background: rgba(255,255,255,0.12); }
   outline: 3px solid rgba(62, 224, 160, 0.12);
 }
 .field textarea::placeholder { color: rgba(154, 163, 181, 0.7); }
+
+.format-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: -2px 0 2px;
+}
+.format-legend i {
+  font-style: normal;
+  color: var(--muted);
+  opacity: 0.6;
+}
+.legend-token {
+  font: 10px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: var(--ok);
+  background: rgba(62, 224, 160, 0.1);
+  border: 1px solid rgba(62, 224, 160, 0.22);
+  border-radius: 6px;
+  padding: 3px 6px;
+}
+
+/* Accessible, consistent keyboard focus for every interactive control. */
+button:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
+}
 
 .settings-actions {
   display: flex;

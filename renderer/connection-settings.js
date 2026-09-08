@@ -17,6 +17,20 @@ const CONNECTION_PROVIDERS = [
 let latestConnectionPayload = null;
 let connectionMessageTimer = null;
 
+// Titles map to a friendly icon + one-line hint so the advanced area reads as a
+// scannable, keyboard-accessible accordion instead of one long scroll.
+const SECTION_META = {
+  "표시": { icon: "▦", hint: "밀도 · 토큰 높이 · 시각화 · 투명도" },
+  "화면 가장자리": { icon: "▤", hint: "엣지 숨김 패널 위치" },
+  "다계정 프로필": { icon: "≡", hint: "격리 로그인 프로필 목록" },
+  "자동화": { icon: "⚡", hint: "Codex 한도 자동 리셋" },
+  "동기화": { icon: "↻", hint: "새로고침 간격" },
+  "Smart Routing": { icon: "⇉", hint: "잔여량 기반 CLI 계정 자동 선택" },
+  "API 공급자": { icon: "⇄", hint: "OpenRouter 키 · localhost 라우터" },
+  "생성형 미디어 API": { icon: "✦", hint: "fal.ai · Higgsfield · Magnific …" },
+  "연결": { icon: "⚿", hint: "수동 토큰 · 쿠키 (대체 수단)" },
+};
+
 function providerIdForConnection(row) {
   if (!row) return "";
   if (row.providerId) return String(row.providerId).toLowerCase();
@@ -291,7 +305,59 @@ function installConnectionHub() {
   const groups = [...settings.children].filter((element) =>
     element.classList && element.classList.contains("set-group") && element !== hub && element !== basic,
   );
-  groups.forEach((group) => content.appendChild(group));
+  // Custom (non-<details>) accordion. Native <details> nested inside an open
+  // <details> hits a Chromium auto-height bug that collapses the parent, so we
+  // build an accessible button + body toggler instead.
+  groups.forEach((group, index) => {
+    const heading = group.querySelector("h2");
+    const title = heading ? heading.textContent.trim() : "설정";
+    const meta = SECTION_META[title] || { icon: "•", hint: "" };
+    if (heading) heading.classList.add("section-embedded-title");
+
+    const section = document.createElement("div");
+    section.className = "settings-section";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "settings-section-summary";
+    button.setAttribute("aria-expanded", "false");
+    const bodyId = `settingsSection-${index}`;
+    button.setAttribute("aria-controls", bodyId);
+
+    const icon = document.createElement("span");
+    icon.className = "settings-section-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = meta.icon;
+    const sectionCopy = document.createElement("span");
+    sectionCopy.className = "settings-section-copy";
+    const sectionTitle = document.createElement("b");
+    sectionTitle.textContent = title;
+    sectionCopy.appendChild(sectionTitle);
+    if (meta.hint) {
+      const sectionHint = document.createElement("small");
+      sectionHint.textContent = meta.hint;
+      sectionCopy.appendChild(sectionHint);
+    }
+    const caret = document.createElement("i");
+    caret.className = "settings-section-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "›";
+    button.append(icon, sectionCopy, caret);
+
+    const body = document.createElement("div");
+    body.className = "settings-section-body";
+    body.id = bodyId;
+    body.appendChild(group);
+
+    button.addEventListener("click", () => {
+      const open = section.classList.toggle("is-open");
+      button.setAttribute("aria-expanded", open ? "true" : "false");
+      window.dispatchEvent(new Event("resize"));
+    });
+
+    section.append(button, body);
+    content.appendChild(section);
+  });
   advanced.append(summary, content);
 
   const actions = settings.querySelector(".settings-actions");
