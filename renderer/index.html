@@ -227,6 +227,12 @@
             </div>
           </div>
 
+          <div class="set-group api-provider-group" id="apiProvidersGroup">
+            <h2>생성형 미디어 API</h2>
+            <p class="api-providers-intro">API 키를 저장하면 남은 사용량·크레딧·최근 생성 로그를 함께 표시합니다. 키 원문은 settings.json에 저장하지 않고 OS 보안 저장소에 암호화합니다.</p>
+            <div id="apiProviderList" class="api-provider-list"></div>
+          </div>
+
           <div class="set-group">
             <h2>연결</h2>
             <label class="field">
@@ -250,6 +256,7 @@
     </div>
     <script src="app.js"></script>
     <script src="openrouter-settings.js"></script>
+    <script src="api-providers-settings.js"></script>
     <script src="connection-settings.js"></script>
   </body>
 </html>

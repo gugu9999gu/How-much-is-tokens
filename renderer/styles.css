@@ -335,6 +335,40 @@ button:hover { background: rgba(255,255,255,0.12); }
 .hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
 .empty { color: var(--muted); text-align: center; padding: 18px 8px; }
 
+.provider-logs {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+}
+.provider-logs-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.provider-logs .log-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+}
+.provider-logs .log-line b {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.provider-logs .log-line small {
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .actions button.active {
   background: rgba(62, 224, 160, 0.16);
   color: var(--ok);
