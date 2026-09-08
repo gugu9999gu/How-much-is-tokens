@@ -37,7 +37,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.23-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.26-portable.exe`입니다.
 
 ## 사용
 
