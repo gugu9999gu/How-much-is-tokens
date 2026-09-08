@@ -10,6 +10,9 @@ const API_SECRET = ["key", "openrouter", "default", "smoke"].join("-");
 const MGMT_SECRET = ["key", "management", "default", "smoke"].join("-");
 const PRIMARY_SECRET = ["key", "openrouter", "primary", "smoke"].join("-");
 const BACKUP_SECRET = ["key", "openrouter", "backup", "smoke"].join("-");
+const FAL_SECRET = ["key", "falai", "smoke"].join("-");
+const HF_ID_SECRET = ["id", "higgsfield", "smoke"].join("-");
+const HF_KEY_SECRET = ["secret", "higgsfield", "smoke"].join("-");
 
 app.whenReady().then(() => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "how-much-is-tokens-secrets-"));
@@ -96,6 +99,36 @@ app.whenReady().then(() => {
   secretsRaw = fs.readFileSync(path.join(dir, "secrets.json"), "utf8");
   assert.ok(!settingsRaw.includes(localToken));
   assert.ok(!secretsRaw.includes(localToken));
+
+  // Generic API-provider credentials share the same encrypted store and never
+  // appear in settings.json.
+  secure.saveApiProviderSecrets("falai", { apiKey: FAL_SECRET });
+  secure.saveApiProviderSecrets("higgsfield", { keyId: HF_ID_SECRET, keySecret: HF_KEY_SECRET });
+  assert.strictEqual(secure.loadApiProviderSecrets("falai", ["apiKey"]).apiKey, FAL_SECRET);
+  const hfStored = secure.loadApiProviderSecrets("higgsfield", ["keyId", "keySecret"]);
+  assert.strictEqual(hfStored.keyId, HF_ID_SECRET);
+  assert.strictEqual(hfStored.keySecret, HF_KEY_SECRET);
+
+  const apiStatusMap = secure.apiProviderStatusMap();
+  assert.strictEqual(apiStatusMap.falai.apiKey, true);
+  assert.strictEqual(apiStatusMap.higgsfield.keyId, true);
+  assert.strictEqual(apiStatusMap.higgsfield.keySecret, true);
+
+  settings.invalidateSecretStatusCache();
+  const withApiProviders = settings.loadSettings();
+  assert.strictEqual(withApiProviders.apiProviderStatuses.falai.apiKey, true);
+  assert.strictEqual(withApiProviders.apiProviderStatuses.higgsfield.keySecret, true);
+
+  settingsRaw = fs.readFileSync(path.join(dir, "settings.json"), "utf8");
+  secretsRaw = fs.readFileSync(path.join(dir, "secrets.json"), "utf8");
+  for (const secret of [FAL_SECRET, HF_ID_SECRET, HF_KEY_SECRET]) {
+    assert.ok(!settingsRaw.includes(secret), "settings.json must never contain API-provider secrets");
+    assert.ok(!secretsRaw.includes(secret), "secrets.json must contain ciphertext only");
+  }
+
+  secure.clearApiProviderSecrets("falai", ["apiKey"]);
+  assert.strictEqual(secure.loadApiProviderSecrets("falai", ["apiKey"]).apiKey, null);
+  assert.strictEqual(secure.loadApiProviderSecrets("higgsfield", ["keyId"]).keyId, HF_ID_SECRET);
 
   fs.rmSync(dir, { recursive: true, force: true });
   console.log("Windows DPAPI multi-profile secret-store smoke test passed");
