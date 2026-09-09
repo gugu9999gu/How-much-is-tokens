@@ -49,10 +49,14 @@ jobs:
           node --check lib/usage.js
           node --check lib/usage-cache.js
           node --check lib/account-identity.js
+          node --check lib/account-display-identity.js
+          node --check lib/account-dedupe.js
           node --check lib/account-profiles.js
           node --check lib/account-router.js
           node --check lib/routed-launcher.js
           node --check lib/credential-login.js
+          node --check lib/cli-maintenance.js
+          node --check lib/cli-maintenance-main-integration.js
           node --check lib/credit-balances.js
           node --check lib/codex-app-server.js
           node --check lib/codex-rate-limits.js
@@ -63,6 +67,7 @@ jobs:
           node --check lib/openrouter-profiles.js
           node --check lib/openrouter-request-router.js
           node --check lib/openrouter-oauth.js
+          node --check lib/openrouter-account-identity.js
           node --check lib/openrouter-main-integration.js
           node --check lib/api-providers-main-integration.js
           node --check lib/api-providers/common.js
@@ -73,6 +78,8 @@ jobs:
           node --check lib/api-providers/elevenlabs.js
           node --check lib/api-providers/stability.js
           node --check lib/window-behavior.js
+          node --check lib/window-resize.js
+          node --check lib/window-resize-main-integration.js
           node --check lib/edge-dock.js
           node --check lib/antigravity-bridge.js
           node --check lib/antigravity-cli.js
@@ -89,6 +96,8 @@ jobs:
           node --check renderer/openrouter-settings.js
           node --check renderer/connection-settings.js
           node --check renderer/api-providers-settings.js
+          node --check renderer/widget-enhancements.js
+          node --check renderer/account-identity-ui.js
           node --check test/claude-usage.test.js
           node --check test/cursor-credits.test.js
           node --check test/copilot-credits.test.js
@@ -104,7 +113,14 @@ jobs:
           node --check test/openrouter-profiles.test.js
           node --check test/openrouter-request-router.test.js
           node --check test/openrouter-oauth.test.js
+          node --check test/openrouter-account-identity.test.js
           node --check test/openrouter-security.test.js
+          node --check test/window-resize.test.js
+          node --check test/cli-maintenance.test.js
+          node --check test/credential-disconnect.test.js
+          node --check test/account-display-identity.test.js
+          node --check test/account-dedupe.test.js
+          node --check test/widget-enhancements.test.js
           node --check test/repository-split-leerness.test.js
           node --check test/renderer-layout-smoke.js
           node --check test/renderer-layout-preload.js

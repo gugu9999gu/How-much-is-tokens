@@ -10,6 +10,7 @@ const {
 const key = parseKeyPayload({
   data: {
     label: "sk-or-v1-test...123",
+    creator_user_id: "user_2dHFtVWx2n56w6HkM0000000000",
     limit: 100,
     limit_remaining: 74.5,
     limit_reset: "monthly",
@@ -29,6 +30,7 @@ assert.strictEqual(key.window.usedPct, 25.5);
 assert.strictEqual(key.usageDaily, 1.25);
 assert.strictEqual(key.usageWeekly, 8.5);
 assert.strictEqual(key.usageMonthly, 25.5);
+assert.strictEqual(key.creatorUserId, "user_2dHFtVWx2n56w6HkM0000000000");
 
 const credits = parseCreditsPayload({
   data: {
