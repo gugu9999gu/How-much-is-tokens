@@ -10,7 +10,13 @@ const identityCss = fs.readFileSync(path.join(root, "renderer", "account-identit
 const preload = fs.readFileSync(path.join(root, "preload.js"), "utf8");
 const integration = fs.readFileSync(path.join(root, "lib", "api-providers-main-integration.js"), "utf8");
 
-assert.ok(enhancement.includes("RESET_MODE_INTERVAL_MS = 5_000"), "reset countdown/date mode must rotate every five seconds");
+assert.ok(enhancement.includes("RESET_MODE_INTERVAL_MS = 5_000"), "reset countdown/date mode must rotate every five seconds in automatic mode");
+assert.ok(enhancement.includes('new Set(["auto", "relative", "absolute"])'), "reset display mode must support auto, remaining-time and scheduled-date choices");
+assert.ok(enhancement.includes('field.id = "resetDisplayModeField"'), "settings must install a reset display preference field");
+assert.ok(enhancement.includes('input.name = "resetDisplayMode"'), "reset display options must be one radio group");
+assert.ok(enhancement.includes('api.saveSettings({ resetDisplayMode: requested })'), "reset display selection must persist immediately");
+assert.ok(enhancement.includes('if (resetDisplayPreference !== "auto") return;'), "forced reset display modes must not alternate every five seconds");
+assert.ok(enhancement.includes("effectiveResetDisplayMode"), "rendered reset text must respect the configured display mode");
 assert.ok(enhancement.includes("resetDateTimeText"), "scheduled reset date/time formatter must exist");
 assert.ok(enhancement.includes('id = "headerEdgeDockToggle"'), "header edge-dock toggle must be installed outside settings");
 assert.ok(enhancement.includes("manualWindowResize"), "renderer border handles must drive native window bounds");
