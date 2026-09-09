@@ -2,6 +2,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const { spawnSync } = require("child_process");
 const {
   LOGIN_SPECS,
   PROFILE_LOGIN_PROVIDERS,
@@ -64,6 +65,33 @@ assert.ok(commandLine.includes('start "" "C:\\Windows\\System32\\cmd.exe" /d /k'
 assert.ok(commandLine.includes('call "C:\\Tools\\claude.exe" auth login'));
 assert.strictEqual(interactiveLoginCommand("bad\npath", ["login"], "cmd.exe"), null);
 assert.strictEqual(interactiveLoginCommand("tool.exe", ["bad arg"], "cmd.exe"), null);
+
+// Exercise the actual cmd.exe + START quoting boundary on Windows CI. The
+// fixture deliberately contains a space in its filename, matching npm/global
+// CLI paths that require quotes. /wait + /c keep the smoke test finite.
+if (process.platform === "win32") {
+  const smokeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-login-quoting-"));
+  try {
+    const shim = path.join(smokeRoot, "login shim.cmd");
+    const marker = path.join(smokeRoot, "marker.txt");
+    fs.writeFileSync(shim, "@echo off\r\n> \"%~dp0marker.txt\" echo %1\r\nexit /b 0\r\n", "utf8");
+    const shell = process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe";
+    const smokeCommand = interactiveLoginCommand(shim, ["login"], shell)
+      .replace('start "" ', 'start "" /wait ')
+      .replace(" /d /k call ", " /d /c call ");
+    const smoke = spawnSync(shell, ["/d", "/s", "/c", smokeCommand], {
+      encoding: "utf8",
+      windowsHide: true,
+      windowsVerbatimArguments: true,
+      timeout: 8_000,
+    });
+    assert.ifError(smoke.error);
+    assert.strictEqual(smoke.status, 0, `Windows quoted START smoke failed: ${smoke.stderr || smoke.stdout || "unknown error"}`);
+    assert.strictEqual(fs.readFileSync(marker, "utf8").trim(), "login");
+  } finally {
+    fs.rmSync(smokeRoot, { recursive: true, force: true });
+  }
+}
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-managed-profiles-"));
 try {
