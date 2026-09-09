@@ -119,4 +119,12 @@ const notVerified = dedupeManagedAccountRows(settings, [
 ]);
 assert.strictEqual(notVerified.duplicates.length, 0, "only successfully verified account identities may trigger deduplication");
 
+const stale = dedupeManagedAccountRows(settings, [
+  rows[0],
+  { ...rows[1], stale: true, liveStatus: "error" },
+]);
+assert.strictEqual(verifiedAccountIdentityKey({ ...rows[1], stale: true }), null, "stale last-good usage must not count as fresh account verification");
+assert.strictEqual(stale.duplicates.length, 0, "cached usage must never remove an account profile");
+assert.strictEqual(stale.accountProfiles.length, 2);
+
 console.log("authenticated account deduplication tests passed");
