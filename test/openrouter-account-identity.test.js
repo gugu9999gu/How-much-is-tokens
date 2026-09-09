@@ -1,4 +1,6 @@
 const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
 const {
   OPENROUTER_CURRENT_KEY_URL,
   creatorUserIdFromPayload,
@@ -11,6 +13,14 @@ assert.strictEqual(
   "user_2dHFtVWx2n56w6HkM0000000000",
 );
 assert.strictEqual(creatorUserIdFromPayload({ data: {} }), null);
+
+const integration = fs.readFileSync(path.join(__dirname, "..", "lib", "openrouter-main-integration.js"), "utf8");
+assert.ok(integration.includes("duplicateOpenRouterAccount"), "OAuth flow must invoke the account-identity duplicate guard");
+assert.ok(integration.includes('reason: "duplicate-account"'), "duplicate OAuth account must return an explicit duplicate-account result");
+assert.ok(
+  integration.indexOf("duplicateOpenRouterAccount(selection, apiKey)") < integration.indexOf("saveOpenRouterProfileSecrets(selection.profile.id"),
+  "duplicate-account check must happen before persisting the new OAuth key",
+);
 
 const profiles = [
   { id: "primary", label: "OpenRouter 1", priority: 10, enabled: true },
