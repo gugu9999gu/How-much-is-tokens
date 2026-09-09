@@ -1,0 +1,161 @@
+.header-edge-toggle {
+  width: 30px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.header-edge-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.header-edge-track {
+  width: 26px;
+  height: 14px;
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  transition: background .15s ease, border-color .15s ease;
+}
+.header-edge-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dce2eb;
+  transition: transform .15s ease;
+}
+.header-edge-toggle input:checked + .header-edge-track {
+  background: rgba(62,224,160,.22);
+  border-color: rgba(62,224,160,.42);
+}
+.header-edge-toggle input:checked + .header-edge-track::after {
+  transform: translateX(12px);
+  background: var(--ok);
+}
+.header-edge-toggle input:focus-visible + .header-edge-track {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
+}
+
+.shell.manual-height-size {
+  height: 100vh;
+  max-height: 100vh;
+}
+
+.widget-resize-handle {
+  position: fixed;
+  z-index: 10000;
+  -webkit-app-region: no-drag;
+  user-select: none;
+  touch-action: none;
+  background: transparent;
+}
+.widget-resize-handle.n,
+.widget-resize-handle.s {
+  left: 10px;
+  right: 10px;
+  height: 6px;
+  cursor: ns-resize;
+}
+.widget-resize-handle.n { top: 0; }
+.widget-resize-handle.s { bottom: 0; }
+.widget-resize-handle.e,
+.widget-resize-handle.w {
+  top: 10px;
+  bottom: 10px;
+  width: 6px;
+  cursor: ew-resize;
+}
+.widget-resize-handle.e { right: 0; }
+.widget-resize-handle.w { left: 0; }
+.widget-resize-handle.ne,
+.widget-resize-handle.nw,
+.widget-resize-handle.se,
+.widget-resize-handle.sw {
+  width: 12px;
+  height: 12px;
+}
+.widget-resize-handle.ne { top: 0; right: 0; cursor: nesw-resize; }
+.widget-resize-handle.nw { top: 0; left: 0; cursor: nwse-resize; }
+.widget-resize-handle.se { right: 0; bottom: 0; cursor: nwse-resize; }
+.widget-resize-handle.sw { left: 0; bottom: 0; cursor: nesw-resize; }
+
+.cli-version-line {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cli-version-line.update-available { color: var(--ok); }
+.cli-version-line.missing { opacity: .72; }
+
+.connection-card.has-account-controls {
+  grid-template-areas:
+    "copy status"
+    "copy actions"
+    "accounts accounts";
+}
+.connection-account-list {
+  grid-area: accounts;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255,255,255,.045);
+}
+.connection-account-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 2px 3px 2px 7px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 999px;
+  background: rgba(255,255,255,.035);
+  color: var(--muted);
+  font-size: 9px;
+}
+.connection-account-chip span {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.connection-account-chip button,
+.cli-update-btn {
+  width: auto;
+  height: 20px;
+  min-height: 20px !important;
+  padding: 1px 6px !important;
+  border-radius: 999px !important;
+  font-size: 9px !important;
+}
+.connection-account-chip button {
+  color: var(--muted);
+  background: transparent;
+}
+.connection-account-chip button:hover {
+  color: var(--bad);
+  background: rgba(255,107,122,.1);
+}
+.cli-update-btn {
+  color: var(--ok) !important;
+  border: 1px solid rgba(62,224,160,.2) !important;
+  background: rgba(62,224,160,.08) !important;
+}
+.cli-update-btn:disabled,
+.connection-account-chip button:disabled,
+.header-edge-toggle.busy {
+  opacity: .48;
+  pointer-events: none;
+}
