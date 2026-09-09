@@ -4,11 +4,18 @@ const path = require("path");
 const os = require("os");
 const {
   DEFAULTS,
+  RESET_DISPLAY_MODES,
   RESET_PRESERVED_FIELDS,
+  normalizeSettings,
   resetSettingsValues,
 } = require("../lib/settings");
 
 assert.deepStrictEqual(RESET_PRESERVED_FIELDS, ["githubToken", "cursorCookie", "accountProfiles", "openRouterProfiles"]);
+assert.deepStrictEqual(RESET_DISPLAY_MODES, ["auto", "relative", "absolute"]);
+assert.strictEqual(DEFAULTS.resetDisplayMode, "auto", "reset display should preserve the existing five-second automatic rotation by default");
+assert.strictEqual(normalizeSettings({ resetDisplayMode: "relative" }).resetDisplayMode, "relative");
+assert.strictEqual(normalizeSettings({ resetDisplayMode: "absolute" }).resetDisplayMode, "absolute");
+assert.strictEqual(normalizeSettings({ resetDisplayMode: "invalid" }).resetDisplayMode, "auto", "invalid reset display values must fall back safely");
 assert.strictEqual(DEFAULTS.codexAutoUseReset, false, "automatic reset-ticket consumption must be opt-in");
 assert.deepStrictEqual(DEFAULTS.accountProfiles, [], "multi-account profiles must be opt-in");
 assert.deepStrictEqual(DEFAULTS.openRouterProfiles, [], "OpenRouter key profiles must be opt-in");
@@ -25,6 +32,7 @@ const current = {
   compact: true,
   hideMissing: false,
   visualization: "number",
+  resetDisplayMode: "absolute",
   denseLayout: true,
   edgeDockEnabled: true,
   edgeDockSide: "bottom",
@@ -53,6 +61,7 @@ for (const [key, value] of Object.entries(DEFAULTS)) {
   if (RESET_PRESERVED_FIELDS.includes(key)) continue;
   assert.deepStrictEqual(safeReset[key], value, `expected ${key} to reset to default`);
 }
+assert.strictEqual(safeReset.resetDisplayMode, "auto", "settings reset must restore automatic reset-time display");
 assert.strictEqual(safeReset.codexAutoUseReset, false, "settings reset must turn destructive automation back off");
 assert.strictEqual(safeReset.smartRouting.codex.enabled, false, "settings reset must disable automatic account routing");
 assert.strictEqual(safeReset.openRouterRouter.enabled, false, "settings reset must stop localhost API routing");
