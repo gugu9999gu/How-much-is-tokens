@@ -23,9 +23,9 @@ assert.strictEqual(resolvedSpec("grokbot").sourceId, "cursor");
 assert.deepStrictEqual(resolvedSpec("grokbot").commands, ["cursor-agent", "agent"]);
 assert.strictEqual(resolvedSpec("openrouter"), null);
 
-runResolvedCommand(process.execPath, ["-e", "console.log('1.2.3')"]).then((result) => {
+runResolvedCommand(process.execPath, ["--version"]).then((result) => {
   assert.strictEqual(result.ok, true);
-  assert.ok(result.stdout.includes("1.2.3"));
+  assert.ok(extractVersion(result.stdout), "Node version probe should expose a parseable version");
   return runResolvedCommand(process.execPath, ["bad arg with spaces"]);
 }).then((invalid) => {
   assert.strictEqual(invalid.ok, false);
