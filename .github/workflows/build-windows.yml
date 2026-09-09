@@ -49,6 +49,8 @@ jobs:
           node --check lib/usage.js
           node --check lib/usage-cache.js
           node --check lib/account-identity.js
+          node --check lib/account-display-identity.js
+          node --check lib/account-dedupe.js
           node --check lib/account-profiles.js
           node --check lib/account-router.js
           node --check lib/routed-launcher.js
@@ -94,6 +96,7 @@ jobs:
           node --check renderer/connection-settings.js
           node --check renderer/api-providers-settings.js
           node --check renderer/widget-enhancements.js
+          node --check renderer/account-identity-ui.js
           node --check test/claude-usage.test.js
           node --check test/cursor-credits.test.js
           node --check test/copilot-credits.test.js
@@ -113,6 +116,8 @@ jobs:
           node --check test/window-resize.test.js
           node --check test/cli-maintenance.test.js
           node --check test/credential-disconnect.test.js
+          node --check test/account-display-identity.test.js
+          node --check test/account-dedupe.test.js
           node --check test/widget-enhancements.test.js
           node --check test/repository-split-leerness.test.js
           node --check test/renderer-layout-smoke.js
