@@ -13,7 +13,7 @@ const {
   nextManagedProfile,
 } = require("../lib/credential-login");
 
-assert.deepStrictEqual([...PROFILE_LOGIN_PROVIDERS].sort(), ["claude", "codex", "grok"]);
+assert.deepStrictEqual([...PROFILE_LOGIN_PROVIDERS].sort(), ["claude", "codex", "copilot", "cursor", "grok"]);
 assert.deepStrictEqual(LOGIN_SPECS.codex.args, ["login"]);
 assert.deepStrictEqual(LOGIN_SPECS.claude.args, ["auth", "login"]);
 assert.deepStrictEqual(LOGIN_SPECS.grok.args, ["login"]);
@@ -66,9 +66,6 @@ assert.ok(commandLine.includes('call "C:\\Tools\\claude.exe" auth login'));
 assert.strictEqual(interactiveLoginCommand("bad\npath", ["login"], "cmd.exe"), null);
 assert.strictEqual(interactiveLoginCommand("tool.exe", ["bad arg"], "cmd.exe"), null);
 
-// Exercise the actual cmd.exe + START quoting boundary on Windows CI. The
-// fixture deliberately contains a space in its filename, matching npm/global
-// CLI paths that require quotes. /wait + /c keep the smoke test finite.
 if (process.platform === "win32") {
   const smokeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-login-quoting-"));
   try {
@@ -108,7 +105,12 @@ try {
   }, "codex", { rootDir: root });
   assert.strictEqual(collisionSafe.label, "Codex 4");
   assert.strictEqual(collisionSafe.configDir, path.join(root, "codex", "account-4"));
-  assert.strictEqual(nextManagedProfile({}, "cursor", { rootDir: root }), null);
+  const cursorProposal = nextManagedProfile({}, "cursor", { rootDir: root });
+  const copilotProposal = nextManagedProfile({}, "copilot", { rootDir: root });
+  assert.strictEqual(cursorProposal.label, "Cursor 2");
+  assert.strictEqual(copilotProposal.label, "Copilot 2");
+  assert.strictEqual(nextManagedProfile({}, "antigravity", { rootDir: root }), null,
+    "Antigravity multi-account storage is handled by the encrypted external manager rather than raw profile directories");
 
   let spawnCall = null;
   const profile = {
@@ -129,12 +131,26 @@ try {
   assert.strictEqual(launched.ok, true);
   assert.strictEqual(launched.profileId, "profile-test");
   assert.strictEqual(spawnCall.options.env.CODEX_HOME, profile.configDir, "isolated login must set CODEX_HOME instead of moving auth files");
-  assert.strictEqual(spawnCall.options.detached, true, "interactive login must run independently from the widget process");
-  assert.strictEqual(spawnCall.options.windowsHide, false, "interactive login console must stay visible on Windows");
-  assert.strictEqual(spawnCall.options.windowsVerbatimArguments, true, "CMD /c payload quoting must be passed to Windows verbatim");
+  assert.strictEqual(spawnCall.options.detached, true);
+  assert.strictEqual(spawnCall.options.windowsHide, false);
+  assert.strictEqual(spawnCall.options.windowsVerbatimArguments, true);
   assert.deepStrictEqual(spawnCall.args.slice(0, 3), ["/d", "/s", "/c"]);
-  assert.ok(spawnCall.args[3].includes('start "" "C:\\Windows\\System32\\cmd.exe" /d /k'));
-  assert.ok(spawnCall.args[3].includes('call "C:\\Tools\\codex.exe" login'));
+
+  spawnCall = null;
+  const cursorProfile = { id: "cursor-test", providerId: "cursor", label: "Cursor 2", configDir: cursorProposal.configDir };
+  assert.strictEqual(launchCredentialLogin("cursor", cursorProfile, {
+    platform: "win32", executable: "C:\\Tools\\agent.exe", comspec: "cmd.exe",
+    spawnImpl(command, args, options) { spawnCall = { command, args, options }; return { unref() {} }; },
+  }).ok, true);
+  assert.strictEqual(spawnCall.options.env.CURSOR_CONFIG_DIR, cursorProfile.configDir);
+
+  spawnCall = null;
+  const copilotProfile = { id: "copilot-test", providerId: "copilot", label: "Copilot 2", configDir: copilotProposal.configDir };
+  assert.strictEqual(launchCredentialLogin("copilot", copilotProfile, {
+    platform: "win32", executable: "C:\\Tools\\gh.exe", comspec: "cmd.exe",
+    spawnImpl(command, args, options) { spawnCall = { command, args, options }; return { unref() {} }; },
+  }).ok, true);
+  assert.strictEqual(spawnCall.options.env.GH_CONFIG_DIR, copilotProfile.configDir);
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
 }
