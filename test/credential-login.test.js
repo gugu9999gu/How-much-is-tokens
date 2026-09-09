@@ -5,6 +5,7 @@ const os = require("os");
 const {
   LOGIN_SPECS,
   PROFILE_LOGIN_PROVIDERS,
+  preferredWindowsCommand,
   resolveCommand,
   interactiveLoginCommand,
   launchCredentialLogin,
@@ -19,6 +20,23 @@ assert.deepStrictEqual(LOGIN_SPECS.cursor.commands, ["cursor-agent", "agent"], "
 assert.deepStrictEqual(LOGIN_SPECS.copilot.args, ["auth", "login"]);
 assert.deepStrictEqual(LOGIN_SPECS.antigravity.args, []);
 
+assert.strictEqual(
+  preferredWindowsCommand([
+    "C:\\Users\\test\\AppData\\Roaming\\npm\\codex",
+    "C:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd",
+  ]),
+  "C:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd",
+  "Windows command resolution must prefer a runnable npm .cmd shim over the extensionless POSIX shim",
+);
+assert.strictEqual(
+  preferredWindowsCommand([
+    "C:\\Tools\\cursor-agent.cmd",
+    "C:\\Tools\\cursor-agent.exe",
+  ]),
+  "C:\\Tools\\cursor-agent.exe",
+  "native Windows executables should be preferred over command shims",
+);
+
 const resolved = resolveCommand(["cursor-agent", "agent"], {
   platform: "win32",
   env: {},
@@ -30,7 +48,19 @@ const resolved = resolveCommand(["cursor-agent", "agent"], {
 });
 assert.strictEqual(resolved, "C:\\Tools\\cursor-agent.exe");
 
+const npmShimResolved = resolveCommand(["codex"], {
+  platform: "win32",
+  env: {},
+  execFileSyncImpl(command, args) {
+    assert.strictEqual(command, "where.exe");
+    assert.deepStrictEqual(args, ["codex"]);
+    return "C:\\Users\\test\\AppData\\Roaming\\npm\\codex\r\nC:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd\r\n";
+  },
+});
+assert.strictEqual(npmShimResolved, "C:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd");
+
 const commandLine = interactiveLoginCommand("C:\\Tools\\claude.exe", ["auth", "login"], "C:\\Windows\\System32\\cmd.exe");
+assert.ok(commandLine.includes('start "" "C:\\Windows\\System32\\cmd.exe" /d /k'));
 assert.ok(commandLine.includes('call "C:\\Tools\\claude.exe" auth login'));
 assert.strictEqual(interactiveLoginCommand("bad\npath", ["login"], "cmd.exe"), null);
 assert.strictEqual(interactiveLoginCommand("tool.exe", ["bad arg"], "cmd.exe"), null);
@@ -73,7 +103,10 @@ try {
   assert.strictEqual(spawnCall.options.env.CODEX_HOME, profile.configDir, "isolated login must set CODEX_HOME instead of moving auth files");
   assert.strictEqual(spawnCall.options.detached, true, "interactive login must run independently from the widget process");
   assert.strictEqual(spawnCall.options.windowsHide, false, "interactive login console must stay visible on Windows");
-  assert.ok(spawnCall.args.join(" ").includes("login"));
+  assert.strictEqual(spawnCall.options.windowsVerbatimArguments, true, "CMD /c payload quoting must be passed to Windows verbatim");
+  assert.deepStrictEqual(spawnCall.args.slice(0, 3), ["/d", "/s", "/c"]);
+  assert.ok(spawnCall.args[3].includes('start "" "C:\\Windows\\System32\\cmd.exe" /d /k'));
+  assert.ok(spawnCall.args[3].includes('call "C:\\Tools\\codex.exe" login'));
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
 }
