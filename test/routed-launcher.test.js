@@ -3,17 +3,8 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
-const {
-  normalizeAccountProfiles,
-  defaultConfigDir,
-  profileInstanceKey,
-} = require("../lib/account-profiles");
-const {
-  sanitizeProvider,
-  saveProviderSnapshot,
-  applyUsageFallback,
-  readStore,
-} = require("../lib/usage-cache");
+const { normalizeAccountProfiles, defaultConfigDir, profileInstanceKey } = require("../lib/account-profiles");
+const { sanitizeProvider, saveProviderSnapshot, applyUsageFallback, readStore } = require("../lib/usage-cache");
 const {
   PROVIDER_COMMANDS,
   resolveProviderExecutable,
@@ -36,10 +27,22 @@ assert.ok(interactiveStartCommand("C:\\Tools\\gh.exe", "cmd.exe", ["copilot"]).i
 assert.strictEqual(interactiveStartCommand("bad\npath.cmd", "cmd.exe"), null);
 assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", limitReached: true }).limitReached, true);
 assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", remainingPct: 90, routingRemainingPct: 12 }).routingRemainingPct, 12);
-assert.strictEqual(sanitizeProvider({
-  id: "antigravity:agm-a", providerId: "antigravity", status: "ok", remainingPct: 50,
-  profileId: "agm-a", externalAccountRef: "a@example.com", managedBy: "agm",
-}).externalAccountRef, "a@example.com", "managed routing metadata must survive the persistent cache sanitizer");
+const sanitizedManaged = sanitizeProvider({
+  id: "antigravity:agm-a",
+  providerId: "antigravity",
+  status: "ok",
+  remainingPct: 50,
+  profileId: "agm-a",
+  externalAccountRef: "a@example.com",
+  accountEmail: "a@example.com",
+  managedBy: "agm",
+  accountOrder: 1,
+});
+assert.strictEqual(sanitizedManaged.profileId, "agm-a");
+assert.strictEqual(sanitizedManaged.managedBy, "agm");
+assert.strictEqual(sanitizedManaged.accountOrder, 1);
+assert.strictEqual(sanitizedManaged.externalAccountRef, undefined, "raw account email must not be persisted in usage cache");
+assert.strictEqual(sanitizedManaged.accountEmail, undefined, "display identity must remain memory-only for managed Antigravity accounts");
 
 const profiles = normalizeAccountProfiles([
   { providerId: "codex", label: "GPT 2번", configDir: path.join(os.tmpdir(), "launcher-codex-2") },
@@ -59,7 +62,7 @@ const launched = launchRoutedCli("codex", profile, {
 assert.strictEqual(launched.ok, true);
 assert.strictEqual(captured.options.env.CODEX_HOME, profile.configDir);
 assert.strictEqual(captured.options.detached, true);
-assert.strictEqual(captured.options.windowsHide, false, "the interactive routed login console must remain visible");
+assert.strictEqual(captured.options.windowsHide, false);
 assert.strictEqual(captured.options.windowsVerbatimArguments, true);
 
 captured = null;
@@ -77,16 +80,11 @@ assert.ok(captured.args.join(" ").includes("copilot"));
 
 let agmSwitch = null;
 captured = null;
-const antigravityProfile = {
-  id: "agm-b", providerId: "antigravity", label: "Antigravity 2", accountRef: "b@example.com", externalManager: "agm",
-};
+const antigravityProfile = { id: "agm-b", providerId: "antigravity", label: "Antigravity 2", accountRef: "b@example.com", externalManager: "agm" };
 const agLaunch = launchRoutedCli("antigravity", antigravityProfile, {
-  platform: "win32",
-  executable: "C:\\Tools\\agy.exe",
-  agmExecutable: "C:\\Tools\\agm.exe",
+  platform: "win32", executable: "C:\\Tools\\agy.exe", agmExecutable: "C:\\Tools\\agm.exe",
   execFileSyncImpl(command, args) { agmSwitch = { command, args }; return "ok"; },
-  spawnImpl,
-  comspec: "cmd.exe",
+  spawnImpl, comspec: "cmd.exe",
 });
 assert.strictEqual(agLaunch.ok, true);
 assert.strictEqual(agmSwitch.command, "C:\\Tools\\agm.exe");
@@ -126,9 +124,10 @@ for (const name of [
 
 const psPath = path.join(binDir, "how-tokens-route.ps1");
 const ps = fs.readFileSync(psPath, "utf8");
-for (const needle of ["settings.json", "usage-cache.json", "fixed-primary", "max-remaining", "routingRemainingPct", "routeBlockedAt", "provider.limitReached", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "GROK_HOME", "CURSOR_CONFIG_DIR", "GH_CONFIG_DIR", "agm switch"]) {
+for (const needle of ["settings.json", "usage-cache.json", "fixed-primary", "max-remaining", "routingRemainingPct", "routeBlockedAt", "provider.limitReached", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "GROK_HOME", "CURSOR_CONFIG_DIR", "GH_CONFIG_DIR", "agm switch", "agm list", "managedBy"]) {
   assert.ok(ps.includes(needle), `generated router should include ${needle}`);
 }
+assert.ok(!ps.includes("externalAccountRef"), "standalone router must not require a raw account email from usage-cache.json");
 
 const generated = powershellRouterScript(stateDir, {
   codex: "C:\\Users\\test\\.codex",
@@ -138,7 +137,7 @@ const generated = powershellRouterScript(stateDir, {
   copilot: "C:\\Users\\test\\AppData\\Roaming\\GitHub CLI",
   antigravity: "",
 });
-assert.ok(generated.includes("C:\\\\Users\\\\test\\\\.codex"), "JSON-embedded default directories must be present in the generated script");
+assert.ok(generated.includes("C:\\\\Users\\\\test\\\\.codex"));
 
 if (process.platform === "win32") {
   execFileSync("powershell.exe", [
@@ -166,8 +165,7 @@ if (process.platform === "win32") {
   fs.writeFileSync(cacheFile, JSON.stringify(fixtureCache, null, 2));
 
   execFileSync("powershell.exe", ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", psPath, "codex"], {
-    env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
-    stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
+    env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile }, stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
   });
   assert.strictEqual(fs.readFileSync(outputFile, "utf8").trim().toLowerCase(), profile.configDir.toLowerCase());
 
@@ -176,8 +174,7 @@ if (process.platform === "win32") {
   let blocked = false;
   try {
     execFileSync("powershell.exe", ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", psPath, "codex"], {
-      env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
-      stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
+      env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile }, stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
     });
   } catch { blocked = true; }
   assert.strictEqual(blocked, true);
