@@ -66,10 +66,21 @@ function installRendererEnhancements() {
   link.dataset.widgetEnhancements = "1";
   document.head.appendChild(link);
 
+  const identityLink = document.createElement("link");
+  identityLink.rel = "stylesheet";
+  identityLink.href = "account-identity-ui.css";
+  identityLink.dataset.widgetEnhancements = "1";
+  document.head.appendChild(identityLink);
+
   const script = document.createElement("script");
   script.src = "widget-enhancements.js";
   script.dataset.widgetEnhancements = "1";
   document.body.appendChild(script);
+
+  const identityScript = document.createElement("script");
+  identityScript.src = "account-identity-ui.js";
+  identityScript.dataset.widgetEnhancements = "1";
+  document.body.appendChild(identityScript);
 }
 
 window.addEventListener("DOMContentLoaded", installRendererEnhancements, { once: true });
