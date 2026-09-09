@@ -9,6 +9,7 @@ const settings = {
     { providerId: "codex", label: "Codex 2", configDir: path.join(baseDir, "codex-2") },
     { providerId: "codex", label: "Codex 3", configDir: path.join(baseDir, "codex-3") },
   ],
+  openRouterProfiles: [],
 };
 const normalized = require("../lib/account-profiles").normalizeAccountProfiles(settings.accountProfiles);
 
@@ -57,12 +58,58 @@ assert.ok(result.providers.some((row) => row.profileId === normalized[1].id));
 assert.strictEqual(result.accountProfiles.length, 1, "duplicate managed profile must be removed from settings");
 assert.strictEqual(result.accountProfiles[0].id, normalized[1].id);
 
+const openRouterSettings = {
+  accountProfiles: [],
+  openRouterProfiles: [
+    { id: "primary", label: "OpenRouter 1", priority: 10, enabled: true },
+    { id: "duplicate", label: "OpenRouter 2", priority: 20, enabled: true },
+    { id: "other", label: "OpenRouter 3", priority: 30, enabled: true },
+  ],
+};
+const openRouterRows = [
+  {
+    id: "openrouter",
+    providerId: "openrouter",
+    profileId: "primary",
+    status: "ok",
+    accountOrder: 0,
+    accountKey: "openrouter:user-same",
+    accountId: "user_2dHFtVWx2n56w6HkM0000000000",
+    accountLabel: "OpenRouter 1",
+  },
+  {
+    id: "openrouter",
+    providerId: "openrouter",
+    profileId: "duplicate",
+    status: "ok",
+    accountOrder: 1,
+    accountKey: "openrouter:user-same",
+    accountId: "user_2dHFtVWx2n56w6HkM0000000000",
+    accountLabel: "OpenRouter 2",
+  },
+  {
+    id: "openrouter",
+    providerId: "openrouter",
+    profileId: "other",
+    status: "ok",
+    accountOrder: 2,
+    accountKey: "openrouter:user-other",
+    accountId: "user_other",
+    accountLabel: "OpenRouter 3",
+  },
+];
+const openRouterResult = dedupeManagedAccountRows(openRouterSettings, openRouterRows);
+assert.strictEqual(openRouterResult.duplicates.length, 1, "OAuth keys from the same OpenRouter creator_user_id must collapse to one account");
+assert.strictEqual(openRouterResult.duplicates[0].profileId, "duplicate");
+assert.deepStrictEqual(openRouterResult.openRouterProfiles.map((profile) => profile.id), ["primary", "other"]);
+assert.deepStrictEqual(openRouterResult.providers.map((row) => row.profileId), ["primary", "other"]);
+
 const unknownRows = [
   { id: "claude", providerId: "claude", status: "ok", accountOrder: 0, accountKey: "claude:default" },
   { id: "claude:profile:x", providerId: "claude", profileId: "x", status: "ok", accountOrder: 1, accountKey: "claude:default" },
 ];
 assert.strictEqual(verifiedAccountIdentityKey(unknownRows[0]), null, "unknown/default identity must never be used for destructive deduplication");
-const unknown = dedupeManagedAccountRows({ accountProfiles: [] }, unknownRows);
+const unknown = dedupeManagedAccountRows({ accountProfiles: [], openRouterProfiles: [] }, unknownRows);
 assert.strictEqual(unknown.duplicates.length, 0);
 assert.strictEqual(unknown.providers.length, 2);
 
