@@ -43,6 +43,12 @@
   outline: 2px solid var(--ok);
   outline-offset: 2px;
 }
+/* The main process applies the native edge geometry immediately after the
+   header switch saves. Mirror that state directly from the switch so the
+   titlebar stops acting as a drag region without waiting for the next poll. */
+.shell:has(#headerEdgeDockToggle:checked) .titlebar {
+  -webkit-app-region: no-drag;
+}
 
 .shell.manual-height-size {
   height: 100vh;
