@@ -38,7 +38,11 @@ const API_PROVIDER_CATALOG = [
 let lastPayload = {
   fetchedAt: Date.now(),
   providers: [
-    { id: "codex", providerId: "codex", name: "Codex", status: "ok", remainingPct: 75, resetAt: Date.now() + 60 * 60 * 1000 },
+    {
+      id: "codex", providerId: "codex", name: "Codex", status: "ok", remainingPct: 75,
+      resetAt: Date.now() + 60 * 60 * 1000,
+      accountEmail: "codex@example.com", accountLogin: "codex-user", accountId: "acct_codex_123",
+    },
     { id: "claude", providerId: "claude", name: "Claude", status: "missing" },
     { id: "grok", providerId: "grok", name: "Grok", status: "missing" },
     { id: "cursor", providerId: "cursor", name: "Cursor", status: "missing" },
@@ -159,11 +163,15 @@ contextBridge.exposeInMainWorld("tokenWidget", {
 });
 
 window.addEventListener("DOMContentLoaded", () => {
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = "widget-enhancements.css";
-  document.head.appendChild(link);
-  const script = document.createElement("script");
-  script.src = "widget-enhancements.js";
-  document.body.appendChild(script);
+  for (const href of ["widget-enhancements.css", "account-identity-ui.css"]) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+  for (const src of ["widget-enhancements.js", "account-identity-ui.js"]) {
+    const script = document.createElement("script");
+    script.src = src;
+    document.body.appendChild(script);
+  }
 }, { once: true });
