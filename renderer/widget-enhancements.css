@@ -191,13 +191,13 @@
 
 /* Settings previously inherited two independent 520px caps. A manually taller
    window therefore left unused space and made lower controls look clipped.
-   The settings pane is now the sole scroll container and consumes the complete
-   content viewport beneath the fixed titlebar. */
+   The settings pane remains content-sized in automatic-height mode, then grows
+   or shrinks to the complete viewport when a native manual height is present. */
 .settings {
   max-height: none;
 }
 .shell.settings-open .settings {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
   max-height: none;
   overflow-x: hidden;
