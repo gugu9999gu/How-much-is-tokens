@@ -19,18 +19,22 @@ const root = path.join(os.tmpdir(), "how-much-is-tokens-multi-account-test");
 const codexTwo = path.join(root, "codex-2");
 const claudeWork = path.join(root, "claude-work");
 const grokTwo = path.join(root, "grok-2");
+const cursorTwo = path.join(root, "cursor-2");
+const copilotTwo = path.join(root, "copilot-2");
 
 const profiles = normalizeAccountProfiles([
   { providerId: "codex", label: "GPT 2번", configDir: codexTwo },
   { provider: "claude", label: "Claude | 업무", path: claudeWork },
   { providerId: "grok", label: "Grok 2번", configDir: grokTwo },
   { providerId: "grok", label: "duplicate", configDir: grokTwo },
-  { providerId: "cursor", label: "unsupported", configDir: path.join(root, "cursor") },
+  { providerId: "cursor", label: "Cursor 2번", configDir: cursorTwo },
+  { providerId: "copilot", label: "Copilot 2번", configDir: copilotTwo },
+  { providerId: "antigravity", label: "external-manager-only", configDir: path.join(root, "agy") },
   { providerId: "codex", label: "relative", configDir: "relative/profile" },
 ]);
 
-assert.strictEqual(profiles.length, 3, "only supported absolute isolated profiles should survive normalization");
-assert.deepStrictEqual(profiles.map((profile) => profile.providerId), ["codex", "claude", "grok"]);
+assert.strictEqual(profiles.length, 5, "supported absolute isolated profiles should survive normalization");
+assert.deepStrictEqual(profiles.map((profile) => profile.providerId), ["codex", "claude", "grok", "cursor", "copilot"]);
 assert.strictEqual(profiles[1].label, "Claude 업무", "profile labels must not contain the line-format separator");
 assert.strictEqual(profiles[0].id, stableProfileId("codex", codexTwo));
 assert.strictEqual(profileInstanceKey(profiles[0]), `codex:profile:${profiles[0].id}`);
@@ -38,9 +42,13 @@ assert.strictEqual(profileInstanceKey(profiles[0]), `codex:profile:${profiles[0]
 const codexEnv = profileEnvironment(profiles[0]);
 const claudeEnv = profileEnvironment(profiles[1]);
 const grokEnv = profileEnvironment(profiles[2]);
+const cursorEnv = profileEnvironment(profiles[3]);
+const copilotEnv = profileEnvironment(profiles[4]);
 assert.strictEqual(codexEnv.CODEX_HOME, profiles[0].configDir);
 assert.strictEqual(claudeEnv.CLAUDE_CONFIG_DIR, profiles[1].configDir);
 assert.strictEqual(grokEnv.GROK_HOME, profiles[2].configDir);
+assert.strictEqual(cursorEnv.CURSOR_CONFIG_DIR, profiles[3].configDir);
+assert.strictEqual(copilotEnv.GH_CONFIG_DIR, profiles[4].configDir);
 assert.notStrictEqual(codexEnv, process.env, "explicit profile runtime must use an isolated environment object");
 
 const oldCodexHome = process.env.CODEX_HOME;
@@ -48,7 +56,7 @@ process.env.CODEX_HOME = codexTwo;
 try {
   const active = activeAccountProfiles({ accountProfiles: profiles });
   assert.ok(!active.some((profile) => profile.providerId === "codex"), "the current default CODEX_HOME must not be duplicated as another card");
-  assert.strictEqual(active.length, 2);
+  assert.strictEqual(active.length, 4);
 } finally {
   if (oldCodexHome == null) delete process.env.CODEX_HOME;
   else process.env.CODEX_HOME = oldCodexHome;
@@ -58,6 +66,9 @@ const map = profileMap({ accountProfiles: profiles });
 assert.strictEqual(map.get("codex").length, 1);
 assert.strictEqual(map.get("claude").length, 1);
 assert.strictEqual(map.get("grok").length, 1);
+assert.strictEqual(map.get("cursor").length, 1);
+assert.strictEqual(map.get("grokbot").length, 1, "Grok Bot must mirror isolated Cursor profiles because both use the same auth source");
+assert.strictEqual(map.get("copilot").length, 1);
 
 const contextual = withAccountContext({
   id: "codex",
