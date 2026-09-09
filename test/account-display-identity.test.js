@@ -32,11 +32,16 @@ assert.strictEqual(nested.accountId, "acct_456");
 
 const cleaned = normalizeAccountIdentity({
   email: " user@example.com\n",
-  id: " account-789 ",
+  accountId: " account-789 ",
 });
 assert.strictEqual(cleaned.accountEmail, "user@example.com");
 assert.strictEqual(cleaned.accountId, "account-789");
 assert.strictEqual(accountIdentityText(cleaned), "user@example.com · ID account-789");
+
+const providerRow = normalizeAccountIdentity({ id: "codex", name: "Codex" });
+assert.strictEqual(providerRow.accountId, null, "ordinary provider row id must not become an authenticated account id");
+assert.strictEqual(providerRow.accountIdentityLabel, null, "ordinary provider name must not become an account identity label");
+assert.strictEqual(accountIdentityText(providerRow), "");
 assert.strictEqual(decodeJwtPayload("not-a-jwt"), null);
 
 console.log("account identity display tests passed");
