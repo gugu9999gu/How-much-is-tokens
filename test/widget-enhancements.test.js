@@ -22,7 +22,7 @@ assert.ok(css.includes(".header-edge-toggle"), "minimal header edge toggle must 
 assert.ok(css.includes("repeat(auto-fit, minmax(min(100%, 280px), 1fr))"), "provider token cards must add/remove columns with widget width");
 assert.ok(css.includes("repeat(auto-fit, minmax(min(100%, 120px), 1fr))"), "multi-quota cells must also use available card width responsively");
 assert.ok(css.includes(".shell.settings-open .settings"), "settings viewport override must be scoped to the open settings page");
-assert.ok(css.includes("flex: 1 1 0"), "settings must consume all remaining height below the titlebar");
+assert.ok(css.includes("flex: 1 1 auto"), "settings must keep intrinsic sizing while growing into manually available height");
 assert.ok(css.includes("max-height: none"), "settings must remove the legacy fixed-height cap");
 
 assert.ok(identityUi.includes("accountEmail"), "quota cards must consume authenticated account email metadata");
