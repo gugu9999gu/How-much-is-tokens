@@ -17,6 +17,7 @@ assert.strictEqual(creatorUserIdFromPayload({ data: {} }), null);
 const integration = fs.readFileSync(path.join(__dirname, "..", "lib", "openrouter-main-integration.js"), "utf8");
 assert.ok(integration.includes("duplicateOpenRouterAccount"), "OAuth flow must invoke the account-identity duplicate guard");
 assert.ok(integration.includes('reason: "duplicate-account"'), "duplicate OAuth account must return an explicit duplicate-account result");
+assert.ok(integration.includes("selection.isNew !== true"), "duplicate rejection must apply only to +account OAuth, preserving normal reconnect behavior");
 assert.ok(
   integration.indexOf("duplicateOpenRouterAccount(selection, apiKey)") < integration.indexOf("saveOpenRouterProfileSecrets(selection.profile.id"),
   "duplicate-account check must happen before persisting the new OAuth key",
