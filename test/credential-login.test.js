@@ -71,6 +71,8 @@ try {
   assert.strictEqual(launched.ok, true);
   assert.strictEqual(launched.profileId, "profile-test");
   assert.strictEqual(spawnCall.options.env.CODEX_HOME, profile.configDir, "isolated login must set CODEX_HOME instead of moving auth files");
+  assert.strictEqual(spawnCall.options.detached, true, "interactive login must run independently from the widget process");
+  assert.strictEqual(spawnCall.options.windowsHide, false, "interactive login console must stay visible on Windows");
   assert.ok(spawnCall.args.join(" ").includes("login"));
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
