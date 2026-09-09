@@ -1,0 +1,21 @@
+name: Dispatch v1.0.28 Public Release Once
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch existing public release workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish-public-release.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag=v1.0.28
