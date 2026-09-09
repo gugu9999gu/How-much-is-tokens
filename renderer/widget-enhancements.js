@@ -3,10 +3,17 @@
   if (!api) return;
 
   const RESET_MODE_INTERVAL_MS = 5_000;
+  const RESET_DISPLAY_MODES = new Set(["auto", "relative", "absolute"]);
+  const RESET_DISPLAY_OPTIONS = [
+    { value: "auto", icon: "↔", label: "자동" },
+    { value: "relative", icon: "D", label: "남은 시간" },
+    { value: "absolute", icon: "◷", label: "예정 일시" },
+  ];
   const CLI_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
   const RESIZE_DIRECTIONS = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
   let usagePayload = typeof api.getLastUsage === "function" ? api.getLastUsage() : null;
   let resetMode = "relative";
+  let resetDisplayPreference = "auto";
   let resetTimer = null;
   let cliTimer = null;
   let resizePointer = null;
@@ -22,6 +29,34 @@
     if (!element) return;
     element.textContent = text || "";
     element.classList.toggle("warning", warning);
+  }
+
+  function normalizeResetDisplayPreference(value) {
+    const mode = String(value || "").trim().toLowerCase();
+    return RESET_DISPLAY_MODES.has(mode) ? mode : "auto";
+  }
+
+  function syncResetDisplayControls() {
+    document.querySelectorAll('input[name="resetDisplayMode"]').forEach((input) => {
+      input.checked = input.value === resetDisplayPreference;
+    });
+  }
+
+  function syncResetDisplayPreference(settings = {}) {
+    const previous = resetDisplayPreference;
+    const next = normalizeResetDisplayPreference(settings.resetDisplayMode);
+    resetDisplayPreference = next;
+    if (next === "auto") {
+      if (previous !== "auto") resetMode = "relative";
+    } else {
+      resetMode = next;
+    }
+    syncResetDisplayControls();
+    return previous !== next;
+  }
+
+  function effectiveResetDisplayMode() {
+    return resetDisplayPreference === "auto" ? resetMode : resetDisplayPreference;
   }
 
   function resetDateTimeText(ms) {
@@ -47,14 +82,82 @@
     try {
       if (typeof api.getSettings === "function") settings = await api.getSettings();
     } catch {}
+    syncResetDisplayPreference(settings);
     window.render({ ...usagePayload, settings });
+  }
+
+  function installResetDisplaySetting() {
+    if (document.getElementById("resetDisplayModeField")) return;
+    const visualizationField = document.querySelector(".viz-field");
+    if (!visualizationField) return;
+
+    const field = document.createElement("div");
+    field.id = "resetDisplayModeField";
+    field.className = "viz-field reset-display-field";
+
+    const head = document.createElement("div");
+    head.className = "viz-head";
+    const title = document.createElement("b");
+    title.textContent = "리셋 시간 표시";
+    const description = document.createElement("small");
+    description.textContent = "자동은 남은 시간과 예정 일시를 5초마다 전환";
+    head.append(title, description);
+
+    const picker = document.createElement("div");
+    picker.className = "viz-picker";
+    picker.setAttribute("role", "radiogroup");
+    picker.setAttribute("aria-label", "AI 사용량 리셋 시간 표시 방식");
+
+    for (const option of RESET_DISPLAY_OPTIONS) {
+      const label = document.createElement("label");
+      label.className = "viz-option";
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = "resetDisplayMode";
+      input.value = option.value;
+      input.setAttribute("aria-label", option.label);
+      const box = document.createElement("span");
+      const icon = document.createElement("em");
+      icon.className = "viz-icon";
+      icon.textContent = option.icon;
+      const text = document.createElement("b");
+      text.textContent = option.label;
+      box.append(icon, text);
+      label.append(input, box);
+      picker.appendChild(label);
+
+      input.addEventListener("change", async () => {
+        if (!input.checked || typeof api.saveSettings !== "function") return;
+        const previous = resetDisplayPreference;
+        const requested = normalizeResetDisplayPreference(input.value);
+        resetDisplayPreference = requested;
+        resetMode = requested === "auto" ? "relative" : requested;
+        syncResetDisplayControls();
+        try {
+          const settings = await api.saveSettings({ resetDisplayMode: requested });
+          syncResetDisplayPreference(settings);
+          await rerenderForResetMode();
+        } catch (err) {
+          resetDisplayPreference = previous;
+          resetMode = previous === "auto" ? "relative" : previous;
+          syncResetDisplayControls();
+          setHubMessage(err.message || String(err), true);
+          await rerenderForResetMode();
+        }
+      });
+    }
+
+    field.append(head, picker);
+    visualizationField.insertAdjacentElement("afterend", field);
+    syncResetDisplayControls();
   }
 
   function installResetModeCycle() {
     if (typeof window.resetText !== "function" || typeof window.render !== "function") return;
     const relativeResetText = window.resetText;
-    window.resetText = (ms) => resetMode === "absolute" ? resetDateTimeText(ms) : relativeResetText(ms);
+    window.resetText = (ms) => effectiveResetDisplayMode() === "absolute" ? resetDateTimeText(ms) : relativeResetText(ms);
     resetTimer = setInterval(() => {
+      if (resetDisplayPreference !== "auto") return;
       resetMode = resetMode === "relative" ? "absolute" : "relative";
       rerenderForResetMode().catch(() => {});
     }, RESET_MODE_INTERVAL_MS);
@@ -82,6 +185,8 @@
       const settings = await api.getSettings();
       syncEdgeToggle(settings);
       syncManualHeightClass(settings);
+      const changed = syncResetDisplayPreference(settings);
+      if (changed) await rerenderForResetMode();
     } catch {}
   }
 
@@ -339,12 +444,16 @@
       usagePayload = payload;
       syncEdgeToggle(payload && payload.settings ? payload.settings : {});
       syncManualHeightClass(payload && payload.settings ? payload.settings : {});
+      const changed = syncResetDisplayPreference(payload && payload.settings ? payload.settings : {});
       syncDisconnectControls();
+      if (changed) rerenderForResetMode().catch(() => {});
     });
   }
 
+  syncResetDisplayPreference(usagePayload && usagePayload.settings ? usagePayload.settings : {});
   installHeaderEdgeToggle();
   installResizeHandles();
+  installResetDisplaySetting();
   installResetModeCycle();
   installConnectionEnhancements();
   readSettingsAndSync();
