@@ -12,6 +12,8 @@ const settings = {
   visualization: "ring",
   opacity: 0.94,
   refreshSeconds: 60,
+  manualWindowSize: null,
+  disabledCredentialProviders: [],
   githubToken: "",
   cursorCookie: "",
   accountProfiles: [],
@@ -36,7 +38,7 @@ const API_PROVIDER_CATALOG = [
 let lastPayload = {
   fetchedAt: Date.now(),
   providers: [
-    { id: "codex", providerId: "codex", name: "Codex", status: "ok", remainingPct: 75 },
+    { id: "codex", providerId: "codex", name: "Codex", status: "ok", remainingPct: 75, resetAt: Date.now() + 60 * 60 * 1000 },
     { id: "claude", providerId: "claude", name: "Claude", status: "missing" },
     { id: "grok", providerId: "grok", name: "Grok", status: "missing" },
     { id: "cursor", providerId: "cursor", name: "Cursor", status: "missing" },
@@ -94,13 +96,26 @@ function routerStatus() {
   };
 }
 
+function cliFixture() {
+  return [
+    { providerId: "codex", label: "Codex", installed: true, installedVersion: "1.0.0", latestVersion: "1.1.0", updateAvailable: true, updateSupported: true },
+    { providerId: "claude", label: "Claude", installed: true, installedVersion: "2.0.0", latestVersion: "2.0.0", updateAvailable: false, updateSupported: true },
+    { providerId: "grok", label: "Grok", installed: false, updateAvailable: false, updateSupported: false },
+    { providerId: "cursor", label: "Cursor", installed: true, installedVersion: "0.9.0", updateAvailable: false, updateSupported: true, autoUpdate: true },
+    { providerId: "grokbot", label: "Grok Bot", installed: true, installedVersion: "0.9.0", updateAvailable: false, updateSupported: true, autoUpdate: true },
+    { providerId: "copilot", label: "Copilot / GitHub CLI", installed: true, installedVersion: "2.80.0", updateAvailable: false, updateSupported: false },
+    { providerId: "antigravity", label: "Antigravity", installed: true, installedVersion: "1.2.0", updateAvailable: false, updateSupported: false },
+  ];
+}
+
 contextBridge.exposeInMainWorld("tokenWidget", {
   refresh: async () => emit(),
   hide: async () => {},
   quit: async () => {},
   resize: async (height) => ({ requestedHeight: height, height, constrained: false }),
+  manualWindowResize: async (payload = {}) => ({ ok: true, phase: payload.phase, settings: { ...settings } }),
   getSettings: async () => ({ ...settings }),
-  saveSettings: async (patch = {}) => Object.assign(settings, patch),
+  saveSettings: async (patch = {}) => ({ ...Object.assign(settings, patch) }),
   getLastUsage: () => lastPayload,
   getOpenRouterRouterStatus: async () => routerStatus(),
   configureOpenRouterRouter: async () => routerStatus(),
@@ -112,6 +127,15 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   },
   connectCredential: async (providerId) => ({ ok: false, providerId, reason: "cli-not-found", commands: [providerId] }),
   addCredentialAccount: async (providerId) => ({ ok: false, providerId, reason: "profiles-not-supported" }),
+  disconnectCredential: async (providerId) => {
+    if (providerId === "codex") {
+      lastPayload.providers = lastPayload.providers.filter((row) => row.providerId !== "codex");
+      emit();
+    }
+    return { ok: true, providerId, settings: { ...settings } };
+  },
+  getCliVersions: async () => cliFixture(),
+  updateCli: async (providerId) => ({ ok: true, providerId, status: { providerId, installed: true, installedVersion: "1.1.0" } }),
   getApiProviderCatalog: () => API_PROVIDER_CATALOG.map((provider) => ({ ...provider, credentials: provider.credentials.map((cred) => ({ ...cred })) })),
   saveApiProviderSecret: async (providerId, patch = {}) => {
     settings.apiProviderStatuses = { ...(settings.apiProviderStatuses || {}) };
@@ -133,3 +157,13 @@ contextBridge.exposeInMainWorld("tokenWidget", {
     return () => listeners.delete(callback);
   },
 });
+
+window.addEventListener("DOMContentLoaded", () => {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "widget-enhancements.css";
+  document.head.appendChild(link);
+  const script = document.createElement("script");
+  script.src = "widget-enhancements.js";
+  document.body.appendChild(script);
+}, { once: true });
