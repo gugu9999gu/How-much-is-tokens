@@ -55,7 +55,7 @@ app.whenReady().then(async () => {
 
   try {
     await win.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
-    await wait(120);
+    await wait(180);
 
     const connectionUi = await win.webContents.executeJavaScript(`(() => {
       const hub = document.getElementById('connectionHub');
@@ -83,6 +83,11 @@ app.whenReady().then(async () => {
         manualProfileAdvanced: !!(manualProfile && manualProfile.closest('#advancedSettings')),
         apiKeyAdvanced: !!(apiKey && apiKey.closest('#advancedSettings')),
         codexStatus: document.querySelector('[data-connection-status="codex"]')?.textContent || '',
+        headerEdgeToggle: !!document.getElementById('headerEdgeDockToggle'),
+        resizeHandles: document.querySelectorAll('.widget-resize-handle').length,
+        codexCli: document.querySelector('[data-connection-provider="codex"] .cli-version-line')?.textContent || '',
+        codexUpdate: !!document.querySelector('[data-connection-provider="codex"] .cli-update-btn'),
+        codexDisconnect: !!document.querySelector('[data-connection-provider="codex"] .connection-account-chip button'),
       };
     })()`);
     assert.strictEqual(connectionUi.hub, true, "minimal connection hub must exist");
@@ -98,6 +103,22 @@ app.whenReady().then(async () => {
     assert.strictEqual(connectionUi.manualProfileAdvanced, true, "raw account profile editor must move under advanced settings");
     assert.strictEqual(connectionUi.apiKeyAdvanced, true, "manual OpenRouter API key must move under advanced settings");
     assert.ok(connectionUi.codexStatus.includes("연결됨"), "connection hub should render latest provider state");
+    assert.strictEqual(connectionUi.headerEdgeToggle, true, "edge-dock switch must be available directly in the titlebar");
+    assert.strictEqual(connectionUi.resizeHandles, 8, "all four borders and corners must expose resize hit targets");
+    assert.ok(connectionUi.codexCli.includes("1.0.0"), "installed CLI version must be visible in the connection card");
+    assert.strictEqual(connectionUi.codexUpdate, true, "detected CLI update must expose an update button");
+    assert.strictEqual(connectionUi.codexDisconnect, true, "connected account must expose a disconnect control");
+
+    const headerToggleWorked = await win.webContents.executeJavaScript(`(async () => {
+      document.getElementById('headerEdgeDockToggle').click();
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      const enabled = (await window.tokenWidget.getSettings()).edgeDockEnabled === true;
+      document.getElementById('headerEdgeDockToggle').click();
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      const disabled = (await window.tokenWidget.getSettings()).edgeDockEnabled === false;
+      return enabled && disabled;
+    })()`);
+    assert.strictEqual(headerToggleWorked, true, "titlebar edge switch must persist the same setting without opening settings");
 
     await win.webContents.executeJavaScript(`(() => {
       document.getElementById('settingsBtn').click();
