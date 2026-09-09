@@ -1,6 +1,6 @@
 {
   "name": "how-much-is-tokens",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "화면에 남는 AI 구독 잔여량 위젯",
   "main": "main.js",
   "author": "gugu9999gu",
