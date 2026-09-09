@@ -18,10 +18,10 @@
           </div>
         </div>
         <div class="actions">
-          <button type="button" id="refreshBtn" title="새로고침">↻</button>
-          <button type="button" id="compactBtn" title="간단/자세히">▣</button>
-          <button type="button" id="settingsBtn" title="설정">⚙</button>
-          <button type="button" id="hideBtn" title="숨기기">–</button>
+          <button type="button" id="refreshBtn" title="새로고침" aria-label="사용량 새로고침">↻</button>
+          <button type="button" id="compactBtn" title="간단/자세히" aria-label="간단 보기 전환">▣</button>
+          <button type="button" id="settingsBtn" title="설정" aria-label="설정 열기" aria-expanded="false">⚙</button>
+          <button type="button" id="hideBtn" title="숨기기" aria-label="위젯 숨기기">–</button>
         </div>
       </header>
 
@@ -130,6 +130,9 @@
             <h2>다계정 프로필</h2>
             <label class="field">
               <span class="field-label">격리 로그인 프로필</span>
+              <div class="format-legend" aria-hidden="true">
+                <span class="legend-token">provider</span><i>|</i><span class="legend-token">표시 이름</span><i>|</i><span class="legend-token">설정 디렉터리</span>
+              </div>
               <textarea id="accountProfiles" rows="6" placeholder="codex|GPT 2번|C:\\AI-Profiles\\codex-2&#10;claude|Claude 업무|D:\\AI-Profiles\\claude-work&#10;grok|Grok 2번|D:\\AI-Profiles\\grok-2" spellcheck="false"></textarea>
               <small>한 줄에 <b>provider|표시 이름|설정 디렉터리</b> 형식으로 입력합니다. 현재 지원: codex, claude, grok. 기본 로그인 디렉터리는 자동으로 표시되므로 여기에 다시 추가하지 않습니다.</small>
             </label>
@@ -174,6 +177,9 @@
               <div class="openrouter-profile-editor">
                 <label class="field">
                   <span class="field-label">키 프로필</span>
+                  <div class="format-legend" aria-hidden="true">
+                    <span class="legend-token">id</span><i>|</i><span class="legend-token">표시 이름</span><i>|</i><span class="legend-token">우선순위</span><i>|</i><span class="legend-token">on/off</span>
+                  </div>
                   <textarea id="openRouterProfiles" rows="4" placeholder="primary|주 키|10|on&#10;backup|백업 키|20|on" spellcheck="false"></textarea>
                   <small>한 줄에 <b>id|표시 이름|우선순위|on/off</b>. id는 영문 소문자/숫자/underscore/hyphen, 최대 16개. 키 원문은 여기에 저장하지 않습니다.</small>
                 </label>
@@ -227,6 +233,12 @@
             </div>
           </div>
 
+          <div class="set-group api-provider-group" id="apiProvidersGroup">
+            <h2>생성형 미디어 API</h2>
+            <p class="api-providers-intro">API 키를 저장하면 남은 사용량·크레딧·최근 생성 로그를 함께 표시합니다. 키 원문은 settings.json에 저장하지 않고 OS 보안 저장소에 암호화합니다.</p>
+            <div id="apiProviderList" class="api-provider-list"></div>
+          </div>
+
           <div class="set-group">
             <h2>연결</h2>
             <label class="field">
@@ -250,6 +262,7 @@
     </div>
     <script src="app.js"></script>
     <script src="openrouter-settings.js"></script>
+    <script src="api-providers-settings.js"></script>
     <script src="connection-settings.js"></script>
   </body>
 </html>

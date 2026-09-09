@@ -79,6 +79,16 @@ function pctLabel(pct) {
   return `${Math.round(pct)}`;
 }
 
+function escapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[char]));
+}
+
 function resetText(ms) {
   if (!ms) return "";
   const delta = ms - Date.now();
@@ -226,6 +236,24 @@ function renderCreditBalances(provider) {
   }).join("")}</div>`;
 }
 
+function renderProviderLogs(provider) {
+  if (compact) return "";
+  const logs = Array.isArray(provider.logs)
+    ? provider.logs.filter((entry) => entry && entry.label).slice(0, 4)
+    : [];
+  if (!logs.length) return "";
+  const title = provider.logsTitle
+    ? `<div class="provider-logs-title">${escapeHtml(provider.logsTitle)}</div>`
+    : "";
+  return `<div class="provider-logs">${title}${logs.map((entry) => `
+    <span class="log-line"><b>${escapeHtml(entry.label)}</b>${entry.sub ? `<small>${escapeHtml(entry.sub)}</small>` : ""}</span>
+  `).join("")}</div>`;
+}
+
+function renderProviderNote(provider) {
+  return provider.note ? `<div class="hint">${escapeHtml(provider.note)}</div>` : "";
+}
+
 function renderProviderCard(provider) {
   const plan = provider.plan ? ` · ${provider.plan}` : "";
   const account = provider.accountLabel ? ` · ${provider.accountLabel}` : "";
@@ -261,6 +289,8 @@ function renderProviderCard(provider) {
           <div class="quota-visuals quota-${visualization}s">${quotaWindows.map(renderQuotaVisual).join("")}</div>
           ${credits}
           ${extras ? `<div class="windows">${extras}</div>` : ""}
+          ${renderProviderLogs(provider)}
+          ${renderProviderNote(provider)}
           ${hint}
         </div>
       </article>
@@ -275,6 +305,8 @@ function renderProviderCard(provider) {
         <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
         ${credits}
         ${chips ? `<div class="windows">${chips}</div>` : ""}
+        ${renderProviderLogs(provider)}
+        ${renderProviderNote(provider)}
         ${hint}
       </div>
     </article>
@@ -409,6 +441,7 @@ function mergePayloadSettings(settings) {
 function setSettingsOpen(open) {
   settingsEl.classList.toggle("hidden", !open);
   settingsBtn.classList.toggle("active", open);
+  settingsBtn.setAttribute("aria-expanded", open ? "true" : "false");
   shellEl.classList.toggle("settings-open", open);
   requestResize();
 }

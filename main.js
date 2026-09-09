@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { loadSettings, saveSettings, resetSettings } = require("./lib/settings");
 require("./lib/openrouter-main-integration");
+require("./lib/api-providers-main-integration");
 const { fetchAll } = require("./lib/usage");
 const { applyAlwaysOnTop: setWindowAlwaysOnTop } = require("./lib/window-behavior");
 const {

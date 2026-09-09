@@ -37,7 +37,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.23-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.26-portable.exe`입니다.
 
 ## 사용
 
@@ -96,6 +96,20 @@ npm run dist
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
 | Grok / Grok Build | `~/.grok/auth.json` |
 | Antigravity | `agy -p "/usage"` (1.1.11+) 우선, 공식 custom status-line snapshot fallback |
+| OpenRouter | API Key(사용량/한도) · Management Key(계정 크레딧) |
+| fal.ai | `GET /v1/account/billing?expand=credits` (Admin scope API Key) |
+| Higgsfield | API Key ID/Secret (공개 잔액 API가 제한적이라 잔여 크레딧은 확인 가능한 경우에만 표시) |
+| Magnific / Freepik | `GET /v1/creations/recent` (최근 생성/사용 현황 로그) |
+| ElevenLabs | `GET /v1/user/subscription` (월간 문자 사용량) |
+| Stability AI | `GET /v1/user/balance` (크레딧 잔액) |
+
+### 생성형 미디어 API 공급자
+
+fal.ai, Higgsfield, Magnific, ElevenLabs, Stability AI 등은 설정 → `생성형 미디어 API`에서 API 키(또는 Key ID/Secret)를 저장하면 남은 사용량·크레딧 잔액·최근 생성 로그를 카드로 표시합니다.
+
+- 키 원문은 `settings.json`에 저장하지 않고 OpenRouter 키와 동일하게 OS 보안 저장소(`safeStorage`)에 암호화해 보관합니다.
+- 공급자별로 조회 항목이 다릅니다: 크레딧 잔액(fal.ai, Stability), 사용량 한도 %(ElevenLabs), 최근 생성 로그(Magnific). 공개 API가 노출하지 않는 값은 추정하지 않습니다.
+- 새 공급자는 `lib/api-providers/`에 모듈 한 개를 추가하고 `registry.js`에 등록하면 카드·설정·정렬에 자동으로 반영됩니다.
 
 ### 사용량 시각화
 

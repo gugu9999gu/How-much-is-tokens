@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 const { appData } = require("./lib/paths");
 const { selectRoute, profileForSelection } = require("./lib/account-router");
 const { normalizeAccountProfiles } = require("./lib/account-profiles");
+const { apiProviderCatalog } = require("./lib/api-providers/registry");
 const { launchRoutedCli, installRouterLaunchers } = require("./lib/routed-launcher");
 const {
   PROFILE_LOGIN_PROVIDERS,
@@ -130,6 +131,9 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   copyOpenRouterRouterToken: () => ipcRenderer.invoke("copy-openrouter-router-token"),
   connectCredential,
   addCredentialAccount,
+  getApiProviderCatalog: () => apiProviderCatalog(),
+  saveApiProviderSecret: (providerId, patch) => ipcRenderer.invoke("save-api-provider-secret", providerId, patch || {}),
+  clearApiProviderSecret: (providerId) => ipcRenderer.invoke("clear-api-provider-secret", providerId),
   routeLaunch,
   installSmartRoutingLaunchers,
   hide: () => ipcRenderer.invoke("hide"),

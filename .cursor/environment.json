@@ -1,0 +1,4 @@
+{
+  "name": "how-much-is-tokens",
+  "install": "npm ci"
+}

@@ -64,6 +64,14 @@ jobs:
           node --check lib/openrouter-request-router.js
           node --check lib/openrouter-oauth.js
           node --check lib/openrouter-main-integration.js
+          node --check lib/api-providers-main-integration.js
+          node --check lib/api-providers/common.js
+          node --check lib/api-providers/registry.js
+          node --check lib/api-providers/falai.js
+          node --check lib/api-providers/higgsfield.js
+          node --check lib/api-providers/magnific.js
+          node --check lib/api-providers/elevenlabs.js
+          node --check lib/api-providers/stability.js
           node --check lib/window-behavior.js
           node --check lib/edge-dock.js
           node --check lib/antigravity-bridge.js
@@ -80,6 +88,7 @@ jobs:
           node --check renderer/app.js
           node --check renderer/openrouter-settings.js
           node --check renderer/connection-settings.js
+          node --check renderer/api-providers-settings.js
           node --check test/claude-usage.test.js
           node --check test/cursor-credits.test.js
           node --check test/copilot-credits.test.js
@@ -90,6 +99,8 @@ jobs:
           node --check test/routed-launcher.test.js
           node --check test/credential-login.test.js
           node --check test/connection-settings.test.js
+          node --check test/api-providers.test.js
+          node --check test/api-provider-secrets.test.js
           node --check test/openrouter-profiles.test.js
           node --check test/openrouter-request-router.test.js
           node --check test/openrouter-oauth.test.js

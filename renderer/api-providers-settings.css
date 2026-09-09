@@ -1,0 +1,90 @@
+.api-providers-intro {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.api-provider-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.api-provider-card {
+  display: grid;
+  gap: 7px;
+  padding: 10px 11px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 11px;
+  background: rgba(255,255,255,.025);
+}
+
+.api-provider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.api-provider-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.api-provider-copy b {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.api-provider-copy small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.api-provider-status {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.api-provider-status.connected {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+.api-provider-status.attention {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+
+.api-provider-card .field {
+  gap: 4px;
+}
+
+.api-secret-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn.subtle-danger {
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bad) 26%, transparent);
+  color: var(--text);
+}
+
+.api-provider-message {
+  min-height: 13px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.api-provider-message.warning {
+  color: var(--warn);
+}
