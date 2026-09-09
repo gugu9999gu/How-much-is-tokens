@@ -55,7 +55,7 @@ app.whenReady().then(async () => {
 
   try {
     await win.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
-    await wait(180);
+    await wait(220);
 
     const connectionUi = await win.webContents.executeJavaScript(`(() => {
       const hub = document.getElementById('connectionHub');
@@ -88,6 +88,7 @@ app.whenReady().then(async () => {
         codexCli: document.querySelector('[data-connection-provider="codex"] .cli-version-line')?.textContent || '',
         codexUpdate: !!document.querySelector('[data-connection-provider="codex"] .cli-update-btn'),
         codexDisconnect: !!document.querySelector('[data-connection-provider="codex"] .connection-account-chip button'),
+        codexIdentity: document.querySelector('#list .account-identity-line')?.textContent || '',
       };
     })()`);
     assert.strictEqual(connectionUi.hub, true, "minimal connection hub must exist");
@@ -108,6 +109,8 @@ app.whenReady().then(async () => {
     assert.ok(connectionUi.codexCli.includes("1.0.0"), "installed CLI version must be visible in the connection card");
     assert.strictEqual(connectionUi.codexUpdate, true, "detected CLI update must expose an update button");
     assert.strictEqual(connectionUi.codexDisconnect, true, "connected account must expose a disconnect control");
+    assert.ok(connectionUi.codexIdentity.includes("codex@example.com"), "token card must show authenticated account email when available");
+    assert.ok(connectionUi.codexIdentity.includes("acct_codex_123"), "token card must show authenticated account ID when available");
 
     const headerToggleWorked = await win.webContents.executeJavaScript(`(async () => {
       document.getElementById('headerEdgeDockToggle').click();
