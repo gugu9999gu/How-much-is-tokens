@@ -7,6 +7,12 @@ const { normalizeOpenRouterProfiles } = require("./lib/openrouter-profiles");
 const { apiProviderCatalog } = require("./lib/api-providers/registry");
 const { launchRoutedCli, installRouterLaunchers } = require("./lib/routed-launcher");
 const {
+  launchLogin: launchAntigravityAccountLogin,
+  removeAccount: removeAntigravityManagedAccount,
+  managerStatus: getAntigravityManagerStatus,
+  installManager: installAntigravityManager,
+} = require("./lib/antigravity-account-manager");
+const {
   PROFILE_LOGIN_PROVIDERS,
   launchCredentialLogin,
   nextManagedProfile,
@@ -72,15 +78,13 @@ function installRendererEnhancements() {
   identityLink.dataset.widgetEnhancements = "1";
   document.head.appendChild(identityLink);
 
-  const script = document.createElement("script");
-  script.src = "widget-enhancements.js";
-  script.dataset.widgetEnhancements = "1";
-  document.body.appendChild(script);
-
-  const identityScript = document.createElement("script");
-  identityScript.src = "account-identity-ui.js";
-  identityScript.dataset.widgetEnhancements = "1";
-  document.body.appendChild(identityScript);
+  const scripts = ["widget-enhancements.js", "account-identity-ui.js", "account-automation-v2.js"];
+  for (const src of scripts) {
+    const script = document.createElement("script");
+    script.src = src;
+    script.dataset.widgetEnhancements = "1";
+    document.body.appendChild(script);
+  }
 }
 
 window.addEventListener("DOMContentLoaded", installRendererEnhancements, { once: true });
@@ -173,6 +177,7 @@ async function connectCredential(providerId, options = {}) {
 async function addCredentialAccount(providerId) {
   const id = String(providerId || "").toLowerCase();
   if (id === "openrouter") return ipcRenderer.invoke("connect-openrouter-oauth", { createNew: true });
+  if (id === "antigravity") return launchAntigravityAccountLogin();
   if (!PROFILE_LOGIN_PROVIDERS.has(id)) {
     return { ok: false, providerId: id, reason: "profiles-not-supported" };
   }
@@ -195,6 +200,14 @@ async function addCredentialAccount(providerId) {
   };
 }
 
+function managedAntigravityRow(profileId) {
+  const rows = Array.isArray(lastUsagePayload && lastUsagePayload.providers) ? lastUsagePayload.providers : [];
+  return rows.find((row) => row && row.providerId === "antigravity"
+    && row.profileId === profileId
+    && row.managedBy === "agm"
+    && row.externalAccountRef);
+}
+
 async function disconnectCredential(providerId, options = {}) {
   const id = String(providerId || "").toLowerCase();
   const profileId = String((options && options.profileId) || "");
@@ -214,6 +227,16 @@ async function disconnectCredential(providerId, options = {}) {
       openRouterEnabled: remaining.length > 0,
     });
     return { ok: true, providerId: id, profileId: profileId || null, settings: saved };
+  }
+
+  if (id === "antigravity" && profileId) {
+    const row = managedAntigravityRow(profileId);
+    if (row) {
+      const removed = await removeAntigravityManagedAccount(row.externalAccountRef);
+      return removed.ok
+        ? { ok: true, providerId: id, profileId, managedBy: "agm", settings }
+        : { ...removed, providerId: id, profileId };
+    }
   }
 
   if (profileId) {
@@ -277,6 +300,8 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   connectCredential,
   addCredentialAccount,
   disconnectCredential,
+  getAntigravityAccountManagerStatus: () => getAntigravityManagerStatus(),
+  installAntigravityAccountManager: () => installAntigravityManager(),
   getCliVersions: (options) => ipcRenderer.invoke("get-cli-versions", options || {}),
   updateCli: (providerId) => ipcRenderer.invoke("update-cli", providerId),
   getApiProviderCatalog: () => apiProviderCatalog(),
