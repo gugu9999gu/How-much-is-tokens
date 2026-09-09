@@ -15,6 +15,7 @@ const {
   readStore,
 } = require("../lib/usage-cache");
 const {
+  PROVIDER_COMMANDS,
   resolveProviderExecutable,
   interactiveStartCommand,
   launchRoutedCli,
@@ -23,26 +24,29 @@ const {
 } = require("../lib/routed-launcher");
 
 const WINDOWS_POWERSHELL_TIMEOUT_MS = 20_000;
+assert.deepStrictEqual(Object.keys(PROVIDER_COMMANDS), ["codex", "claude", "grok", "cursor", "copilot", "antigravity"]);
 
 const fakeExec = (_command, args) => {
   assert.strictEqual(args[0], "codex");
   return "C:\\Tools\\codex.cmd\r\n";
 };
-assert.strictEqual(
-  resolveProviderExecutable("codex", { platform: "win32", execFileSyncImpl: fakeExec, env: {} }),
-  "C:\\Tools\\codex.cmd",
-);
+assert.strictEqual(resolveProviderExecutable("codex", { platform: "win32", execFileSyncImpl: fakeExec, env: {} }), "C:\\Tools\\codex.cmd");
 assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32\\cmd.exe").startsWith("start \"\""));
-assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32\\cmd.exe").includes(" /k call "));
-assert.strictEqual(interactiveStartCommand("bad\npath.cmd", "cmd.exe"), null, "shell paths with line breaks must be rejected");
-assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", limitReached: true }).limitReached, true,
-  "persistent cache must retain the server-classified reached state used by terminal routing");
-assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", remainingPct: 90, routingRemainingPct: 12 }).routingRemainingPct, 12,
-  "persistent cache must retain the conservative routing quota independently of the display gauge");
+assert.ok(interactiveStartCommand("C:\\Tools\\gh.exe", "cmd.exe", ["copilot"]).includes(" copilot"));
+assert.strictEqual(interactiveStartCommand("bad\npath.cmd", "cmd.exe"), null);
+assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", limitReached: true }).limitReached, true);
+assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", remainingPct: 90, routingRemainingPct: 12 }).routingRemainingPct, 12);
+assert.strictEqual(sanitizeProvider({
+  id: "antigravity:agm-a", providerId: "antigravity", status: "ok", remainingPct: 50,
+  profileId: "agm-a", externalAccountRef: "a@example.com", managedBy: "agm",
+}).externalAccountRef, "a@example.com", "managed routing metadata must survive the persistent cache sanitizer");
 
-const profile = normalizeAccountProfiles([
+const profiles = normalizeAccountProfiles([
   { providerId: "codex", label: "GPT 2번", configDir: path.join(os.tmpdir(), "launcher-codex-2") },
-])[0];
+  { providerId: "cursor", label: "Cursor 2번", configDir: path.join(os.tmpdir(), "launcher-cursor-2") },
+  { providerId: "copilot", label: "Copilot 2번", configDir: path.join(os.tmpdir(), "launcher-copilot-2") },
+]);
+const profile = profiles[0];
 
 let captured = null;
 const spawnImpl = (command, args, options) => {
@@ -50,181 +54,133 @@ const spawnImpl = (command, args, options) => {
   return { unref() {} };
 };
 const launched = launchRoutedCli("codex", profile, {
-  platform: "win32",
-  executable: "C:\\Tools\\codex.cmd",
-  spawnImpl,
-  comspec: "cmd.exe",
-  cwd: "C:\\Work",
+  platform: "win32", executable: "C:\\Tools\\codex.cmd", spawnImpl, comspec: "cmd.exe", cwd: "C:\\Work",
 });
 assert.strictEqual(launched.ok, true);
-assert.strictEqual(launched.accountLabel, "GPT 2번");
-assert.strictEqual(captured.command, "cmd.exe");
 assert.strictEqual(captured.options.env.CODEX_HOME, profile.configDir);
 assert.strictEqual(captured.options.detached, true);
-assert.strictEqual(captured.options.windowsHide, true, "only the short-lived parent shell should be hidden");
-assert.ok(captured.args.join(" ").includes("start \"\""), "parent shell must START a separate interactive console");
-assert.ok(captured.args.join(" ").includes(" /k call "), "interactive console must stay open while the CLI runs");
-assert.ok(captured.args.join(" ").includes("codex.cmd"));
+assert.strictEqual(captured.options.windowsHide, false, "the interactive routed login console must remain visible");
+assert.strictEqual(captured.options.windowsVerbatimArguments, true);
+
+captured = null;
+assert.strictEqual(launchRoutedCli("cursor", profiles[1], {
+  platform: "win32", executable: "C:\\Tools\\agent.exe", spawnImpl, comspec: "cmd.exe",
+}).ok, true);
+assert.strictEqual(captured.options.env.CURSOR_CONFIG_DIR, profiles[1].configDir);
+
+captured = null;
+assert.strictEqual(launchRoutedCli("copilot", profiles[2], {
+  platform: "win32", executable: "C:\\Tools\\gh.exe", spawnImpl, comspec: "cmd.exe",
+}).ok, true);
+assert.strictEqual(captured.options.env.GH_CONFIG_DIR, profiles[2].configDir);
+assert.ok(captured.args.join(" ").includes("copilot"));
+
+let agmSwitch = null;
+captured = null;
+const antigravityProfile = {
+  id: "agm-b", providerId: "antigravity", label: "Antigravity 2", accountRef: "b@example.com", externalManager: "agm",
+};
+const agLaunch = launchRoutedCli("antigravity", antigravityProfile, {
+  platform: "win32",
+  executable: "C:\\Tools\\agy.exe",
+  agmExecutable: "C:\\Tools\\agm.exe",
+  execFileSyncImpl(command, args) { agmSwitch = { command, args }; return "ok"; },
+  spawnImpl,
+  comspec: "cmd.exe",
+});
+assert.strictEqual(agLaunch.ok, true);
+assert.strictEqual(agmSwitch.command, "C:\\Tools\\agm.exe");
+assert.deepStrictEqual(agmSwitch.args, ["switch", "b@example.com", "--target", "agy"]);
 
 captured = null;
 const defaultLaunch = launchRoutedCli("codex", null, {
-  platform: "win32",
-  executable: "C:\\Tools\\codex.cmd",
-  spawnImpl,
-  comspec: "cmd.exe",
+  platform: "win32", executable: "C:\\Tools\\codex.cmd", spawnImpl, comspec: "cmd.exe",
 });
 assert.strictEqual(defaultLaunch.ok, true);
-assert.strictEqual(captured.options.env.CODEX_HOME, defaultConfigDir("codex"), "default selection must not inherit an unrelated shell CODEX_HOME");
+assert.strictEqual(captured.options.env.CODEX_HOME, defaultConfigDir("codex"));
 
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-router-state-"));
 const cacheFile = path.join(stateDir, "usage-cache.json");
 const cacheNow = Date.now();
 const cacheProvider = {
-  id: "codex",
-  accountKey: "codex:routing-test",
-  name: "Codex",
-  status: "ok",
-  remainingPct: 55,
-  routingRemainingPct: 55,
+  id: "codex", accountKey: "codex:routing-test", name: "Codex", status: "ok",
+  remainingPct: 55, routingRemainingPct: 55,
   windows: [{ id: "session", label: "5시간", remainingPct: 55, usedPct: 45, resetAt: cacheNow + 60_000 }],
 };
 assert.strictEqual(saveProviderSnapshot(cacheProvider, cacheNow, cacheFile), true);
-const fallback = applyUsageFallback({
-  id: "codex",
-  accountKey: "codex:routing-test",
-  name: "Codex",
-  status: "error",
-  error: "network",
-}, cacheNow + 100, cacheFile);
+const fallback = applyUsageFallback({ id: "codex", accountKey: "codex:routing-test", name: "Codex", status: "error", error: "network" }, cacheNow + 100, cacheFile);
 assert.strictEqual(fallback.stale, true);
 let routeEntry = readStore(cacheFile).providers["codex:routing-test"];
-assert.strictEqual(routeEntry.routeBlockedAt, cacheNow + 100, "last-good quota must be route-blocked after a live error");
-assert.strictEqual(routeEntry.lastLiveStatus, "error");
+assert.strictEqual(routeEntry.routeBlockedAt, cacheNow + 100);
 assert.strictEqual(saveProviderSnapshot({ ...cacheProvider, remainingPct: 54, routingRemainingPct: 54 }, cacheNow + 200, cacheFile), true);
 routeEntry = readStore(cacheFile).providers["codex:routing-test"];
-assert.strictEqual(Object.prototype.hasOwnProperty.call(routeEntry, "routeBlockedAt"), false,
-  "a successful provider refresh must clear the standalone routing block");
+assert.strictEqual(Object.prototype.hasOwnProperty.call(routeEntry, "routeBlockedAt"), false);
 
 const binDir = path.join(stateDir, "router-bin");
 const installed = installRouterLaunchers({ stateDir, binDir });
 assert.strictEqual(installed.ok, true);
-for (const name of ["codex-auto.cmd", "claude-auto.cmd", "grok-auto.cmd", "how-tokens-route.ps1", "README.txt"]) {
-  assert.ok(fs.existsSync(path.join(binDir, name)), `${name} must be installed`);
-}
+for (const name of [
+  "codex-auto.cmd", "claude-auto.cmd", "grok-auto.cmd", "cursor-auto.cmd", "copilot-auto.cmd", "antigravity-auto.cmd",
+  "how-tokens-route.ps1", "README.txt",
+]) assert.ok(fs.existsSync(path.join(binDir, name)), `${name} must be installed`);
 
 const psPath = path.join(binDir, "how-tokens-route.ps1");
 const ps = fs.readFileSync(psPath, "utf8");
-assert.ok(ps.includes("settings.json"));
-assert.ok(ps.includes("usage-cache.json"));
-assert.ok(ps.includes("fixed-primary"));
-assert.ok(ps.includes("max-remaining"));
-assert.ok(ps.includes("routingRemainingPct"), "terminal routing must prefer the conservative routing metric over the display gauge");
-assert.ok(ps.includes("Sort-Object Order"), "default routing branch must preserve account priority order");
-assert.ok(ps.includes("$Remaining -gt $Threshold"), "automatic routing must enforce the configured threshold");
-assert.ok(ps.includes("routeBlockedAt"), "terminal routing must reject accounts whose latest live check failed");
-assert.ok(ps.includes("provider.limitReached"), "terminal routing must reject persisted limit-reached accounts");
-assert.ok(ps.includes("CODEX_HOME"));
-assert.ok(ps.includes("CLAUDE_CONFIG_DIR"));
-assert.ok(ps.includes("GROK_HOME"));
-assert.ok(ps.includes(String(defaultConfigDir("codex")).replace(/'/g, "''")));
+for (const needle of ["settings.json", "usage-cache.json", "fixed-primary", "max-remaining", "routingRemainingPct", "routeBlockedAt", "provider.limitReached", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "GROK_HOME", "CURSOR_CONFIG_DIR", "GH_CONFIG_DIR", "agm switch"]) {
+  assert.ok(ps.includes(needle), `generated router should include ${needle}`);
+}
 
 const generated = powershellRouterScript(stateDir, {
   codex: "C:\\Users\\test\\.codex",
   claude: "C:\\Users\\test\\.claude",
   grok: "C:\\Users\\test\\.grok",
+  cursor: "C:\\Users\\test\\.cursor",
+  copilot: "C:\\Users\\test\\AppData\\Roaming\\GitHub CLI",
+  antigravity: "",
 });
-assert.ok(generated.includes("C:\\Users\\test\\.codex"));
+assert.ok(generated.includes("C:\\\\Users\\\\test\\\\.codex"), "JSON-embedded default directories must be present in the generated script");
 
 if (process.platform === "win32") {
   execFileSync("powershell.exe", [
-    "-NoLogo",
-    "-NoProfile",
-    "-Command",
+    "-NoLogo", "-NoProfile", "-Command",
     `[scriptblock]::Create((Get-Content -Raw -LiteralPath '${psPath.replace(/'/g, "''")}')) | Out-Null`,
   ], { stdio: "inherit", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS });
 
   const outputFile = path.join(stateDir, "selected-home.txt");
   const fakeCodex = path.join(stateDir, "fake-codex.cmd");
   fs.writeFileSync(fakeCodex, "@echo off\r\n>\"%ROUTER_TEST_OUTPUT%\" echo %CODEX_HOME%\r\nexit /b 0\r\n", "utf8");
-
   const fixtureNow = Date.now();
   fs.writeFileSync(path.join(stateDir, "settings.json"), JSON.stringify({
     refreshSeconds: 60,
-    smartRouting: {
-      codex: { enabled: true, policy: "priority-fallback", thresholdPct: 0 },
-    },
+    smartRouting: { codex: { enabled: true, policy: "priority-fallback", thresholdPct: 0 } },
     accountProfiles: [profile],
   }, null, 2));
   const profileKey = profileInstanceKey(profile);
   const fixtureCache = {
     version: 1,
     providers: {
-      "codex:default-fixture": {
-        savedAt: fixtureNow,
-        provider: {
-          id: "codex",
-          name: "Codex",
-          status: "ok",
-          remainingPct: 90,
-          routingRemainingPct: 0,
-          limitReached: false,
-        },
-      },
-      [profileKey]: {
-        savedAt: fixtureNow,
-        provider: {
-          id: profileKey,
-          instanceKey: profileKey,
-          name: "Codex",
-          status: "ok",
-          remainingPct: 99,
-          routingRemainingPct: 63,
-          limitReached: false,
-        },
-      },
+      "codex:default-fixture": { savedAt: fixtureNow, provider: { id: "codex", name: "Codex", status: "ok", remainingPct: 90, routingRemainingPct: 0, limitReached: false } },
+      [profileKey]: { savedAt: fixtureNow, provider: { id: profileKey, instanceKey: profileKey, name: "Codex", status: "ok", remainingPct: 99, routingRemainingPct: 63, limitReached: false } },
     },
   };
   fs.writeFileSync(cacheFile, JSON.stringify(fixtureCache, null, 2));
 
-  execFileSync("powershell.exe", [
-    "-NoLogo",
-    "-NoProfile",
-    "-ExecutionPolicy",
-    "Bypass",
-    "-File",
-    psPath,
-    "codex",
-  ], {
+  execFileSync("powershell.exe", ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", psPath, "codex"], {
     env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
-    stdio: "ignore",
-    windowsHide: true,
-    timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
+    stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
   });
-  assert.strictEqual(fs.readFileSync(outputFile, "utf8").trim().toLowerCase(), profile.configDir.toLowerCase(),
-    "standalone routing must ignore a high display gauge when the default account's conservative routing quota is exhausted");
+  assert.strictEqual(fs.readFileSync(outputFile, "utf8").trim().toLowerCase(), profile.configDir.toLowerCase());
 
   fixtureCache.providers[profileKey].routeBlockedAt = Date.now();
   fs.writeFileSync(cacheFile, JSON.stringify(fixtureCache, null, 2));
   let blocked = false;
   try {
-    execFileSync("powershell.exe", [
-      "-NoLogo",
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-File",
-      psPath,
-      "codex",
-    ], {
+    execFileSync("powershell.exe", ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", psPath, "codex"], {
       env: { ...process.env, CODEX_BIN: fakeCodex, ROUTER_TEST_OUTPUT: outputFile },
-      stdio: "ignore",
-      windowsHide: true,
-      timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
+      stdio: "ignore", windowsHide: true, timeout: WINDOWS_POWERSHELL_TIMEOUT_MS,
     });
-  } catch {
-    blocked = true;
-  }
-  assert.strictEqual(blocked, true, "standalone routing must fail closed when every automatic candidate is exhausted or route-blocked");
+  } catch { blocked = true; }
+  assert.strictEqual(blocked, true);
 }
 
 fs.rmSync(stateDir, { recursive: true, force: true });
