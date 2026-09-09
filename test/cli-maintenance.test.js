@@ -1,10 +1,12 @@
 const assert = require("assert");
 const {
   CLI_SPECS,
+  CODEX_WINDOWS_INSTALLER,
   extractVersion,
   compareVersions,
   resolvedSpec,
   runResolvedCommand,
+  codexUpdateKind,
 } = require("../lib/cli-maintenance");
 
 assert.strictEqual(extractVersion("codex-cli 1.2.3"), "1.2.3");
@@ -15,7 +17,11 @@ assert.strictEqual(compareVersions("1.3.0", "1.2.9"), 1);
 assert.strictEqual(compareVersions("2.0.0-beta.1", "2.0.0"), -1);
 assert.strictEqual(compareVersions("2.0.0", "2.0.0"), 0);
 
-assert.deepStrictEqual(CLI_SPECS.codex.updateArgs, ["update"]);
+assert.strictEqual(CLI_SPECS.codex.updateMethod, "codex-official");
+assert.strictEqual(CLI_SPECS.codex.updateArgs, undefined, "Codex does not expose a documented `codex update` command");
+assert.strictEqual(CODEX_WINDOWS_INSTALLER, "https://chatgpt.com/codex/install.ps1");
+assert.strictEqual(codexUpdateKind("C:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd", "win32"), "npm");
+assert.strictEqual(codexUpdateKind("C:\\Users\\test\\.local\\bin\\codex.exe", "win32"), "windows-installer");
 assert.deepStrictEqual(CLI_SPECS.claude.updateArgs, ["update"]);
 assert.deepStrictEqual(CLI_SPECS.cursor.updateArgs, ["update"]);
 assert.strictEqual(CLI_SPECS.cursor.autoUpdate, true);
