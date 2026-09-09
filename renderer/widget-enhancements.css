@@ -165,3 +165,42 @@
   opacity: .48;
   pointer-events: none;
 }
+
+/* Native border resizing can make the widget substantially wider than the
+   original 332px layout. Keep each provider card readable, then add/remove
+   columns automatically as horizontal space becomes available. */
+.provider-group-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: start;
+  gap: 8px;
+}
+.provider-group-cards > .row {
+  width: 100%;
+  min-width: 0;
+}
+.shell.dense-layout .provider-group-cards { gap: 5px; }
+
+/* Multi-quota cards also use the available card width instead of being fixed
+   to two cells. At normal widget width this remains two columns; wider cards
+   can show more quota cells without wasting horizontal space. */
+.quota-rings,
+.quota-numbers {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+}
+
+/* Settings previously inherited two independent 520px caps. A manually taller
+   window therefore left unused space and made lower controls look clipped.
+   The settings pane is now the sole scroll container and consumes the complete
+   content viewport beneath the fixed titlebar. */
+.settings {
+  max-height: none;
+}
+.shell.settings-open .settings {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
