@@ -23,4 +23,5 @@ Status values: requested, planned, in-progress, waiting, on-hold, blocked, incom
 |---|---|---|---|---|---|
 | T-0001 | done | Private 개발/Public Release 분리 및 Leerness 운영 경계 | plan:M-0001 · release-token run 33894555788 · PR #24/#25 | 유지보수 | 2026-09-05 |
 | T-0002 | done | v1.0.24 OpenRouter secure multi-key localhost smart router | plan:M-0002 · PR #26 CI 33981095152 · main CI 33981334811 · release run 33981622986 · public v1.0.24 SHA-256 d0397fc8e158559f333d0c5b4b2329646a36825021c656c831104d8794a10211 | 운영 피드백 확인 | 2026-09-06 |
-| T-0003 | in-progress | 설정을 미니멀 연결 허브로 재구성하고 플랫폼별 공식 로그인 자격증명 흐름 제공 | plan:M-0003 · validation 34076732991/34076905507/34077476812 success · version sync 34077244587 success · v1.0.25 package/lock aligned | 정식 PR Windows CI/portable build | 2026-09-07 |
+| T-0003 | done | 설정을 미니멀 연결 허브로 재구성하고 플랫폼별 공식 로그인 자격증명 흐름 제공 | plan:M-0003 · validation 34076732991/34076905507/34077476812 success · v1.0.25 이후 login/connection 후속 수정 v1.0.27~v1.0.30 배포 | 유지보수 | 2026-09-10 |
+| T-0004 | done | v1.0.31 다계정/Smart Routing/프로필별 reset/CLI 유지보수 완성 | PR #35 · package/lock 1.0.31 sync · Cursor/Copilot/Antigravity account isolation · 6-provider routing · per-Codex-profile reset opt-in · Windows CI 34424867960 success · docs/v1.0.31.md · public release notes prepared | main 병합 후 post-merge CI 및 v1.0.31 공개 배포 | 2026-09-10 |

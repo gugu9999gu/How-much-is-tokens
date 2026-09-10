@@ -10,13 +10,18 @@ const settings = {
   openAtLogin: false,
   hideMissing: true,
   visualization: "ring",
+  resetDisplayMode: "auto",
   opacity: 0.94,
   refreshSeconds: 60,
   manualWindowSize: null,
   disabledCredentialProviders: [],
   githubToken: "",
   cursorCookie: "",
-  accountProfiles: [],
+  accountProfiles: [
+    { id: "codex-profile-2", providerId: "codex", label: "Codex 2", configDir: "C:\\AI-Profiles\\codex-2", enabled: true },
+  ],
+  codexAutoUseReset: false,
+  codexAutoResetProfiles: [],
   smartRouting: {},
   openRouterEnabled: false,
   openRouterProfiles: [],
@@ -104,11 +109,11 @@ function cliFixture() {
   return [
     { providerId: "codex", label: "Codex", installed: true, installedVersion: "1.0.0", latestVersion: "1.1.0", updateAvailable: true, updateSupported: true },
     { providerId: "claude", label: "Claude", installed: true, installedVersion: "2.0.0", latestVersion: "2.0.0", updateAvailable: false, updateSupported: true },
-    { providerId: "grok", label: "Grok", installed: false, updateAvailable: false, updateSupported: false },
-    { providerId: "cursor", label: "Cursor", installed: true, installedVersion: "0.9.0", updateAvailable: false, updateSupported: true, autoUpdate: true },
-    { providerId: "grokbot", label: "Grok Bot", installed: true, installedVersion: "0.9.0", updateAvailable: false, updateSupported: true, autoUpdate: true },
-    { providerId: "copilot", label: "Copilot / GitHub CLI", installed: true, installedVersion: "2.80.0", updateAvailable: false, updateSupported: false },
-    { providerId: "antigravity", label: "Antigravity", installed: true, installedVersion: "1.2.0", updateAvailable: false, updateSupported: false },
+    { providerId: "grok", label: "Grok", installed: true, installedVersion: "1.0.0", latestVersion: "1.1.0", updateAvailable: true, updateSupported: true },
+    { providerId: "cursor", label: "Cursor", installed: true, installedVersion: "2026.08.01-a", latestVersion: "2026.09.01-b", updateAvailable: true, updateSupported: true, autoUpdate: true },
+    { providerId: "grokbot", label: "Grok Bot", installed: true, installedVersion: "2026.08.01-a", latestVersion: "2026.09.01-b", updateAvailable: true, updateSupported: true, autoUpdate: true },
+    { providerId: "copilot", label: "Copilot / GitHub CLI", installed: true, installedVersion: "2.80.0", latestVersion: "2.90.0", updateAvailable: true, updateSupported: true },
+    { providerId: "antigravity", label: "Antigravity", installed: true, installedVersion: "1.2.0", latestVersion: "1.3.0", updateAvailable: true, updateSupported: true, autoUpdate: true },
   ];
 }
 
@@ -130,16 +135,12 @@ contextBridge.exposeInMainWorld("tokenWidget", {
     return { ok: true };
   },
   connectCredential: async (providerId) => ({ ok: false, providerId, reason: "cli-not-found", commands: [providerId] }),
-  addCredentialAccount: async (providerId) => ({ ok: false, providerId, reason: "profiles-not-supported" }),
-  disconnectCredential: async (providerId) => {
-    if (providerId === "codex") {
-      lastPayload.providers = lastPayload.providers.filter((row) => row.providerId !== "codex");
-      emit();
-    }
-    return { ok: true, providerId, settings: { ...settings } };
-  },
+  addCredentialAccount: async (providerId) => ({ ok: true, providerId, accountLabel: `${providerId} 2`, needsRefresh: true }),
+  disconnectCredential: async (providerId) => ({ ok: true, providerId, settings: { ...settings } }),
+  getAntigravityAccountManagerStatus: async () => ({ installed: true, ready: true, goAvailable: true }),
+  installAntigravityAccountManager: async () => ({ ok: true, status: { installed: true, ready: true } }),
   getCliVersions: async () => cliFixture(),
-  updateCli: async (providerId) => ({ ok: true, providerId, status: { providerId, installed: true, installedVersion: "1.1.0" } }),
+  updateCli: async (providerId) => ({ ok: true, providerId, status: { providerId, installed: true, installedVersion: "latest" } }),
   getApiProviderCatalog: () => API_PROVIDER_CATALOG.map((provider) => ({ ...provider, credentials: provider.credentials.map((cred) => ({ ...cred })) })),
   saveApiProviderSecret: async (providerId, patch = {}) => {
     settings.apiProviderStatuses = { ...(settings.apiProviderStatuses || {}) };
@@ -153,8 +154,8 @@ contextBridge.exposeInMainWorld("tokenWidget", {
     delete settings.apiProviderStatuses[providerId];
     return { ...settings };
   },
-  routeLaunch: async (providerId) => ({ ok: false, providerId, reason: "disabled" }),
-  installSmartRoutingLaunchers: async () => ({ ok: false, reason: "unsupported-platform" }),
+  routeLaunch: async (providerId) => ({ ok: true, providerId, accountLabel: `${providerId} 2`, remainingPct: 55 }),
+  installSmartRoutingLaunchers: async () => ({ ok: true, binDir: "C:\\router-bin" }),
   onUsage: (callback) => {
     listeners.add(callback);
     setTimeout(() => callback(lastPayload), 0);
@@ -169,7 +170,7 @@ window.addEventListener("DOMContentLoaded", () => {
     link.href = href;
     document.head.appendChild(link);
   }
-  for (const src of ["widget-enhancements.js", "account-identity-ui.js"]) {
+  for (const src of ["widget-enhancements.js", "account-identity-ui.js", "account-automation-v2.js"]) {
     const script = document.createElement("script");
     script.src = src;
     document.body.appendChild(script);

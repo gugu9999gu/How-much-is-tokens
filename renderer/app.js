@@ -17,7 +17,7 @@ const visualizationInputs = [...document.querySelectorAll('input[name="visualiza
 
 const VISUALIZATION_MODES = new Set(["ring", "bar", "number"]);
 const EDGE_DOCK_SIDES = new Set(["top", "right", "bottom", "left"]);
-const MULTI_ACCOUNT_PROVIDERS = new Set(["codex", "claude", "grok"]);
+const MULTI_ACCOUNT_PROVIDERS = new Set(["codex", "claude", "grok", "cursor", "copilot"]);
 const TOKEN_AREA_MIN_HEIGHT = 120;
 const TOKEN_AREA_MAX_HEIGHT = 2000;
 

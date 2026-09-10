@@ -7,6 +7,12 @@ const { normalizeOpenRouterProfiles } = require("./lib/openrouter-profiles");
 const { apiProviderCatalog } = require("./lib/api-providers/registry");
 const { launchRoutedCli, installRouterLaunchers } = require("./lib/routed-launcher");
 const {
+  launchLogin: launchAntigravityAccountLogin,
+  removeAccount: removeAntigravityManagedAccount,
+  managerStatus: getAntigravityManagerStatus,
+  installManager: installAntigravityManager,
+} = require("./lib/antigravity-account-manager");
+const {
   PROFILE_LOGIN_PROVIDERS,
   launchCredentialLogin,
   nextManagedProfile,
@@ -40,11 +46,8 @@ function openRouterMetrics(payload) {
 async function deliverUsage(payload) {
   const sequence = ++usageDeliverySequence;
   let settings = payload && payload.settings ? payload.settings : {};
-  try {
-    settings = await ipcRenderer.invoke("get-settings");
-  } catch {}
+  try { settings = await ipcRenderer.invoke("get-settings"); } catch {}
   if (sequence !== usageDeliverySequence) return;
-
   const next = { ...(payload || {}), settings };
   lastUsagePayload = next;
   manualHeightLocked = hasManualHeight(settings);
@@ -54,9 +57,7 @@ async function deliverUsage(payload) {
   }
 }
 
-ipcRenderer.on("usage", (_event, payload) => {
-  deliverUsage(payload).catch(() => {});
-});
+ipcRenderer.on("usage", (_event, payload) => { deliverUsage(payload).catch(() => {}); });
 
 function installRendererEnhancements() {
   if (document.querySelector('link[data-widget-enhancements="1"]')) return;
@@ -65,24 +66,18 @@ function installRendererEnhancements() {
   link.href = "widget-enhancements.css";
   link.dataset.widgetEnhancements = "1";
   document.head.appendChild(link);
-
   const identityLink = document.createElement("link");
   identityLink.rel = "stylesheet";
   identityLink.href = "account-identity-ui.css";
   identityLink.dataset.widgetEnhancements = "1";
   document.head.appendChild(identityLink);
-
-  const script = document.createElement("script");
-  script.src = "widget-enhancements.js";
-  script.dataset.widgetEnhancements = "1";
-  document.body.appendChild(script);
-
-  const identityScript = document.createElement("script");
-  identityScript.src = "account-identity-ui.js";
-  identityScript.dataset.widgetEnhancements = "1";
-  document.body.appendChild(identityScript);
+  for (const src of ["widget-enhancements.js", "account-identity-ui.js", "account-automation-v2.js"]) {
+    const script = document.createElement("script");
+    script.src = src;
+    script.dataset.widgetEnhancements = "1";
+    document.body.appendChild(script);
+  }
 }
-
 window.addEventListener("DOMContentLoaded", installRendererEnhancements, { once: true });
 
 async function getSettingsBridge() {
@@ -90,7 +85,6 @@ async function getSettingsBridge() {
   manualHeightLocked = hasManualHeight(settings);
   return settings;
 }
-
 async function saveSettingsBridge(patch) {
   const settings = await ipcRenderer.invoke("save-settings", patch);
   manualHeightLocked = hasManualHeight(settings);
@@ -108,13 +102,10 @@ async function routeLaunch(providerId) {
   await ipcRenderer.invoke("refresh");
   const settings = await getSettingsBridge();
   const payload = freshUsagePayload(settings);
-  if (!payload) {
-    return { ok: false, providerId, reason: "usage-too-old" };
-  }
+  if (!payload) return { ok: false, providerId, reason: "usage-too-old" };
   const providers = Array.isArray(payload.providers) ? payload.providers : [];
   const selection = selectRoute(providerId, providers, settings.smartRouting);
   if (!selection.ok) return selection;
-
   const profile = profileForSelection(settings, selection);
   const launched = launchRoutedCli(providerId, profile);
   return {
@@ -128,10 +119,7 @@ async function routeLaunch(providerId) {
 
 function installSmartRoutingLaunchers() {
   const stateDir = path.join(appData(), "how-much-is-tokens");
-  return installRouterLaunchers({
-    stateDir,
-    binDir: path.join(stateDir, "router-bin"),
-  });
+  return installRouterLaunchers({ stateDir, binDir: path.join(stateDir, "router-bin") });
 }
 
 function formatAccountProfilesForUi(profiles) {
@@ -140,12 +128,10 @@ function formatAccountProfilesForUi(profiles) {
     .map((profile) => `${profile.providerId}|${profile.label}|${profile.configDir}`)
     .join("\n");
 }
-
 function disabledProviderSet(settings = {}) {
   return new Set((Array.isArray(settings.disabledCredentialProviders) ? settings.disabledCredentialProviders : [])
     .map((id) => String(id || "").toLowerCase()));
 }
-
 async function reenableDefaultCredential(providerId, settings) {
   const id = String(providerId || "").toLowerCase();
   const disabled = disabledProviderSet(settings);
@@ -161,7 +147,8 @@ async function connectCredential(providerId, options = {}) {
   if (id === "openrouter") return ipcRenderer.invoke("connect-openrouter-oauth", options || {});
   const settings = await getSettingsBridge();
   const profileId = String((options && options.profileId) || "");
-  const profile = profileId ? findProfile(settings, id, profileId) : null;
+  const profileProvider = id === "grokbot" ? "cursor" : id;
+  const profile = profileId ? findProfile(settings, profileProvider, profileId) : null;
   const result = launchCredentialLogin(id, profile);
   if (result && result.ok && !profileId) {
     const nextSettings = await reenableDefaultCredential(id, settings);
@@ -173,26 +160,25 @@ async function connectCredential(providerId, options = {}) {
 async function addCredentialAccount(providerId) {
   const id = String(providerId || "").toLowerCase();
   if (id === "openrouter") return ipcRenderer.invoke("connect-openrouter-oauth", { createNew: true });
-  if (!PROFILE_LOGIN_PROVIDERS.has(id)) {
-    return { ok: false, providerId: id, reason: "profiles-not-supported" };
-  }
-
+  if (id === "antigravity") return launchAntigravityAccountLogin();
+  if (!PROFILE_LOGIN_PROVIDERS.has(id)) return { ok: false, providerId: id, reason: "profiles-not-supported" };
   const settings = await getSettingsBridge();
   const proposal = nextManagedProfile(settings, id);
   if (!proposal) return { ok: false, providerId: id, reason: "profiles-not-supported" };
   ensureProfileDirectory(proposal);
-
   const merged = [...normalizeAccountProfiles(settings.accountProfiles), proposal];
   const saved = await saveSettingsBridge({ accountProfiles: merged });
   const profile = normalizeAccountProfiles(saved.accountProfiles)
     .find((item) => item.providerId === id && item.configDir === proposal.configDir);
   if (!profile) return { ok: false, providerId: id, reason: "profile-save-failed" };
-
   const result = launchCredentialLogin(id, profile);
-  return {
-    ...result,
-    accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles),
-  };
+  return { ...result, accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles) };
+}
+
+function managedAntigravityRow(profileId) {
+  const rows = Array.isArray(lastUsagePayload && lastUsagePayload.providers) ? lastUsagePayload.providers : [];
+  return rows.find((row) => row && row.providerId === "antigravity"
+    && row.profileId === profileId && row.managedBy === "agm" && row.externalAccountRef);
 }
 
 async function disconnectCredential(providerId, options = {}) {
@@ -204,28 +190,35 @@ async function disconnectCredential(providerId, options = {}) {
     const profiles = normalizeOpenRouterProfiles(settings.openRouterProfiles);
     const targets = profileId ? profiles.filter((profile) => profile.id === profileId) : profiles;
     if (!targets.length) return { ok: false, providerId: id, reason: "profile-not-found" };
-    for (const profile of targets) {
-      await ipcRenderer.invoke("clear-openrouter-profile-secrets", profile.id);
-    }
+    for (const profile of targets) await ipcRenderer.invoke("clear-openrouter-profile-secrets", profile.id);
     const removed = new Set(targets.map((profile) => profile.id));
     const remaining = profiles.filter((profile) => !removed.has(profile.id));
-    const saved = await saveSettingsBridge({
-      openRouterProfiles: remaining,
-      openRouterEnabled: remaining.length > 0,
-    });
+    const saved = await saveSettingsBridge({ openRouterProfiles: remaining, openRouterEnabled: remaining.length > 0 });
     return { ok: true, providerId: id, profileId: profileId || null, settings: saved };
+  }
+
+  if (id === "antigravity" && profileId) {
+    const row = managedAntigravityRow(profileId);
+    if (row) {
+      const removed = await removeAntigravityManagedAccount(row.externalAccountRef);
+      return removed.ok
+        ? { ok: true, providerId: id, profileId, managedBy: "agm", settings }
+        : { ...removed, providerId: id, profileId };
+    }
   }
 
   if (profileId) {
     const profiles = normalizeAccountProfiles(settings.accountProfiles);
-    const exists = profiles.some((profile) => profile.providerId === id && profile.id === profileId);
+    const profileProviderId = id === "grokbot" ? "cursor" : id;
+    const exists = profiles.some((profile) => profile.providerId === profileProviderId && profile.id === profileId);
     if (!exists) return { ok: false, providerId: id, profileId, reason: "profile-not-found" };
-    const remaining = profiles.filter((profile) => !(profile.providerId === id && profile.id === profileId));
+    const remaining = profiles.filter((profile) => !(profile.providerId === profileProviderId && profile.id === profileId));
     const saved = await saveSettingsBridge({ accountProfiles: remaining });
     return {
       ok: true,
       providerId: id,
       profileId,
+      sharedCredentialProvider: profileProviderId !== id ? profileProviderId : null,
       settings: saved,
       accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles),
     };
@@ -252,19 +245,13 @@ async function manualWindowResize(payload = {}) {
     if (phase === "end" || phase === "cancel") manualResizeActive = false;
   }
 }
-
 function contentDrivenResize(height) {
-  if (manualResizeActive || manualHeightLocked) {
-    return Promise.resolve({ skipped: true, reason: "manual-height" });
-  }
+  if (manualResizeActive || manualHeightLocked) return Promise.resolve({ skipped: true, reason: "manual-height" });
   return ipcRenderer.invoke("resize", height);
 }
 
 contextBridge.exposeInMainWorld("tokenWidget", {
-  onUsage: (cb) => {
-    usageListeners.add(cb);
-    return () => usageListeners.delete(cb);
-  },
+  onUsage: (cb) => { usageListeners.add(cb); return () => usageListeners.delete(cb); },
   getLastUsage: () => lastUsagePayload,
   refresh: () => ipcRenderer.invoke("refresh"),
   getSettings: getSettingsBridge,
@@ -277,6 +264,8 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   connectCredential,
   addCredentialAccount,
   disconnectCredential,
+  getAntigravityAccountManagerStatus: () => getAntigravityManagerStatus(),
+  installAntigravityAccountManager: () => installAntigravityManager(),
   getCliVersions: (options) => ipcRenderer.invoke("get-cli-versions", options || {}),
   updateCli: (providerId) => ipcRenderer.invoke("update-cli", providerId),
   getApiProviderCatalog: () => apiProviderCatalog(),
