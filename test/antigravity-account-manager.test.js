@@ -1,5 +1,6 @@
 const assert = require("assert");
 const {
+  AGM_COMMIT,
   AGM_REPOSITORY,
   parseAccountList,
   parseAccountInfo,
@@ -7,7 +8,9 @@ const {
   profileIdForEmail,
 } = require("../lib/antigravity-account-manager");
 
-assert.strictEqual(AGM_REPOSITORY, "github.com/shyim/agm@latest");
+assert.strictEqual(AGM_COMMIT, "1d3ce8497e36ffa60c3b4e369168315a7ae4d469");
+assert.strictEqual(AGM_REPOSITORY, `github.com/shyim/agm@${AGM_COMMIT}`);
+assert.ok(!AGM_REPOSITORY.endsWith("@latest"), "credential-switching helper must be pinned to a reviewed commit");
 
 const accounts = parseAccountList(`
 EMAIL                                STATUS          GEM-PRO  GEM-FLASH   CLAUDE
