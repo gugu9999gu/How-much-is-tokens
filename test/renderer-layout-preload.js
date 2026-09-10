@@ -79,8 +79,17 @@ let lastPayload = {
 };
 const listeners = new Set();
 
+function cloneSettings() {
+  return {
+    ...settings,
+    accountProfiles: settings.accountProfiles.map((item) => ({ ...item })),
+    openRouterProfiles: settings.openRouterProfiles.map((item) => ({ ...item })),
+    openRouterProfileStatuses: settings.openRouterProfileStatuses.map((item) => ({ ...item })),
+  };
+}
+
 function emit() {
-  lastPayload = { ...lastPayload, fetchedAt: Date.now(), settings: { ...settings } };
+  lastPayload = { ...lastPayload, fetchedAt: Date.now(), settings: cloneSettings() };
   for (const callback of listeners) setTimeout(() => callback(lastPayload), 0);
 }
 
@@ -97,12 +106,24 @@ function routerStatus() {
       id: profile.id,
       label: profile.label,
       priority: profile.priority,
-      apiKeyConfigured: false,
+      apiKeyConfigured: settings.openRouterProfileStatuses.some((status) => status.id === profile.id && status.apiKeyConfigured),
       cooldownUntil: null,
       remainingPct: null,
     })),
     lastError: null,
   };
+}
+
+function addOpenRouterFixture(label, managementKeyConfigured = false) {
+  const ordinal = settings.openRouterProfiles.length + 1;
+  const id = ordinal === 1 ? "default" : `key-${ordinal}`;
+  const profile = { id, providerId: "openrouter", label: label || (ordinal === 1 ? "기본 키" : `OpenRouter ${ordinal}`), priority: ordinal * 10, enabled: true };
+  settings.openRouterProfiles.push(profile);
+  settings.openRouterProfileStatuses.push({ id, apiKeyConfigured: true, managementKeyConfigured });
+  settings.openRouterEnabled = true;
+  lastPayload.providers = lastPayload.providers.filter((row) => !(row.providerId === "openrouter" && row.profileId === id));
+  lastPayload.providers.push({ id: `openrouter:${id}`, providerId: "openrouter", profileId: id, name: "OpenRouter", accountLabel: profile.label, status: "ok", remainingPct: 72 - ordinal });
+  return profile;
 }
 
 function cliFixture() {
@@ -112,7 +133,7 @@ function cliFixture() {
     { providerId: "grok", label: "Grok", installed: true, installedVersion: "1.0.0", latestVersion: "1.1.0", updateAvailable: true, updateSupported: true },
     { providerId: "cursor", label: "Cursor", installed: true, installedVersion: "2026.08.01-a", latestVersion: "2026.09.01-b", updateAvailable: true, updateSupported: true, autoUpdate: true },
     { providerId: "grokbot", label: "Grok Bot", installed: true, installedVersion: "2026.08.01-a", latestVersion: "2026.09.01-b", updateAvailable: true, updateSupported: true, autoUpdate: true },
-    { providerId: "copilot", label: "Copilot / GitHub CLI", installed: true, installedVersion: "2.80.0", latestVersion: "2.90.0", updateAvailable: true, updateSupported: true },
+    { providerId: "copilot", label: "Copilot", installed: true, installedVersion: "2.80.0", latestVersion: "2.90.0", updateAvailable: true, updateSupported: true },
     { providerId: "antigravity", label: "Antigravity", installed: true, installedVersion: "1.2.0", latestVersion: "1.3.0", updateAvailable: true, updateSupported: true, autoUpdate: true },
   ];
 }
@@ -122,21 +143,64 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   hide: async () => {},
   quit: async () => {},
   resize: async (height) => ({ requestedHeight: height, height, constrained: false }),
-  manualWindowResize: async (payload = {}) => ({ ok: true, phase: payload.phase, settings: { ...settings } }),
-  getSettings: async () => ({ ...settings }),
-  saveSettings: async (patch = {}) => ({ ...Object.assign(settings, patch) }),
+  manualWindowResize: async (payload = {}) => ({ ok: true, phase: payload.phase, settings: cloneSettings() }),
+  getSettings: async () => cloneSettings(),
+  saveSettings: async (patch = {}) => {
+    Object.assign(settings, patch);
+    return cloneSettings();
+  },
   getLastUsage: () => lastPayload,
   getOpenRouterRouterStatus: async () => routerStatus(),
   configureOpenRouterRouter: async () => routerStatus(),
-  saveOpenRouterProfileSecrets: async () => ({ ...settings }),
-  clearOpenRouterProfileSecrets: async () => ({ ...settings }),
+  createOpenRouterTrackedProfile: async (options = {}) => {
+    if (!String(options.apiKey || "").trim()) return { ok: false, reason: "api-key-required", error: "API Key required" };
+    const profile = addOpenRouterFixture(String(options.label || "").trim(), !!String(options.managementKey || "").trim());
+    emit();
+    return { ok: true, providerId: "openrouter", profileId: profile.id, accountLabel: profile.label, settings: cloneSettings() };
+  },
+  deleteOpenRouterProfile: async (profileId) => {
+    const id = String(profileId || "");
+    const profile = settings.openRouterProfiles.find((item) => item.id === id);
+    if (!profile) return { ok: false, reason: "profile-not-found" };
+    settings.openRouterProfiles = settings.openRouterProfiles.filter((item) => item.id !== id);
+    settings.openRouterProfileStatuses = settings.openRouterProfileStatuses.filter((item) => item.id !== id);
+    lastPayload.providers = lastPayload.providers.filter((item) => !(item.providerId === "openrouter" && item.profileId === id));
+    settings.openRouterEnabled = settings.openRouterProfiles.length > 0;
+    emit();
+    return { ok: true, providerId: "openrouter", profileId: id, accountLabel: profile.label, settings: cloneSettings() };
+  },
+  saveOpenRouterProfileSecrets: async (profileId, patch = {}) => {
+    let status = settings.openRouterProfileStatuses.find((item) => item.id === profileId);
+    if (!status) {
+      status = { id: profileId, apiKeyConfigured: false, managementKeyConfigured: false };
+      settings.openRouterProfileStatuses.push(status);
+    }
+    if (String(patch.apiKey || "").trim()) status.apiKeyConfigured = true;
+    if (String(patch.managementKey || "").trim()) status.managementKeyConfigured = true;
+    return cloneSettings();
+  },
+  clearOpenRouterProfileSecrets: async (profileId) => {
+    const status = settings.openRouterProfileStatuses.find((item) => item.id === profileId);
+    if (status) {
+      status.apiKeyConfigured = false;
+      status.managementKeyConfigured = false;
+    }
+    return cloneSettings();
+  },
   copyOpenRouterRouterToken: async () => {
     settings.openRouterLocalRouterTokenConfigured = true;
     return { ok: true };
   },
   connectCredential: async (providerId) => ({ ok: false, providerId, reason: "cli-not-found", commands: [providerId] }),
-  addCredentialAccount: async (providerId) => ({ ok: true, providerId, accountLabel: `${providerId} 2`, needsRefresh: true }),
-  disconnectCredential: async (providerId) => ({ ok: true, providerId, settings: { ...settings } }),
+  addCredentialAccount: async (providerId) => {
+    if (providerId === "openrouter") {
+      const profile = addOpenRouterFixture(`OpenRouter 로그인 ${settings.openRouterProfiles.length + 1}`);
+      emit();
+      return { ok: true, providerId, profileId: profile.id, accountLabel: profile.label, needsRefresh: true };
+    }
+    return { ok: true, providerId, accountLabel: `${providerId} 2`, needsRefresh: true };
+  },
+  disconnectCredential: async (providerId) => ({ ok: true, providerId, settings: cloneSettings() }),
   getAntigravityAccountManagerStatus: async () => ({ installed: true, ready: true, goAvailable: true }),
   installAntigravityAccountManager: async () => ({ ok: true, status: { installed: true, ready: true } }),
   getCliVersions: async () => cliFixture(),
@@ -147,12 +211,12 @@ contextBridge.exposeInMainWorld("tokenWidget", {
     const fields = { ...(settings.apiProviderStatuses[providerId] || {}) };
     for (const key of Object.keys(patch)) if (String(patch[key] || "").trim()) fields[key] = true;
     settings.apiProviderStatuses[providerId] = fields;
-    return { ...settings };
+    return cloneSettings();
   },
   clearApiProviderSecret: async (providerId) => {
     settings.apiProviderStatuses = { ...(settings.apiProviderStatuses || {}) };
     delete settings.apiProviderStatuses[providerId];
-    return { ...settings };
+    return cloneSettings();
   },
   routeLaunch: async (providerId) => ({ ok: true, providerId, accountLabel: `${providerId} 2`, remainingPct: 55 }),
   installSmartRoutingLaunchers: async () => ({ ok: true, binDir: "C:\\router-bin" }),
@@ -170,7 +234,7 @@ window.addEventListener("DOMContentLoaded", () => {
     link.href = href;
     document.head.appendChild(link);
   }
-  for (const src of ["widget-enhancements.js", "account-identity-ui.js", "account-automation-v2.js"]) {
+  for (const src of ["widget-enhancements.js", "account-identity-ui.js", "account-automation-v2.js", "openrouter-profile-ui.js"]) {
     const script = document.createElement("script");
     script.src = src;
     document.body.appendChild(script);

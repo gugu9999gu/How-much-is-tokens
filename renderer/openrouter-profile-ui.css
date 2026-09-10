@@ -1,0 +1,228 @@
+.openrouter-quick-manager {
+  display: grid;
+  gap: 8px;
+  margin: 6px;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.025);
+}
+
+.openrouter-quick-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.openrouter-quick-head > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.openrouter-quick-head b {
+  font-size: 11px;
+}
+
+.openrouter-quick-head small,
+.openrouter-profile-empty small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.openrouter-quick-actions,
+.openrouter-add-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.openrouter-quick-actions .btn,
+.openrouter-add-actions .btn,
+.openrouter-card-actions .btn {
+  min-width: 0;
+  height: 29px;
+  padding: 0 9px;
+  font-size: 9px;
+}
+
+.openrouter-add-panel {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.16);
+}
+
+.openrouter-add-panel.hidden {
+  display: none;
+}
+
+.openrouter-add-panel input[type="text"] {
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.28);
+  color: var(--text);
+  padding: 0 10px;
+  outline: none;
+  font-size: 10px;
+  -webkit-app-region: no-drag;
+}
+
+.openrouter-add-panel input[type="text"]:focus {
+  border-color: rgba(62, 224, 160, 0.45);
+  outline: 3px solid rgba(62, 224, 160, 0.12);
+}
+
+.openrouter-profile-cards {
+  display: grid;
+  gap: 6px;
+}
+
+.openrouter-profile-card {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.12);
+}
+
+.openrouter-profile-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.openrouter-profile-title {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.openrouter-profile-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.openrouter-profile-title small {
+  color: var(--muted);
+  font: 8px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+.openrouter-mini-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 8px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.openrouter-mini-toggle input {
+  width: 13px;
+  height: 13px;
+  accent-color: #3ee0a0;
+}
+
+.openrouter-profile-detail {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.openrouter-profile-detail > b {
+  margin-right: 2px;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.openrouter-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.07);
+  color: var(--muted);
+  background: rgba(255,255,255,0.025);
+  font-size: 8px;
+}
+
+.openrouter-profile-badge.ok {
+  color: #8ce7bd;
+  border-color: rgba(62, 224, 160, 0.18);
+}
+
+.openrouter-profile-badge.warn {
+  color: var(--warn);
+  border-color: rgba(255, 191, 92, 0.18);
+}
+
+.openrouter-card-actions {
+  display: grid;
+  grid-template-columns: 32px 32px minmax(72px, 1fr) minmax(54px, auto);
+  gap: 4px;
+}
+
+.openrouter-profile-empty {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.openrouter-profile-empty b {
+  font-size: 10px;
+}
+
+.openrouter-quick-status {
+  min-height: 0;
+  margin: 0;
+}
+
+.openrouter-advanced-details {
+  margin: 6px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.openrouter-advanced-details > summary {
+  padding: 8px 2px 4px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 9px;
+  list-style-position: inside;
+  -webkit-app-region: no-drag;
+}
+
+.openrouter-advanced-details[open] > summary {
+  color: var(--text);
+}
+
+.openrouter-advanced-details .openrouter-profile-editor,
+.openrouter-advanced-details .field,
+.openrouter-advanced-details .api-secret-actions {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+@media (max-width: 430px) {
+  .openrouter-quick-head {
+    grid-template-columns: 1fr;
+  }
+
+  .openrouter-quick-actions .btn {
+    flex: 1 1 120px;
+  }
+}
