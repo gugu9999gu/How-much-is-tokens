@@ -16,6 +16,7 @@ const {
 
 const WINDOWS_POWERSHELL_TIMEOUT_MS = 20_000;
 assert.deepStrictEqual(Object.keys(PROVIDER_COMMANDS), ["codex", "claude", "grok", "cursor", "copilot", "antigravity"]);
+assert.deepStrictEqual(PROVIDER_COMMANDS.copilot, ["copilot"], "Smart Routing must launch the standalone Copilot CLI");
 
 const fakeExec = (_command, args) => {
   assert.strictEqual(args[0], "codex");
@@ -23,7 +24,7 @@ const fakeExec = (_command, args) => {
 };
 assert.strictEqual(resolveProviderExecutable("codex", { platform: "win32", execFileSyncImpl: fakeExec, env: {} }), "C:\\Tools\\codex.cmd");
 assert.ok(interactiveStartCommand("C:\\Tools\\codex.cmd", "C:\\Windows\\System32\\cmd.exe").startsWith("start \"\""));
-assert.ok(interactiveStartCommand("C:\\Tools\\gh.exe", "cmd.exe", ["copilot"]).includes(" copilot"));
+assert.ok(interactiveStartCommand("C:\\Tools\\copilot.exe", "cmd.exe").includes("copilot.exe"));
 assert.strictEqual(interactiveStartCommand("bad\npath.cmd", "cmd.exe"), null);
 assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", limitReached: true }).limitReached, true);
 assert.strictEqual(sanitizeProvider({ id: "codex", status: "ok", remainingPct: 90, routingRemainingPct: 12 }).routingRemainingPct, 12);
@@ -35,12 +36,14 @@ const sanitizedManaged = sanitizeProvider({
   profileId: "agm-a",
   externalAccountRef: "a@example.com",
   accountEmail: "a@example.com",
+  accountKey: "antigravity:abcdef0123456789",
   managedBy: "agm",
   accountOrder: 1,
 });
 assert.strictEqual(sanitizedManaged.profileId, "agm-a");
 assert.strictEqual(sanitizedManaged.managedBy, "agm");
 assert.strictEqual(sanitizedManaged.accountOrder, 1);
+assert.strictEqual(sanitizedManaged.accountKey, "antigravity:abcdef0123456789");
 assert.strictEqual(sanitizedManaged.externalAccountRef, undefined, "raw account email must not be persisted in usage cache");
 assert.strictEqual(sanitizedManaged.accountEmail, undefined, "display identity must remain memory-only for managed Antigravity accounts");
 
@@ -72,11 +75,26 @@ assert.strictEqual(launchRoutedCli("cursor", profiles[1], {
 assert.strictEqual(captured.options.env.CURSOR_CONFIG_DIR, profiles[1].configDir);
 
 captured = null;
-assert.strictEqual(launchRoutedCli("copilot", profiles[2], {
-  platform: "win32", executable: "C:\\Tools\\gh.exe", spawnImpl, comspec: "cmd.exe",
-}).ok, true);
+const copilotCalls = [];
+const copilotLaunch = launchRoutedCli("copilot", profiles[2], {
+  platform: "win32",
+  executable: "C:\\Tools\\copilot.exe",
+  spawnImpl,
+  comspec: "cmd.exe",
+  execFileSyncImpl(command, args) {
+    copilotCalls.push({ command, args });
+    if (command === "where.exe" && args[0] === "gh") return "C:\\Tools\\gh.exe\r\n";
+    if (command === "C:\\Tools\\gh.exe" && args[0] === "auth" && args[1] === "token") return "runtime-only-token\r\n";
+    return "";
+  },
+});
+assert.strictEqual(copilotLaunch.ok, true);
 assert.strictEqual(captured.options.env.GH_CONFIG_DIR, profiles[2].configDir);
-assert.ok(captured.args.join(" ").includes("copilot"));
+assert.strictEqual(captured.options.env.COPILOT_HOME, path.join(profiles[2].configDir, "copilot-home"));
+assert.strictEqual(captured.options.env.COPILOT_GITHUB_TOKEN, "runtime-only-token", "selected profile token must be injected only into the launched process environment");
+assert.ok(copilotCalls.some((call) => call.command === "C:\\Tools\\gh.exe" && call.args.join(" ") === "auth token"));
+assert.ok(captured.args.join(" ").includes("copilot.exe"));
+assert.ok(!captured.args.join(" ").includes("runtime-only-token"), "Copilot token must never be placed on a command line");
 
 let agmSwitch = null;
 captured = null;
@@ -124,9 +142,11 @@ for (const name of [
 
 const psPath = path.join(binDir, "how-tokens-route.ps1");
 const ps = fs.readFileSync(psPath, "utf8");
-for (const needle of ["settings.json", "usage-cache.json", "fixed-primary", "max-remaining", "routingRemainingPct", "routeBlockedAt", "provider.limitReached", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "GROK_HOME", "CURSOR_CONFIG_DIR", "GH_CONFIG_DIR", "agm switch", "agm list", "managedBy"]) {
-  assert.ok(ps.includes(needle), `generated router should include ${needle}`);
-}
+for (const needle of [
+  "settings.json", "usage-cache.json", "fixed-primary", "max-remaining", "routingRemainingPct", "routeBlockedAt",
+  "provider.limitReached", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "GROK_HOME", "CURSOR_CONFIG_DIR", "GH_CONFIG_DIR",
+  "COPILOT_HOME", "COPILOT_GITHUB_TOKEN", "Get-StableAccountKey", "Resolve-Agm", "$Agm switch", "$Agm list", "managedBy",
+]) assert.ok(ps.includes(needle), `generated router should include ${needle}`);
 assert.ok(!ps.includes("externalAccountRef"), "standalone router must not require a raw account email from usage-cache.json");
 
 const generated = powershellRouterScript(stateDir, {
