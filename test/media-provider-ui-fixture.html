@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <style>
+    :root { --muted:#9aa3b5; --text:#eef2f7; --line:#333; --ok:#3ee0a0; --warn:#ffca6b; --bad:#ff6b7a; }
+    body { background:#111; color:var(--text); font-family:system-ui; }
+    .field { display:grid; gap:4px; } .btn { border:1px solid #444; background:#222; color:#eee; padding:5px 8px; }
+    .secret-input { background:#181818; color:#eee; border:1px solid #333; }
+  </style>
+</head>
+<body>
+  <div id="apiProviderList"></div>
+  <script src="../renderer/api-providers-settings.js"></script>
+</body>
+</html>
