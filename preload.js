@@ -258,6 +258,8 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   saveSettings: saveSettingsBridge,
   getOpenRouterRouterStatus: () => ipcRenderer.invoke("get-openrouter-router-status"),
   configureOpenRouterRouter: () => ipcRenderer.invoke("configure-openrouter-router"),
+  createOpenRouterTrackedProfile: (options) => ipcRenderer.invoke("create-openrouter-tracked-profile", options || {}),
+  deleteOpenRouterProfile: (profileId) => ipcRenderer.invoke("delete-openrouter-profile", profileId),
   saveOpenRouterProfileSecrets: (profileId, patch) => ipcRenderer.invoke("save-openrouter-profile-secrets", profileId, patch),
   clearOpenRouterProfileSecrets: (profileId) => ipcRenderer.invoke("clear-openrouter-profile-secrets", profileId),
   copyOpenRouterRouterToken: () => ipcRenderer.invoke("copy-openrouter-router-token"),
