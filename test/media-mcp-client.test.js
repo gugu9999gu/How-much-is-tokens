@@ -16,7 +16,7 @@ assert.strictEqual(selectBalanceTool([
 ], ["balance"]), null, "quota tool requiring unknown arguments must not be called automatically");
 
 const higgs = extractMcpUsage({
-  structuredContent: { credits: { balance: 42.5, total: 100 }, plan: "Creator" },
+  structuredContent: { credits: { balance: 42.5, total_credits: 100 }, plan: "Creator" },
   content: [],
 }, "higgsfield");
 assert.strictEqual(higgs.balance, 42.5);
