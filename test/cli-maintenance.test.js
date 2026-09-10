@@ -7,6 +7,7 @@ const {
   ANTIGRAVITY_WINDOWS_INSTALLER,
   ANTIGRAVITY_WINDOWS_MANIFEST,
   extractVersion,
+  versionFromGrokUpdateCheck,
   compareVersions,
   resolvedSpec,
   runResolvedCommand,
@@ -22,6 +23,8 @@ assert.strictEqual(extractVersion("codex-cli 1.2.3"), "1.2.3");
 assert.strictEqual(extractVersion("claude version v2.1.7-beta.1"), "2.1.7-beta.1");
 assert.strictEqual(extractVersion("agent 2026.08.04-aaa8809"), "2026.08.04-aaa8809");
 assert.strictEqual(extractVersion("no version here"), null);
+assert.strictEqual(versionFromGrokUpdateCheck("Grok Build - v0.3.1 (latest: 0.3.7)"), "0.3.7", "Grok updater must compare against latest, not the current version printed first");
+assert.strictEqual(versionFromGrokUpdateCheck("latest: v1.2.3-beta.1"), "1.2.3-beta.1");
 assert.strictEqual(compareVersions("1.2.3", "1.2.4"), -1);
 assert.strictEqual(compareVersions("1.3.0", "1.2.9"), 1);
 assert.strictEqual(compareVersions("2.0.0-beta.1", "2.0.0"), -1);
@@ -37,6 +40,7 @@ assert.strictEqual(ANTIGRAVITY_WINDOWS_INSTALLER, "https://antigravity.google/cl
 assert.ok(ANTIGRAVITY_WINDOWS_MANIFEST.includes("manifests/windows_amd64.json"));
 
 assert.deepStrictEqual(CLI_SPECS.grok.latestCommand, ["update", "--check"], "Grok latest-version detection must use its documented updater command");
+assert.strictEqual(CLI_SPECS.grok.latestParser, "grok-update-check");
 assert.deepStrictEqual(CLI_SPECS.grok.updateArgs, ["update"]);
 assert.deepStrictEqual(CLI_SPECS.copilot.commands, ["copilot"], "Copilot maintenance must target the standalone Copilot CLI, not the legacy gh extension");
 assert.strictEqual(CLI_SPECS.copilot.npmPackage, "@github/copilot");
