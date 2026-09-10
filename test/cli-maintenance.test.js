@@ -5,14 +5,13 @@ const {
   GROK_WINDOWS_INSTALLER,
   CURSOR_WINDOWS_INSTALLER,
   ANTIGRAVITY_WINDOWS_INSTALLER,
-  GROK_STABLE_VERSION,
   ANTIGRAVITY_WINDOWS_MANIFEST,
-  GITHUB_CLI_LATEST_RELEASE,
   extractVersion,
   compareVersions,
   resolvedSpec,
   runResolvedCommand,
   codexUpdateKind,
+  copilotUpdateKind,
   versionFromCursorInstaller,
   versionFromGithubRelease,
   versionFromManifest,
@@ -35,12 +34,14 @@ assert.strictEqual(CODEX_WINDOWS_INSTALLER, "https://chatgpt.com/codex/install.p
 assert.strictEqual(GROK_WINDOWS_INSTALLER, "https://x.ai/cli/install.ps1");
 assert.strictEqual(CURSOR_WINDOWS_INSTALLER, "https://cursor.com/install?win32=true");
 assert.strictEqual(ANTIGRAVITY_WINDOWS_INSTALLER, "https://antigravity.google/cli/install.ps1");
-assert.strictEqual(GROK_STABLE_VERSION, "https://x.ai/cli/stable");
 assert.ok(ANTIGRAVITY_WINDOWS_MANIFEST.includes("manifests/windows_amd64.json"));
-assert.strictEqual(GITHUB_CLI_LATEST_RELEASE, "https://api.github.com/repos/cli/cli/releases/latest");
-assert.strictEqual(CLI_SPECS.grok.updateMethod, "powershell-installer");
-assert.strictEqual(CLI_SPECS.copilot.updateMethod, "winget");
-assert.strictEqual(CLI_SPECS.copilot.wingetId, "GitHub.cli");
+
+assert.deepStrictEqual(CLI_SPECS.grok.latestCommand, ["update", "--check"], "Grok latest-version detection must use its documented updater command");
+assert.deepStrictEqual(CLI_SPECS.grok.updateArgs, ["update"]);
+assert.deepStrictEqual(CLI_SPECS.copilot.commands, ["copilot"], "Copilot maintenance must target the standalone Copilot CLI, not the legacy gh extension");
+assert.strictEqual(CLI_SPECS.copilot.npmPackage, "@github/copilot");
+assert.strictEqual(CLI_SPECS.copilot.updateMethod, "copilot-official");
+assert.strictEqual(CLI_SPECS.copilot.autoUpdate, true);
 assert.strictEqual(CLI_SPECS.antigravity.updateMethod, "powershell-installer");
 assert.strictEqual(CLI_SPECS.antigravity.autoUpdate, true);
 assert.deepStrictEqual(CLI_SPECS.claude.updateArgs, ["update"]);
@@ -55,17 +56,17 @@ assert.strictEqual(versionFromGithubRelease(JSON.stringify({ tag_name: "v2.82.1"
 assert.strictEqual(versionFromManifest(JSON.stringify({ version: "1.2.3", url: "https://example.invalid/agy.exe" })), "1.2.3");
 assert.strictEqual(versionFromManifest(JSON.stringify({ url: "https://storage.example/1.4.5/windows_amd64/agy.exe" })), "1.4.5");
 
+assert.strictEqual(codexUpdateKind("C:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd", "win32"), "npm");
+assert.strictEqual(codexUpdateKind("C:\\Users\\test\\.local\\bin\\codex.exe", "win32"), "windows-installer");
+assert.strictEqual(copilotUpdateKind("C:\\Users\\test\\AppData\\Roaming\\npm\\copilot.cmd", "win32"), "npm");
+assert.strictEqual(copilotUpdateKind("C:\\Users\\test\\AppData\\Local\\Microsoft\\WinGet\\Links\\copilot.exe", "win32"), "winget");
+assert.strictEqual(copilotUpdateKind("C:\\Tools\\copilot.exe", "win32"), null, "unknown install methods must not expose an unsafe update button");
+
 Promise.all([
-  latestVersionFor(CLI_SPECS.grok, { fetchTextImpl: async (url) => {
-    assert.strictEqual(url, GROK_STABLE_VERSION); return "1.3.7\n";
-  } }),
   latestVersionFor(CLI_SPECS.cursor, { fetchTextImpl: async () => "$version = '2026.09.01-bbbbbbb'" }),
-  latestVersionFor(CLI_SPECS.copilot, { fetchTextImpl: async () => JSON.stringify({ tag_name: "v2.90.0" }) }),
   latestVersionFor(CLI_SPECS.antigravity, { fetchTextImpl: async () => JSON.stringify({ version: "1.2.8" }) }),
 ]).then((versions) => {
-  assert.deepStrictEqual(versions, ["1.3.7", "2026.09.01-bbbbbbb", "2.90.0", "1.2.8"]);
-  assert.strictEqual(codexUpdateKind("C:\\Users\\test\\AppData\\Roaming\\npm\\codex.cmd", "win32"), "npm");
-  assert.strictEqual(codexUpdateKind("C:\\Users\\test\\.local\\bin\\codex.exe", "win32"), "windows-installer");
+  assert.deepStrictEqual(versions, ["2026.09.01-bbbbbbb", "1.2.8"]);
   return runResolvedCommand(process.execPath, ["--version"]);
 }).then((result) => {
   assert.strictEqual(result.ok, true);
