@@ -28,7 +28,7 @@ try {
   assert.notStrictEqual(authA.token, authB.token);
   assert.strictEqual(authA.source, "cursor-profile");
   assert.strictEqual(cursorIdentity({}, profileA).accountEmail, "a@example.com");
-  assert.strictEqual(cursorIdentity({}, profileB).accountId, "auth0|cursor-b");
+  assert.strictEqual(cursorIdentity({}, profileB).accountId, "cursor-b", "Cursor identity must use the normalized user id rather than the auth-provider prefix");
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
 }
