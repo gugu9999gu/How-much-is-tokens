@@ -41,6 +41,14 @@ jobs:
           npx --no-install leerness workspace-dir get --path . --json
           npm run leerness:status
 
+      - name: Scan committed secrets
+        shell: pwsh
+        env:
+          LEERNESS_NO_PROMPT: "1"
+          LEERNESS_NO_AUTOCHCP: "1"
+          LEERNESS_NO_DRIFT_CHECK: "1"
+        run: npx --no-install leerness scan secrets .
+
       - name: Syntax check
         shell: pwsh
         run: |

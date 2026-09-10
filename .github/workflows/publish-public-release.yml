@@ -39,6 +39,14 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci
 
+      - name: Scan committed secrets
+        shell: pwsh
+        env:
+          LEERNESS_NO_PROMPT: "1"
+          LEERNESS_NO_AUTOCHCP: "1"
+          LEERNESS_NO_DRIFT_CHECK: "1"
+        run: npx --no-install leerness scan secrets .
+
       - name: Run regression tests
         run: npm test
 
