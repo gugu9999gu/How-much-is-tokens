@@ -18,7 +18,7 @@ const profiles = normalizeMediaProviderProfiles([
 assert.deepStrictEqual(profiles.map((p) => `${p.providerId}:${p.id}:${p.mode}`), [
   "falai:personal:api",
   "falai:work:mcp",
-  "stability:studio:mcp",
+  "stability:studio:api",
 ]);
 assert.strictEqual(mediaProfileInstanceKey(profiles[0]), "falai:media:personal");
 assert.strictEqual(officialMcpFor("falai").url, "https://mcp.fal.ai/mcp");
