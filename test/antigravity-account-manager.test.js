@@ -6,6 +6,7 @@ const {
   parseAccountInfo,
   fallbackWindows,
   profileIdForEmail,
+  listManagedUsageRows,
 } = require("../lib/antigravity-account-manager");
 
 assert.strictEqual(AGM_COMMIT, "1d3ce8497e36ffa60c3b4e369168315a7ae4d469");
@@ -45,4 +46,41 @@ assert.deepStrictEqual(fallback.map((row) => row.remainingPct), [82, 73, 61]);
 assert.strictEqual(profileIdForEmail("User@Example.com"), profileIdForEmail("user@example.com"));
 assert.ok(profileIdForEmail("a@example.com").startsWith("agm-"));
 
-console.log("Antigravity encrypted multi-account adapter tests passed");
+(async () => {
+  const listFixture = `
+EMAIL                                STATUS          GEM-PRO  GEM-FLASH   CLAUDE
+------------------------------------ -------------- ------- ---------- --------
+a@example.com                        cli,active        82%        73%       5%
+`;
+  const infoFixture = `
+Account: a@example.com
+Status: active
+TYPE         MODEL                                              USAGE  RESET
+GOOGLE       gemini-3.1-pro-high                                  82%  2026-09-10T10:00:00Z
+GOOGLE       gemini-3-flash                                       73%  2026-09-10T11:00:00Z
+ANTHROPIC    claude-sonnet-4-5                                     5%  2026-09-10T09:30:00Z
+`;
+  const rows = await listManagedUsageRows({
+    executable: "agm-fixture",
+    execFileImpl(_command, args, _options, callback) {
+      if (args[0] === "list") callback(null, listFixture, "");
+      else if (args[0] === "info") callback(null, infoFixture, "");
+      else callback(new Error(`unexpected args: ${args.join(" ")}`), "", "");
+    },
+  });
+  assert.strictEqual(rows.length, 1);
+  assert.strictEqual(
+    rows[0].remainingPct,
+    73,
+    "managed Antigravity compact summary must use the tightest Gemini quota, not the lower Claude quota",
+  );
+  assert.strictEqual(rows[0].usedPct, 27);
+  assert.strictEqual(rows[0].windows.length, 3, "detailed Antigravity mode must still retain Claude/GPT quota windows");
+  assert.ok(rows[0].windows.some((row) => /claude/i.test(row.label)));
+  assert.strictEqual(rows[0].resetAt, Date.parse("2026-09-10T11:00:00Z"));
+
+  console.log("Antigravity encrypted multi-account adapter tests passed");
+})().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
