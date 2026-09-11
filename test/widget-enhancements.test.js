@@ -9,6 +9,9 @@ const identityUi = fs.readFileSync(path.join(root, "renderer", "account-identity
 const identityCss = fs.readFileSync(path.join(root, "renderer", "account-identity-ui.css"), "utf8");
 const preload = fs.readFileSync(path.join(root, "preload.js"), "utf8");
 const integration = fs.readFileSync(path.join(root, "lib", "api-providers-main-integration.js"), "utf8");
+const rendererApp = fs.readFileSync(path.join(root, "renderer", "app.js"), "utf8");
+const rendererCss = fs.readFileSync(path.join(root, "renderer", "styles.css"), "utf8");
+const logoDir = path.join(root, "renderer", "assets", "platform-logos");
 
 assert.ok(enhancement.includes("RESET_MODE_INTERVAL_MS = 5_000"), "reset countdown/date mode must rotate every five seconds in automatic mode");
 assert.ok(enhancement.includes('new Set(["auto", "relative", "absolute"])'), "reset display mode must support auto, remaining-time and scheduled-date choices");
@@ -34,6 +37,7 @@ assert.ok(css.includes("max-height: none"), "settings must remove the legacy fix
 assert.ok(identityUi.includes("accountEmail"), "quota cards must consume authenticated account email metadata");
 assert.ok(identityUi.includes("accountId"), "quota cards must consume authenticated account ID metadata");
 assert.ok(identityUi.includes("account-identity-line"), "quota cards must render a minimal identity line");
+assert.ok(identityUi.includes(":scope > .provider-title, :scope > b"), "account identity insertion must remain compatible with logo-wrapped provider titles");
 assert.ok(identityUi.includes("deduplicatedAccounts"), "duplicate-account suppression should provide a user-facing explanation");
 assert.ok(identityCss.includes(".account-identity-line"));
 
@@ -44,5 +48,34 @@ assert.ok(preload.includes("account-identity-ui.css"), "preload must inject mini
 assert.ok(preload.includes("manualHeightLocked"), "content auto-height must stop overriding a manually selected height");
 assert.ok(integration.includes('require("./window-resize-main-integration")'));
 assert.ok(integration.includes('require("./cli-maintenance-main-integration")'));
+
+const expectedPlatformLogos = [
+  "openai",
+  "anthropic",
+  "antigravity",
+  "grok",
+  "cursor",
+  "github",
+  "openrouter",
+  "falai",
+  "higgsfield",
+  "magnific",
+  "elevenlabs",
+];
+for (const name of expectedPlatformLogos) {
+  const svg = fs.readFileSync(path.join(logoDir, `${name}.svg`), "utf8");
+  assert.ok(/<svg\b/i.test(svg), `${name} platform logo must be a real SVG asset`);
+}
+assert.ok(fs.readFileSync(path.join(logoDir, "anthropic.svg"), "utf8").includes('viewBox="0 0 35 24"'), "Anthropic asset must be the official A-mark, not a nearby navigation chevron");
+assert.ok(fs.readFileSync(path.join(logoDir, "antigravity.svg"), "utf8").includes('viewBox="0 0 869 113"'), "Antigravity asset must be the official wordmark SVG");
+assert.ok(fs.readFileSync(path.join(logoDir, "falai.svg"), "utf8").includes('viewBox="0 0 120 48"'), "fal.ai asset must be the official homepage logo SVG");
+assert.ok(rendererApp.includes("const PROVIDER_LOGOS = {"), "renderer must map provider IDs to local SVG assets");
+assert.ok(rendererApp.includes('.split(":")[0]'), "multi-account provider IDs must resolve to their base provider logo");
+assert.ok(rendererApp.includes("renderProviderTitle(provider, account, plan)"), "provider cards must render the logo next to the provider title");
+assert.ok(rendererApp.includes('stability: { fallback: "S", label: "Stability AI" }'), "Stability must use the non-logo fallback tile");
+assert.ok(!fs.existsSync(path.join(logoDir, "stability.svg")), "Stability logo must not be bundled without written permission");
+assert.ok(rendererCss.includes(".provider-logo"), "provider SVG tile must be styled");
+assert.ok(rendererCss.includes(".provider-logo--wide"), "wide official wordmarks must have a dedicated layout");
+assert.ok(rendererCss.includes(".row.compact .provider-logo"), "platform logos must resize with compact cards");
 
 console.log("minimal widget enhancement wiring tests passed");

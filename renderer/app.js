@@ -18,6 +18,21 @@ const visualizationInputs = [...document.querySelectorAll('input[name="visualiza
 const VISUALIZATION_MODES = new Set(["ring", "bar", "number"]);
 const EDGE_DOCK_SIDES = new Set(["top", "right", "bottom", "left"]);
 const MULTI_ACCOUNT_PROVIDERS = new Set(["codex", "claude", "grok", "cursor", "copilot"]);
+const PROVIDER_LOGOS = {
+  codex: { src: "./assets/platform-logos/openai.svg", label: "OpenAI" },
+  claude: { src: "./assets/platform-logos/anthropic.svg", label: "Anthropic" },
+  antigravity: { src: "./assets/platform-logos/antigravity.svg", label: "Google Antigravity", wide: true },
+  grok: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
+  grokbot: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
+  cursor: { src: "./assets/platform-logos/cursor.svg", label: "Cursor" },
+  copilot: { src: "./assets/platform-logos/github.svg", label: "GitHub" },
+  openrouter: { src: "./assets/platform-logos/openrouter.svg", label: "OpenRouter" },
+  falai: { src: "./assets/platform-logos/falai.svg", label: "fal.ai", wide: true },
+  higgsfield: { src: "./assets/platform-logos/higgsfield.svg", label: "Higgsfield" },
+  magnific: { src: "./assets/platform-logos/magnific.svg", label: "Magnific" },
+  elevenlabs: { src: "./assets/platform-logos/elevenlabs.svg", label: "ElevenLabs" },
+  stability: { fallback: "S", label: "Stability AI" },
+};
 const TOKEN_AREA_MIN_HEIGHT = 120;
 const TOKEN_AREA_MAX_HEIGHT = 2000;
 
@@ -254,6 +269,25 @@ function renderProviderNote(provider) {
   return provider.note ? `<div class="hint">${escapeHtml(provider.note)}</div>` : "";
 }
 
+function providerLogoKey(provider) {
+  return String(provider.providerId || provider.id || "")
+    .trim()
+    .toLowerCase()
+    .split(":")[0];
+}
+
+function renderProviderTitle(provider, account, plan) {
+  const logo = PROVIDER_LOGOS[providerLogoKey(provider)];
+  const title = escapeHtml(`${provider.name || ""}${account}${plan}`);
+  if (!logo) return `<div class="provider-title"><b>${title}</b></div>`;
+
+  const label = escapeHtml(logo.label || provider.name || "Provider");
+  const icon = logo.src
+    ? `<span class="provider-logo${logo.wide ? " provider-logo--wide" : ""}" title="${label}"><img src="${logo.src}" alt="" aria-hidden="true" draggable="false"></span>`
+    : `<span class="provider-logo provider-logo--fallback" title="${label}" aria-hidden="true">${escapeHtml(logo.fallback || "?")}</span>`;
+  return `<div class="provider-title">${icon}<b>${title}</b></div>`;
+}
+
 function renderProviderCard(provider) {
   const plan = provider.plan ? ` · ${provider.plan}` : "";
   const account = provider.accountLabel ? ` · ${provider.accountLabel}` : "";
@@ -284,7 +318,7 @@ function renderProviderCard(provider) {
     return `
       <article class="row multi-quota visual-${visualization}">
         <div class="meta">
-          <b>${provider.name}${account}${plan}</b>
+          ${renderProviderTitle(provider, account, plan)}
           <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
           <div class="quota-visuals quota-${visualization}s">${quotaWindows.map(renderQuotaVisual).join("")}</div>
           ${credits}
@@ -301,7 +335,7 @@ function renderProviderCard(provider) {
     <article class="row visual-${visualization} ${compact ? "compact" : ""}">
       ${renderSummaryVisual(provider)}
       <div class="meta">
-        <b>${provider.name}${account}${plan}</b>
+        ${renderProviderTitle(provider, account, plan)}
         <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
         ${credits}
         ${chips ? `<div class="windows">${chips}</div>` : ""}
