@@ -149,17 +149,20 @@
       button.type = "button";
       button.className = "card-pin-button";
       button.dataset.providerPin = key;
+      button.textContent = "⌖";
       card.appendChild(button);
     }
-    button.dataset.providerPin = key;
+    if (button.dataset.providerPin !== key) button.dataset.providerPin = key;
     button.classList.toggle("active", pinned);
-    button.setAttribute("aria-pressed", pinned ? "true" : "false");
-    button.setAttribute("aria-label", pinned ? "상단 고정 해제" : "카드를 상단에 고정");
-    button.title = pinned ? "상단 고정 해제" : "상단 고정";
-    button.textContent = "⌖";
+    const pressed = pinned ? "true" : "false";
+    if (button.getAttribute("aria-pressed") !== pressed) button.setAttribute("aria-pressed", pressed);
+    const ariaLabel = pinned ? "상단 고정 해제" : "카드를 상단에 고정";
+    if (button.getAttribute("aria-label") !== ariaLabel) button.setAttribute("aria-label", ariaLabel);
+    const title = pinned ? "상단 고정 해제" : "상단 고정";
+    if (button.title !== title) button.title = title;
   }
 
-  function assignFreshCardKeys(rows, settings) {
+  function assignFreshCardKeys(_rows, settings) {
     const cards = [...list.querySelectorAll("article.row")];
     const fresh = cards.filter((card) => !card.dataset.providerCardKey);
     if (!fresh.length) return;
