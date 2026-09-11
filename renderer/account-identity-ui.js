@@ -9,6 +9,10 @@
     return value == null ? "" : String(value).trim();
   }
 
+  function providerCardKey(row) {
+    return clean(row && (row.instanceKey || row.id || row.providerId));
+  }
+
   function identityText(row) {
     if (!row) return "";
     const email = clean(row.accountEmail);
@@ -35,9 +39,11 @@
     const cards = [...list.querySelectorAll("article.row")];
     const rows = visibleRows(usagePayload);
     if (cards.length !== rows.length) return;
+    const byKey = new Map(rows.map((row) => [providerCardKey(row), row]).filter(([key]) => key));
 
     cards.forEach((card, index) => {
-      const row = rows[index];
+      const cardKey = clean(card.dataset && card.dataset.providerCardKey);
+      const row = (cardKey && byKey.get(cardKey)) || rows[index];
       const meta = card.querySelector(".meta");
       if (!meta) return;
       const text = identityText(row);

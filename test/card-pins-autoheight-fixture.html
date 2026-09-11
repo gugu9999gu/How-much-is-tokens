@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    :root { --ok:#3ee0a0; --muted:#9aa3b5; }
+    body { background:#111; color:#fff; font:13px sans-serif; }
+    .list,.provider-group,.provider-group-cards,.set-group { display:grid; gap:6px; }
+    .provider-group-head { display:flex; gap:6px; }
+    .row { position:relative; padding:10px; background:#222; }
+    .hidden { display:none; }
+    .toggle { display:flex; gap:8px; align-items:center; }
+  </style>
+</head>
+<body>
+  <main id="list" class="list">
+    <section class="provider-group">
+      <div class="provider-group-head"><span>OpenAI</span><i></i></div>
+      <div class="provider-group-cards">
+        <article class="row"><div class="meta"><b>Codex</b><div class="sub">75%</div></div></article>
+      </div>
+    </section>
+    <section class="provider-group">
+      <div class="provider-group-head"><span>Anthropic</span><i></i></div>
+      <div class="provider-group-cards">
+        <article class="row"><div class="meta"><b>Claude</b><div class="sub">60%</div></div></article>
+      </div>
+    </section>
+  </main>
+
+  <section id="settings">
+    <div class="set-group">
+      <h2>표시</h2>
+      <label class="toggle"><span class="toggle-copy"><b>항상 위에</b><small>fixture</small></span><input id="alwaysOnTop" type="checkbox" /><span class="switch"></span></label>
+      <label class="toggle"><span class="toggle-copy"><b>촘촘하게</b><small>fixture</small></span><input id="denseLayout" type="checkbox" /><span class="switch"></span></label>
+      <label class="field"><span>토큰 영역 최대 높이</span><input id="tokenAreaMaxHeight" type="number" value="0" /></label>
+    </div>
+    <p id="connectionHubMessage"></p>
+  </section>
+
+  <script src="../renderer/card-pins-autoheight.js"></script>
+</body>
+</html>
