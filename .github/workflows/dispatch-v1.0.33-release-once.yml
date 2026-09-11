@@ -1,0 +1,71 @@
+name: Dispatch v1.0.33 Public Release Once
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/dispatch-v1.0.33-release-once.yml
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  prepare-and-dispatch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout development source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Prepare v1.0.33 metadata
+        shell: bash
+        run: |
+          npm version 1.0.33 --no-git-tag-version
+          mkdir -p docs/public-release-notes
+          cat > docs/public-release-notes/v1.0.33.md <<'EOF'
+          # How much is tokens v1.0.33
+
+          ## 플랫폼 로고 표시
+
+          - 토큰/사용량 위젯 카드에 플랫폼 로고를 함께 표시합니다.
+          - OpenAI/Codex, Anthropic/Claude, Google Antigravity, Grok, Cursor, GitHub Copilot, OpenRouter, fal.ai, Higgsfield, Magnific, ElevenLabs의 실제 SVG 브랜드 자산을 로컬에 포함해 오프라인에서도 표시합니다.
+          - 다중 계정 카드에서도 계정별 인스턴스 ID를 기본 플랫폼으로 정규화해 동일한 로고를 유지합니다.
+          - 일반 카드와 컴팩트 모드에서 로고 크기가 자동으로 조정되며, 가로형 워드마크는 별도 레이아웃을 사용합니다.
+
+          ## 호환성 및 안전성
+
+          - 로고 제목 래퍼 도입 후에도 기존 계정 이메일/ID 식별선이 정상 위치에 표시되도록 호환성을 보완했습니다.
+          - SVG 자산 출처를 저장소에 기록하고 공식 사이트 자산 재수집 도구를 추가했습니다.
+          - SVG 내부 스크립트, 이벤트 핸들러, `javascript:` 패턴을 검사해 안전성을 확인했습니다.
+          - Stability AI는 현재 로고 사용 조건을 고려해 공식 로고 파일 대신 중립 `S` 타일을 표시합니다.
+
+          Windows portable 실행 파일과 `SHA256SUMS.txt`를 함께 배포합니다.
+          EOF
+
+      - name: Commit release metadata
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json docs/public-release-notes/v1.0.33.md
+          git commit -m "chore: prepare v1.0.33 release"
+          git push origin main
+
+      - name: Dispatch existing public release workflow
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 2
+          gh workflow run publish-public-release.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag=v1.0.33
