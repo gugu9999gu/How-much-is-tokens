@@ -69,7 +69,7 @@ function installRendererEnhancements() {
   identityLink.href = "account-identity-ui.css";
   identityLink.dataset.widgetEnhancements = "1";
   document.head.appendChild(identityLink);
-  for (const src of ["widget-enhancements.js", "account-identity-ui.js", "account-automation-v2.js", "openrouter-profile-ui.js"]) {
+  for (const src of ["widget-enhancements.js", "account-identity-ui.js", "account-automation-v2.js", "openrouter-profile-ui.js", "card-pins-autoheight.js"]) {
     const script = document.createElement("script");
     script.src = src;
     script.dataset.widgetEnhancements = "1";
