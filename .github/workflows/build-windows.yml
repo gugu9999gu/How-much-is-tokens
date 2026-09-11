@@ -77,6 +77,8 @@ jobs:
           node --check lib/openrouter-oauth.js
           node --check lib/openrouter-account-identity.js
           node --check lib/openrouter-main-integration.js
+          node --check lib/media-provider-profiles.js
+          node --check lib/media-mcp-client.js
           node --check lib/api-providers-main-integration.js
           node --check lib/api-providers/common.js
           node --check lib/api-providers/registry.js
@@ -123,6 +125,12 @@ jobs:
           node --check test/openrouter-oauth.test.js
           node --check test/openrouter-account-identity.test.js
           node --check test/openrouter-security.test.js
+          node --check test/media-provider-profiles.test.js
+          node --check test/media-mcp-sdk.test.js
+          node --check test/media-mcp-client.test.js
+          node --check test/media-provider-accounts-smoke.js
+          node --check test/media-provider-ui-preload.js
+          node --check test/media-provider-ui-smoke.js
           node --check test/window-resize.test.js
           node --check test/cli-maintenance.test.js
           node --check test/credential-disconnect.test.js

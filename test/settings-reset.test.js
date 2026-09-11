@@ -10,7 +10,7 @@ const {
   resetSettingsValues,
 } = require("../lib/settings");
 
-assert.deepStrictEqual(RESET_PRESERVED_FIELDS, ["githubToken", "cursorCookie", "accountProfiles", "openRouterProfiles"]);
+assert.deepStrictEqual(RESET_PRESERVED_FIELDS, ["githubToken", "cursorCookie", "accountProfiles", "openRouterProfiles", "mediaProviderProfiles"]);
 assert.deepStrictEqual(RESET_DISPLAY_MODES, ["auto", "relative", "absolute"]);
 assert.strictEqual(DEFAULTS.resetDisplayMode, "auto", "reset display should preserve the existing five-second automatic rotation by default");
 assert.strictEqual(normalizeSettings({ resetDisplayMode: "relative" }).resetDisplayMode, "relative");
@@ -19,6 +19,7 @@ assert.strictEqual(normalizeSettings({ resetDisplayMode: "invalid" }).resetDispl
 assert.strictEqual(DEFAULTS.codexAutoUseReset, false, "automatic reset-ticket consumption must be opt-in");
 assert.deepStrictEqual(DEFAULTS.accountProfiles, [], "multi-account profiles must be opt-in");
 assert.deepStrictEqual(DEFAULTS.openRouterProfiles, [], "OpenRouter key profiles must be opt-in");
+assert.deepStrictEqual(DEFAULTS.mediaProviderProfiles, [], "media-provider account profiles must be opt-in");
 assert.strictEqual(DEFAULTS.openRouterRouter.enabled, false, "localhost API router must be opt-in");
 assert.strictEqual(DEFAULTS.smartRouting.codex.enabled, false, "smart routing must be opt-in");
 assert.strictEqual(DEFAULTS.smartRouting.claude.enabled, false, "smart routing must be opt-in");
@@ -48,6 +49,10 @@ const current = {
     { id: "backup", label: "백업 키", priority: 20, enabled: true },
   ],
   openRouterRouter: { enabled: true, port: 45555, policy: "max-remaining" },
+  mediaProviderProfiles: [
+    { providerId: "falai", id: "fal-work", label: "Fal 업무", mode: "api", priority: 20, enabled: true },
+    { providerId: "higgsfield", id: "higgs-mcp", label: "Higgs MCP", mode: "mcp", priority: 20, enabled: true },
+  ],
   position: { x: 9000, y: -4000 },
   githubToken: "github-secret",
   cursorCookie: "cursor-secret",
@@ -71,6 +76,10 @@ assert.strictEqual(safeReset.accountProfiles.length, 1, "isolated login profile 
 assert.strictEqual(safeReset.accountProfiles[0].label, "GPT 2번");
 assert.deepStrictEqual(safeReset.openRouterProfiles.map((profile) => profile.id), ["primary", "backup"]);
 assert.strictEqual(safeReset.openRouterProfiles[0].label, "주 키");
+assert.deepStrictEqual(safeReset.mediaProviderProfiles.map((profile) => `${profile.providerId}:${profile.id}:${profile.mode}`), [
+  "falai:fal-work:api",
+  "higgsfield:higgs-mcp:mcp",
+]);
 
 const fullReset = resetSettingsValues(current, { preserveCredentials: false });
 assert.deepStrictEqual(fullReset, DEFAULTS);
@@ -86,6 +95,7 @@ assert.ok(main.includes("reloadIgnoringCache"), "renderer settings should refres
 const html = fs.readFileSync(path.join(__dirname, "..", "renderer", "index.html"), "utf8");
 const renderer = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
 const providerSettings = fs.readFileSync(path.join(__dirname, "..", "renderer", "openrouter-settings.js"), "utf8");
+const mediaSettings = fs.readFileSync(path.join(__dirname, "..", "renderer", "api-providers-settings.js"), "utf8");
 const preload = fs.readFileSync(path.join(__dirname, "..", "preload.js"), "utf8");
 assert.ok(html.includes('id="codexAutoUseReset"'), "Codex auto reset toggle must exist");
 assert.ok(html.includes("기본값은 꺼짐"));
@@ -99,7 +109,11 @@ assert.ok(providerSettings.includes("parseOpenRouterProfiles"), "OpenRouter prof
 assert.ok(providerSettings.includes("openRouterRouterPolicy"), "OpenRouter router policy controls must be wired");
 assert.ok(providerSettings.includes("Smart Routing"), "Smart Routing settings UI must be installed");
 assert.ok(providerSettings.includes("data-route-launch"), "Smart Routing launch buttons must exist");
+assert.ok(mediaSettings.includes("+ API 계정"), "media providers must expose intuitive additional API account UI");
+assert.ok(mediaSettings.includes("+ MCP 계정"), "OAuth-capable media providers must expose MCP account UI");
 assert.ok(preload.includes("routeLaunch"), "preload must expose constrained routed launches");
 assert.ok(preload.includes("installSmartRoutingLaunchers"), "preload must expose launcher installation");
+assert.ok(preload.includes("addMediaProviderAccount"), "preload must expose media account creation without exposing stored secrets");
+assert.ok(preload.includes("connectMediaProviderMcp"), "preload must expose official MCP account connection");
 
 console.log("settings reset / startup recovery / safe automation defaults tests passed");

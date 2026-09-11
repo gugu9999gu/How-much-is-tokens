@@ -32,15 +32,13 @@ function hasManualHeight(settings) {
 
 function openRouterMetrics(payload) {
   const providers = Array.isArray(payload && payload.providers) ? payload.providers : [];
-  return providers
-    .filter((provider) => provider && provider.providerId === "openrouter" && provider.profileId)
-    .map((provider) => ({
-      providerId: "openrouter",
-      profileId: provider.profileId,
-      remainingPct: provider.remainingPct,
-      routingRemainingPct: provider.routingRemainingPct,
-      status: provider.status,
-    }));
+  return providers.filter((provider) => provider && provider.providerId === "openrouter" && provider.profileId).map((provider) => ({
+    providerId: "openrouter",
+    profileId: provider.profileId,
+    remainingPct: provider.remainingPct,
+    routingRemainingPct: provider.routingRemainingPct,
+    status: provider.status,
+  }));
 }
 
 async function deliverUsage(payload) {
@@ -108,13 +106,7 @@ async function routeLaunch(providerId) {
   if (!selection.ok) return selection;
   const profile = profileForSelection(settings, selection);
   const launched = launchRoutedCli(providerId, profile);
-  return {
-    ...launched,
-    policy: selection.policy,
-    routeReason: selection.reason,
-    remainingPct: selection.remainingPct,
-    accountLabel: selection.accountLabel,
-  };
+  return { ...launched, policy: selection.policy, routeReason: selection.reason, remainingPct: selection.remainingPct, accountLabel: selection.accountLabel };
 }
 
 function installSmartRoutingLaunchers() {
@@ -123,14 +115,11 @@ function installSmartRoutingLaunchers() {
 }
 
 function formatAccountProfilesForUi(profiles) {
-  return normalizeAccountProfiles(profiles)
-    .filter((profile) => profile.enabled !== false)
-    .map((profile) => `${profile.providerId}|${profile.label}|${profile.configDir}`)
-    .join("\n");
+  return normalizeAccountProfiles(profiles).filter((profile) => profile.enabled !== false)
+    .map((profile) => `${profile.providerId}|${profile.label}|${profile.configDir}`).join("\n");
 }
 function disabledProviderSet(settings = {}) {
-  return new Set((Array.isArray(settings.disabledCredentialProviders) ? settings.disabledCredentialProviders : [])
-    .map((id) => String(id || "").toLowerCase()));
+  return new Set((Array.isArray(settings.disabledCredentialProviders) ? settings.disabledCredentialProviders : []).map((id) => String(id || "").toLowerCase()));
 }
 async function reenableDefaultCredential(providerId, settings) {
   const id = String(providerId || "").toLowerCase();
@@ -168,8 +157,7 @@ async function addCredentialAccount(providerId) {
   ensureProfileDirectory(proposal);
   const merged = [...normalizeAccountProfiles(settings.accountProfiles), proposal];
   const saved = await saveSettingsBridge({ accountProfiles: merged });
-  const profile = normalizeAccountProfiles(saved.accountProfiles)
-    .find((item) => item.providerId === id && item.configDir === proposal.configDir);
+  const profile = normalizeAccountProfiles(saved.accountProfiles).find((item) => item.providerId === id && item.configDir === proposal.configDir);
   if (!profile) return { ok: false, providerId: id, reason: "profile-save-failed" };
   const result = launchCredentialLogin(id, profile);
   return { ...result, accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles) };
@@ -177,8 +165,7 @@ async function addCredentialAccount(providerId) {
 
 function managedAntigravityRow(profileId) {
   const rows = Array.isArray(lastUsagePayload && lastUsagePayload.providers) ? lastUsagePayload.providers : [];
-  return rows.find((row) => row && row.providerId === "antigravity"
-    && row.profileId === profileId && row.managedBy === "agm" && row.externalAccountRef);
+  return rows.find((row) => row && row.providerId === "antigravity" && row.profileId === profileId && row.managedBy === "agm" && row.externalAccountRef);
 }
 
 async function disconnectCredential(providerId, options = {}) {
@@ -201,9 +188,7 @@ async function disconnectCredential(providerId, options = {}) {
     const row = managedAntigravityRow(profileId);
     if (row) {
       const removed = await removeAntigravityManagedAccount(row.externalAccountRef);
-      return removed.ok
-        ? { ok: true, providerId: id, profileId, managedBy: "agm", settings }
-        : { ...removed, providerId: id, profileId };
+      return removed.ok ? { ok: true, providerId: id, profileId, managedBy: "agm", settings } : { ...removed, providerId: id, profileId };
     }
   }
 
@@ -214,14 +199,7 @@ async function disconnectCredential(providerId, options = {}) {
     if (!exists) return { ok: false, providerId: id, profileId, reason: "profile-not-found" };
     const remaining = profiles.filter((profile) => !(profile.providerId === profileProviderId && profile.id === profileId));
     const saved = await saveSettingsBridge({ accountProfiles: remaining });
-    return {
-      ok: true,
-      providerId: id,
-      profileId,
-      sharedCredentialProvider: profileProviderId !== id ? profileProviderId : null,
-      settings: saved,
-      accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles),
-    };
+    return { ok: true, providerId: id, profileId, sharedCredentialProvider: profileProviderId !== id ? profileProviderId : null, settings: saved, accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles) };
   }
 
   const supported = new Set(["codex", "claude", "grok", "cursor", "grokbot", "copilot", "antigravity"]);
@@ -273,6 +251,11 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   getApiProviderCatalog: () => apiProviderCatalog(),
   saveApiProviderSecret: (providerId, patch) => ipcRenderer.invoke("save-api-provider-secret", providerId, patch || {}),
   clearApiProviderSecret: (providerId) => ipcRenderer.invoke("clear-api-provider-secret", providerId),
+  addMediaProviderAccount: (providerId, options) => ipcRenderer.invoke("add-media-provider-account", providerId, options || {}),
+  connectMediaProviderMcp: (providerId, options) => ipcRenderer.invoke("connect-media-provider-mcp", providerId, options || {}),
+  updateMediaProviderAccount: (providerId, profileId, patch) => ipcRenderer.invoke("update-media-provider-account", providerId, profileId, patch || {}),
+  saveMediaProviderAccountCredentials: (providerId, profileId, patch) => ipcRenderer.invoke("save-media-provider-account-credentials", providerId, profileId, patch || {}),
+  removeMediaProviderAccount: (providerId, profileId) => ipcRenderer.invoke("remove-media-provider-account", providerId, profileId),
   routeLaunch,
   installSmartRoutingLaunchers,
   manualWindowResize,
