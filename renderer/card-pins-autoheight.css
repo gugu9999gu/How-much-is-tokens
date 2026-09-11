@@ -1,0 +1,58 @@
+.row.has-card-pin {
+  position: relative;
+  padding-right: 34px;
+}
+
+.row.has-card-pin.compact {
+  padding-right: 31px;
+}
+
+.card-pin-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  opacity: .58;
+  transition: opacity .12s ease, background .12s ease, color .12s ease;
+}
+
+.row:hover .card-pin-button,
+.card-pin-button:focus-visible,
+.card-pin-button.active {
+  opacity: 1;
+}
+
+.card-pin-button:hover,
+.card-pin-button:focus-visible {
+  background: rgba(255,255,255,.08);
+  outline: none;
+}
+
+.card-pin-button.active {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+
+.pinned-provider-group {
+  order: -100;
+}
+
+.pinned-provider-group .provider-group-head span {
+  color: color-mix(in srgb, var(--ok) 70%, var(--muted));
+}
+
+.pinned-card {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 15%, transparent);
+}
+
+.auto-height-toggle input:disabled + .switch {
+  opacity: .55;
+}
