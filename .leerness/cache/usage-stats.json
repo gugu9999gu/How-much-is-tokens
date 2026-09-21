@@ -1,14 +1,25 @@
 {
   "commands": {
-    "gate": 2,
-    "session": 2
+    "gate": 3,
+    "session": 4,
+    "handoff": 2,
+    "drift": 2,
+    "task": 6,
+    "bugfix": 3,
+    "plan": 1,
+    "review": 2,
+    "lens": 3,
+    "persona": 1,
+    "verify-claim": 3,
+    "health": 1,
+    "scan": 1
   },
   "drift": {
-    "criticalSeen": 0,
-    "skipped": 0,
+    "criticalSeen": 1,
+    "skipped": 2,
     "autoResolved": 0
   },
   "since": "2026-09-05",
   "lastCommand": "session",
-  "lastAt": "2026-09-05T17:46:30.052Z"
+  "lastAt": "2026-09-21T00:54:51.169Z"
 }

@@ -90,3 +90,11 @@ Tasks:
 - [x] Grok Bot/collision-avoidance 포함 최종 Windows 사전 검증 run `34077476812` 통과
 - [ ] 정식 PR Windows CI 및 portable build 통과
 - [ ] main 병합 및 Public v1.0.25 Release 게시
+
+### M-0004. Claude 상태 사용량 조회 안정화
+Status: done
+Progress: 100%
+Done-When: Claude usage endpoint가 429여도 계정 일치 로컬 캐시로 정상 사용량을 표시하고 관련 회귀 테스트와 품질 게이트가 통과한다
+
+Tasks:
+- [x] Claude 상태 사용량 조회 안정화

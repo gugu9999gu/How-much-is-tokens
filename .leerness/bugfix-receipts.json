@@ -1,0 +1,24 @@
+[
+  {
+    "id": "T-0007",
+    "repro": "node test/claude-usage.test.js",
+    "expectBad": "TypeError: claudeConfigPath is not a function",
+    "baseline": {
+      "at": "2026-09-21T00:42:20.749Z",
+      "failed": true,
+      "exit": 1,
+      "expectMatched": true,
+      "reproduced": 2,
+      "ms": 79
+    },
+    "rootCause": "기본 60초 새로고침마다 Anthropic usage endpoint를 직접 호출해 HTTP 429를 유발했고, 최신 Claude Code의 계정별 로컬 사용량 캐시와 Retry-After를 활용하지 않았다",
+    "siblingScope": {
+      "checked": [
+        "기본 및 격리 Claude 프로필의 .claude.json/.config.json 캐시 경로",
+        "성공 응답 메모리 캐시",
+        "공용 HTTP 응답 헤더 전달"
+      ]
+    },
+    "previousGuardGap": null
+  }
+]

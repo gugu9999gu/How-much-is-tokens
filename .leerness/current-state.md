@@ -15,10 +15,10 @@ doNotStore:
 <!-- leerness:managed -->
 # Current State
 
-Updated: 2026-09-07
+Updated: 2026-09-21
 
 ## Now
-- v1.0.25 미니멀 계정 연결 허브 구현 및 feature-head Windows 사전 검증 완료; 정식 PR 준비 중. <!-- leerness:auto -->
+- 대기 중 <!-- leerness:auto -->
 - 개발 저장소 `gugu9999gu/How-much-is-tokens`는 Private, `gugu9999gu/How-much-is-tokens-releases`는 Public 바이너리 배포 전용으로 운영 중.
 - Leerness v1.36.184를 고정 설치하고 Windows CI에서 `leerness gate`를 필수 검증으로 실행함.
 - 기본 설정 UX는 8개 공급자 카드(Codex/Claude/Grok/Cursor/Grok Bot/Copilot/Antigravity/OpenRouter)의 `연결 상태 + 로그인/다시 로그인 + 가능한 경우 계정 추가`와 `항상 위에/시작 시 실행/빈 계정 숨기기` 3개 기본 옵션만 바로 표시함.
@@ -33,7 +33,7 @@ Updated: 2026-09-07
 - package/package-lock은 npm workflow run `34077244587`로 v1.0.25에 동기화했고 모든 일회성 validation/sync workflow는 feature branch에서 제거함.
 
 ## Next
-- 정식 PR을 열어 Windows full CI에서 complete regression, Leerness gate, DPAPI, renderer, Antigravity smoke, portable EXE build를 검증. <!-- leerness:auto -->
+- 계획된 작업 없음 <!-- leerness:auto -->
 - 성공한 PR head만 main에 squash merge하고 post-merge CI를 확인.
 - `docs/public-release-notes/v1.0.25.md`를 사용해 Public v1.0.25 Release 게시.
 
