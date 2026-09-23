@@ -37,7 +37,7 @@ const structuredFixture = {
 
 const structured = structuredWindows(structuredFixture);
 assert.deepStrictEqual(structured.map((win) => win.label), [
-  "세션 한도",
+  "5시간 한도",
   "주간 한도",
   "Fable 주간 한도",
   "Future Model 주간 한도",

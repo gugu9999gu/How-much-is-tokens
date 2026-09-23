@@ -77,6 +77,8 @@ assert.strictEqual(result.creditBalances[0].limit, 100);
 assert.strictEqual(result.creditBalances[0].balance, 75);
 assert.ok(!result.extras.some((item) => /On-demand (사용|잔여|한도)/.test(item.label)), "money details must use the common credit model, not duplicate chips");
 assert.ok(result.extras.some((item) => item.label === "계정" && item.value === "Cursor"));
+assert.strictEqual(result.billing.label, "결제일");
+assert.strictEqual(result.billing.renewsAt, Date.parse("2026-10-01T00:00:00Z"));
 
 assert.strictEqual(periodCreditBalance(null), null);
 console.log("grok bot provider / credit tests passed");

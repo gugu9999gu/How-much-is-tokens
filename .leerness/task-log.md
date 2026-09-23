@@ -21,3 +21,9 @@ doNotStore:
 
 ## 2026-09-05 session-close
 - Generated session-handoff.md and refreshed current-state.md.
+
+## 2026-09-23
+- v1.0.34 사용량 카드에 Claude 5시간 한도, Claude/Codex 리셋 쿠폰, CLI 버전·업데이트 가능, 결제·갱신일 표시를 추가. 쿠폰 소비와 결제일 추정은 하지 않음. 공개 릴리스는 미게시.
+
+## 2026-09-23 session-close
+- Generated session-handoff.md and refreshed current-state.md.

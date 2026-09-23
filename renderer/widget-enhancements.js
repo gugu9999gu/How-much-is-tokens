@@ -12,6 +12,7 @@
   const CLI_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
   const RESIZE_DIRECTIONS = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
   let usagePayload = typeof api.getLastUsage === "function" ? api.getLastUsage() : null;
+  let latestCliStatuses = [];
   let resetMode = "relative";
   let resetDisplayPreference = "auto";
   let resetTimer = null;
@@ -357,6 +358,7 @@
         list.appendChild(chip);
       });
     });
+    stampCliCards();
   }
 
   function ensureCliVersionLine(card) {
@@ -374,13 +376,32 @@
   function cliVersionText(status) {
     if (!status || status.installed !== true) return "CLI 없음";
     const current = status.installedVersion ? `CLI ${status.installedVersion}` : "CLI 감지됨";
-    if (status.updateAvailable && status.latestVersion) return `${current} · 최신 ${status.latestVersion}`;
+    if (status.updateAvailable) {
+      const latest = status.latestVersion ? ` · 최신 ${status.latestVersion}` : "";
+      return `${current}${latest} · 업데이트 가능`;
+    }
     if (status.autoUpdate) return `${current} · 자동 업데이트`;
     return current;
   }
 
+  function stampCliCards() {
+    if (!latestCliStatuses.length) return;
+    const map = new Map(latestCliStatuses.map((status) => [status.providerId, status]));
+    document.querySelectorAll(".cli-card-line[data-cli-provider]").forEach((line) => {
+      const providerId = String(line.dataset.cliProvider || "").toLowerCase();
+      const status = map.get(providerId) || (providerId === "grokbot" ? map.get("cursor") : null);
+      line.textContent = cliVersionText(status);
+      line.classList.toggle("missing", !status || status.installed !== true);
+      line.classList.toggle("update-available", !!(status && status.updateAvailable));
+      line.title = status && status.updateAvailable
+        ? `설치된 ${status.installedVersion || "CLI"}에서 업데이트할 수 있습니다`
+        : "";
+    });
+  }
+
   function renderCliStatuses(statuses) {
-    const map = new Map((Array.isArray(statuses) ? statuses : []).map((status) => [status.providerId, status]));
+    latestCliStatuses = Array.isArray(statuses) ? statuses : [];
+    const map = new Map(latestCliStatuses.map((status) => [status.providerId, status]));
     document.querySelectorAll(".connection-card[data-connection-provider]").forEach((card) => {
       const providerId = String(card.dataset.connectionProvider || "").toLowerCase();
       if (providerId === "openrouter") return;
@@ -421,6 +442,7 @@
         }
       };
     });
+    stampCliCards();
   }
 
   async function refreshCliVersions(force = false) {
@@ -456,6 +478,16 @@
   installResetDisplaySetting();
   installResetModeCycle();
   installConnectionEnhancements();
+  if (typeof window.render === "function" && !window.render.__cliCards) {
+    const renderUsage = window.render;
+    const wrappedRender = (payload) => {
+      const rendered = renderUsage(payload);
+      stampCliCards();
+      return rendered;
+    };
+    wrappedRender.__cliCards = true;
+    window.render = wrappedRender;
+  }
   readSettingsAndSync();
 
   window.addEventListener("beforeunload", () => {

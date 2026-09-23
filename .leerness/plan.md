@@ -90,3 +90,15 @@ Tasks:
 - [x] Grok Bot/collision-avoidance 포함 최종 Windows 사전 검증 run `34077476812` 통과
 - [ ] 정식 PR Windows CI 및 portable build 통과
 - [ ] main 병합 및 Public v1.0.25 Release 게시
+
+### M-0004. v1.0.34 한도·리셋 쿠폰·CLI 버전·결제 주기 표시
+Status: in-progress
+Progress: 90%
+
+Tasks:
+- [x] Claude 세션 한도를 5시간 한도로 표시
+- [x] Claude 리셋 쿠폰은 OAuth usage에서 읽기 전용 조회. surface 비공개면 수량을 만들지 않음
+- [x] Codex 리셋 쿠폰 수량은 wham `available_count`를 우선하고 만료일은 상세 조회가 될 때만 표시. 소비 API는 호출하지 않음
+- [x] 사용량 카드에 설치 CLI 버전과 업데이트 가능 여부 표시
+- [x] 공급자가 준 결제·갱신일만 표시하고, 없으면 추정하지 않음
+- [ ] 커밋 후 Public v1.0.34 Release를 `How-much-is-tokens-releases`에 게시

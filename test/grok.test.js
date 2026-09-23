@@ -28,6 +28,8 @@ assert.strictEqual(exhausted.remainingPct, 0);
 assert.strictEqual(exhausted.windows.length, 1, "product rows must not become independent quota windows");
 assert.strictEqual(exhausted.windows[0].id, "weekly");
 assert.strictEqual(exhausted.windows[0].label, "주간 공유 한도");
+assert.strictEqual(exhausted.billing.label, "이용 기간");
+assert.strictEqual(exhausted.billing.renewsAt, Date.parse(reset));
 assert.strictEqual(exhausted.windows[0].remainingPct, 0);
 assert.deepStrictEqual(exhausted.extras, [
   { label: "GrokBuild", value: "사용 95%" },

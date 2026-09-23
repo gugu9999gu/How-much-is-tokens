@@ -24,6 +24,8 @@ assert.strictEqual(Math.round(el.remainingPct), 68);
 assert.strictEqual(el.creditBalances[0].balance, 68000);
 assert.strictEqual(el.creditBalances[0].used, 32000);
 assert.ok(el.windows[0].resetAt > 1e12, "reset unix seconds convert to ms");
+assert.strictEqual(el.billing.label, "결제일");
+assert.strictEqual(el.billing.renewsAt, el.windows[0].resetAt);
 assert.strictEqual(elevenlabs.parse({ character_limit: 0, character_count: 0 }), null);
 
 // --- Stability AI: credit balance --------------------------------------------

@@ -26,6 +26,13 @@ assert.ok(enhancement.includes("manualWindowResize"), "renderer border handles m
 assert.ok(enhancement.includes("disconnectCredential"), "connection cards must expose disconnect controls");
 assert.ok(enhancement.includes("getCliVersions"), "connection cards must display detected CLI versions");
 assert.ok(enhancement.includes("updateAvailable && status.updateSupported"), "CLI update button must appear only when a newer version is detected and updating is supported");
+assert.ok(enhancement.includes("업데이트 가능"), "installed CLI cards must say when an update is available");
+assert.ok(enhancement.includes("stampCliCards"), "usage cards must receive the same CLI version status as connection cards");
+assert.ok(rendererApp.includes("account-facts"), "usage cards must show limit, coupon, and billing facts");
+assert.ok(rendererApp.includes("리셋 쿠폰"), "Claude and Codex reset coupon counts must be labeled on the card");
+assert.ok(rendererApp.includes("결제일 정보 없음"), "platforms without a billing date must say so instead of inventing one");
+assert.ok(rendererApp.includes('data-provider-id='), "usage cards must keep a stable provider id for version stamping");
+assert.ok(rendererCss.includes(".account-facts"), "account fact chips must be styled");
 assert.ok(css.includes(".widget-resize-handle"), "window edge/corner resize hit targets must be styled");
 assert.ok(css.includes(".header-edge-toggle"), "minimal header edge toggle must be styled");
 assert.ok(css.includes("repeat(auto-fit, minmax(min(100%, 280px), 1fr))"), "provider token cards must add/remove columns with widget width");

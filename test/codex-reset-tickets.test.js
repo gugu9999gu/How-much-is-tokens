@@ -72,7 +72,7 @@ assert.strictEqual(expiredFiltered.availableCount, 1, "do not rewrite authoritat
 assert.strictEqual(ticketExpiryText(now + 2 * 86_400_000, now), "D-2 · 2027-01-17");
 assert.strictEqual(ticketExpiryText(null, now), "만료 없음");
 const extras = resetTicketExtras(normalized, now);
-assert.strictEqual(extras[0].label, "Codex/Work 리셋");
+assert.strictEqual(extras[0].label, "리셋 쿠폰");
 assert.strictEqual(extras[0].value, "3개");
 assert.ok(extras[1].value.startsWith("D-2 · "));
 

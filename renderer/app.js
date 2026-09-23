@@ -269,6 +269,77 @@ function renderProviderNote(provider) {
   return provider.note ? `<div class="hint">${escapeHtml(provider.note)}</div>` : "";
 }
 
+const CLI_CARD_PROVIDERS = new Set(["codex", "claude", "grok", "cursor", "grokbot", "copilot", "antigravity"]);
+const COUPON_PROVIDERS = new Set(["codex", "claude"]);
+
+function baseProviderId(provider) {
+  return String((provider && (provider.providerId || provider.id)) || "")
+    .trim()
+    .toLowerCase()
+    .split(":")[0];
+}
+
+function cycleDateText(ms) {
+  const time = Number(ms);
+  if (!Number.isFinite(time) || time <= 0) return "";
+  const date = new Date(time);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}.${month}.${day}`;
+}
+
+function fiveHourWindow(provider) {
+  const windows = Array.isArray(provider && provider.windows) ? provider.windows : [];
+  return windows.find((win) => {
+    const id = String(win && win.id || "");
+    const label = String(win && win.label || "");
+    return id === "five_hour" || id === "session" || id === "5h" || label.includes("5시간");
+  }) || null;
+}
+
+function couponFactText(provider) {
+  const id = baseProviderId(provider);
+  if (!COUPON_PROVIDERS.has(id)) return "";
+  const coupons = provider && provider.resetCoupons;
+  if (!coupons || coupons.visibility === "unknown" || (coupons.availableCount == null && coupons.visibility !== "web-only")) {
+    return "리셋 쿠폰 확인 불가";
+  }
+  if (coupons.visibility === "web-only") return "리셋 쿠폰 · 웹에서 확인";
+  const count = Math.max(0, Number(coupons.availableCount) || 0);
+  const waiting = coupons.applicableCount === 0 && count > 0 ? " · 적용 대기" : "";
+  const expiry = coupons.tickets && coupons.tickets[0] && coupons.tickets[0].expiresAt
+    ? ` · ${cycleDateText(coupons.tickets[0].expiresAt)}까지`
+    : "";
+  return `리셋 쿠폰 ${count}개${waiting}${expiry}`;
+}
+
+function billingFactText(provider) {
+  const billing = provider && provider.billing;
+  if (!billing) return "결제일 정보 없음";
+  if (billing.renewsAt) {
+    const label = billing.label || "결제일";
+    const start = billing.startedAt ? `${cycleDateText(billing.startedAt)}–` : "";
+    return `${label} ${start}${cycleDateText(billing.renewsAt)}`;
+  }
+  if (billing.startedAt) return `구독 시작 ${cycleDateText(billing.startedAt)} · 다음 결제일 미제공`;
+  if (billing.note) return billing.note;
+  return "결제일 정보 없음";
+}
+
+function renderAccountFacts(provider) {
+  if (!provider || provider.status !== "ok") return "";
+  const id = baseProviderId(provider);
+  const items = [];
+  const coupon = couponFactText(provider);
+  if (coupon) items.push(`<span class="fact fact-coupon">${escapeHtml(coupon)}</span>`);
+  items.push(`<span class="fact fact-billing">${escapeHtml(billingFactText(provider))}</span>`);
+  if (CLI_CARD_PROVIDERS.has(id)) {
+    items.push(`<span class="fact fact-cli cli-card-line" data-cli-provider="${escapeHtml(id)}"></span>`);
+  }
+  return `<div class="account-facts">${items.join("")}</div>`;
+}
+
 function providerLogoKey(provider) {
   return String(provider.providerId || provider.id || "")
     .trim()
@@ -291,9 +362,14 @@ function renderProviderTitle(provider, account, plan) {
 function renderProviderCard(provider) {
   const plan = provider.plan ? ` · ${provider.plan}` : "";
   const account = provider.accountLabel ? ` · ${provider.accountLabel}` : "";
+  const providerKey = baseProviderId(provider);
+  const fiveHour = fiveHourWindow(provider);
+  const resetLabel = resetText(provider.resetAt);
   const statusLine =
     provider.status === "ok"
-      ? resetText(provider.resetAt)
+      ? ((providerKey === "claude" || providerKey === "codex") && fiveHour
+        ? `5시간 ${pctLabel(fiveHour.remainingPct)}%${resetLabel ? ` · ${resetLabel}` : ""}`
+        : resetLabel)
       : provider.status === "login"
         ? "로그인 필요"
         : provider.status === "missing"
@@ -312,15 +388,18 @@ function renderProviderCard(provider) {
     : quotaWindows.map((win) => `<span class="chip">${win.label} ${pctLabel(win.remainingPct)}%</span>`).join("");
   const chips = `${quotaChips}${extras}`;
   const credits = renderCreditBalances(provider);
+  const facts = renderAccountFacts(provider);
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
+  const cardAttrs = ` data-provider-id="${escapeHtml(providerKey)}"`;
 
   if (showQuotaVisuals) {
     return `
-      <article class="row multi-quota visual-${visualization}">
+      <article class="row multi-quota visual-${visualization}"${cardAttrs}>
         <div class="meta">
           ${renderProviderTitle(provider, account, plan)}
           <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
           <div class="quota-visuals quota-${visualization}s">${quotaWindows.map(renderQuotaVisual).join("")}</div>
+          ${facts}
           ${credits}
           ${extras ? `<div class="windows">${extras}</div>` : ""}
           ${renderProviderLogs(provider)}
@@ -332,11 +411,12 @@ function renderProviderCard(provider) {
   }
 
   return `
-    <article class="row visual-${visualization} ${compact ? "compact" : ""}">
+    <article class="row visual-${visualization} ${compact ? "compact" : ""}"${cardAttrs}>
       ${renderSummaryVisual(provider)}
       <div class="meta">
         ${renderProviderTitle(provider, account, plan)}
         <div class="sub">${statusLine}${provider.stale ? " · 이전 값" : ""}</div>
+        ${facts}
         ${credits}
         ${chips ? `<div class="windows">${chips}</div>` : ""}
         ${renderProviderLogs(provider)}
