@@ -9,12 +9,13 @@ Last generated: 2026-09-23T02:27:45.666Z
 - T-0004 v1.0.31 다계정/Smart Routing/프로필별 reset/CLI 유지보수 완성 → next: 운영 피드백 확인
 - T-0005 OpenRouter 추가 프로필/API Key를 직관적으로 추가·추적·정렬·삭제하는 설정 UX → next: 운영 피드백 확인
 - T-0006 생성형 미디어 공급자 다계정 + 공식 MCP 잔여량 연동 → next: 운영 피드백 확인
+- T-0007 Claude 5시간 한도, Claude/Codex 리셋 쿠폰 잔여, 설치 CLI 버전·업데이트 가능, 플랫폼별 결제·갱신일 표시 → next: 유지보수
 
 ## In Progress
 - 없음
 
 ## Incomplete / Waiting / On Hold / Blocked
-- T-0007 Claude 5시간 한도, Claude/Codex 리셋 쿠폰 잔여, 설치 CLI 버전·업데이트 가능, 플랫폼별 결제·갱신일 표시 → next: 커밋 후 v1.0.34를 How-much-is-tokens-releases에 게시
+- 없음
 
 ## Dropped
 - 없음
@@ -56,4 +57,4 @@ Last generated: 2026-09-23T02:27:45.666Z
 - 다음 우선순위를 사용자와 정합니다.
 
 ## Next Exact Step
-- 커밋 후 태그 v1.0.34로 publish-public-release를 실행해 portable EXE와 SHA256SUMS.txt만 gugu9999gu/How-much-is-tokens-releases에 게시한다.
+- 없음. v1.0.34 공개 릴리스 run 35813268949 성공.

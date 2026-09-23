@@ -18,7 +18,7 @@ doNotStore:
 Updated: 2026-09-23
 
 ## Now
-- v1.0.34 사용량 카드 표시는 작업 트리에 있고 테스트는 통과했다. 커밋과 공개 릴리스는 아직 없다. <!-- leerness:auto -->
+- v1.0.34 공개 릴리스가 `gugu9999gu/How-much-is-tokens-releases`에 게시되었다. run 35813268949 success. SHA-256 4711a17aa0008efb3293862c113f9033d973df14547ba3362636c6b2496bac1f. <!-- leerness:auto -->
 - 개발 저장소 `gugu9999gu/How-much-is-tokens`는 Private, `gugu9999gu/How-much-is-tokens-releases`는 Public 바이너리 배포 전용으로 운영 중.
 - Leerness v1.36.184를 고정 설치하고 Windows CI에서 `leerness gate`를 필수 검증으로 실행함.
 - 기본 설정 UX는 8개 공급자 카드(Codex/Claude/Grok/Cursor/Grok Bot/Copilot/Antigravity/OpenRouter)의 `연결 상태 + 로그인/다시 로그인 + 가능한 경우 계정 추가`와 `항상 위에/시작 시 실행/빈 계정 숨기기` 3개 기본 옵션만 바로 표시함.
@@ -33,7 +33,7 @@ Updated: 2026-09-23
 - package/package-lock은 npm workflow run `34077244587`로 v1.0.25에 동기화했고 모든 일회성 validation/sync workflow는 feature branch에서 제거함.
 
 ## Next
-- 커밋 후 태그 v1.0.34로 publish-public-release를 실행해 EXE와 SHA256SUMS.txt만 gugu9999gu/How-much-is-tokens-releases에 게시한다. <!-- leerness:auto -->
+- 공개 v1.0.34 피드백을 확인한다. <!-- leerness:auto -->
 - 소스와 `.leerness`는 비공개 개발 저장소에만 둔다.
 
 ## Blockers
