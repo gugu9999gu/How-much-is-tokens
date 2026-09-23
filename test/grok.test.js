@@ -79,4 +79,70 @@ assert.strictEqual(unusedPeriod.usageSource, "empty-current-period");
 const noCredits = grokCreditBalances({ creditUsagePercent: 10 });
 assert.deepStrictEqual(noCredits, [], "credit rows must not be fabricated when xAI omits balance fields");
 
-console.log("Grok shared-pool billing / credit tests passed");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { ensureGrokAuth, pickAuth, selectFreshAuth } = require("../lib/providers/grok");
+
+const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "grok-auth-"));
+const authFile = path.join(authDir, "auth.json");
+const expiredAt = "2026-09-23T00:00:00.000Z";
+const now = Date.parse("2026-09-23T03:00:00.000Z");
+fs.writeFileSync(authFile, JSON.stringify({
+  "https://auth.x.ai": {
+    key: "old-access",
+    auth_mode: "oidc",
+    user_id: "user-1",
+    refresh_token: "old-refresh",
+    expires_at: expiredAt,
+    oidc_issuer: "https://auth.x.ai",
+    oidc_client_id: "grok-cli",
+  },
+}, null, 2));
+
+assert.strictEqual(selectFreshAuth(JSON.parse(fs.readFileSync(authFile, "utf8")), now), null, "expired Grok access token must not be used");
+assert.strictEqual(pickAuth({ configDir: authDir }, now), null);
+
+(async () => {
+  const refreshed = await ensureGrokAuth(null, {
+    authFile,
+    now,
+    requestJson: async (url, init) => {
+      assert.strictEqual(url, "https://auth.x.ai/oauth2/token");
+      assert.match(String(init.body), /grant_type=refresh_token/);
+      assert.match(String(init.body), /refresh_token=old-refresh/);
+      return {
+        ok: true,
+        status: 200,
+        json: { access_token: "new-access", refresh_token: "new-refresh", expires_in: 7200 },
+      };
+    },
+  });
+  assert.strictEqual(refreshed.token, "new-access");
+  const stored = JSON.parse(fs.readFileSync(authFile, "utf8"))["https://auth.x.ai"];
+  assert.strictEqual(stored.key, "new-access");
+  assert.strictEqual(stored.refresh_token, "new-refresh");
+  assert.ok(Date.parse(stored.expires_at) > now);
+  assert.strictEqual(pickAuth({ configDir: authDir }, now).token, "new-access");
+
+  const failedFile = path.join(authDir, "failed-auth.json");
+  fs.writeFileSync(failedFile, JSON.stringify({
+    "https://auth.x.ai": {
+      ...stored,
+      key: "old-access",
+      refresh_token: "old-refresh",
+      expires_at: expiredAt,
+    },
+  }, null, 2));
+  const failed = await ensureGrokAuth(null, {
+    authFile: failedFile,
+    now,
+    requestJson: async () => ({ ok: false, status: 400, json: { error: "invalid_grant" } }),
+  });
+  assert.strictEqual(failed, null, "failed refresh must not invent an access token");
+  assert.strictEqual(JSON.parse(fs.readFileSync(failedFile, "utf8"))["https://auth.x.ai"].refresh_token, "old-refresh");
+  console.log("Grok shared-pool billing / credit tests passed");
+})().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

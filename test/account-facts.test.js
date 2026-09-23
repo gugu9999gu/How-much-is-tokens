@@ -40,6 +40,10 @@ const claudeBilling = billingFromClaudeProfile({
 });
 assert.strictEqual(claudeBilling.renewsAt, null, "Claude profile has no next charge date");
 assert.strictEqual(claudeBilling.startedAt, Date.parse("2025-07-22T00:43:28.093226Z"));
+assert.strictEqual(billingFromClaudeProfile({
+  account: { has_claude_pro: true, has_claude_max: false },
+  organization: { subscription_status: "active", subscription_created_at: "2025-07-22T00:43:28.093226Z" },
+}).planLabel, "Pro");
 assert.strictEqual(billingFromClaudeProfile({ organization: { subscription_status: "active" } }).note, "다음 결제일 미제공");
 
 const cedar = couponsFromCedar({

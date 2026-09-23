@@ -387,15 +387,31 @@
   function stampCliCards() {
     if (!latestCliStatuses.length) return;
     const map = new Map(latestCliStatuses.map((status) => [status.providerId, status]));
-    document.querySelectorAll(".cli-card-line[data-cli-provider]").forEach((line) => {
-      const providerId = String(line.dataset.cliProvider || "").toLowerCase();
+    document.querySelectorAll(".meta-cli[data-cli-provider]").forEach((cell) => {
+      const providerId = String(cell.dataset.cliProvider || "").toLowerCase();
       const status = map.get(providerId) || (providerId === "grokbot" ? map.get("cursor") : null);
-      line.textContent = cliVersionText(status);
-      line.classList.toggle("missing", !status || status.installed !== true);
-      line.classList.toggle("update-available", !!(status && status.updateAvailable));
-      line.title = status && status.updateAvailable
-        ? `설치된 ${status.installedVersion || "CLI"}에서 업데이트할 수 있습니다`
-        : "";
+      const version = cell.querySelector(".cli-card-version");
+      const state = cell.querySelector(".cli-card-state");
+      if (!version || !state) return;
+      cell.classList.toggle("missing", !status || status.installed !== true);
+      cell.classList.toggle("update", !!(status && status.updateAvailable));
+      if (!status || status.installed !== true) {
+        version.textContent = "없음";
+        state.textContent = "";
+        cell.title = "설치된 CLI를 찾지 못했습니다";
+        return;
+      }
+      version.textContent = status.installedVersion || "감지됨";
+      if (status.updateAvailable) {
+        state.textContent = status.latestVersion ? `업데이트 ${status.latestVersion}` : "업데이트 가능";
+        cell.title = `설치된 ${status.installedVersion || "CLI"}에서 업데이트할 수 있습니다`;
+      } else if (status.autoUpdate) {
+        state.textContent = "자동 업데이트";
+        cell.title = "";
+      } else {
+        state.textContent = "최신";
+        cell.title = "";
+      }
     });
   }
 

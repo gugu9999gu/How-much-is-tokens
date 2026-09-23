@@ -28,3 +28,9 @@ doNotStore:
 - Reason: 위젯이 이미 갖고 있는 한도·쿠폰 데이터가 카드에서 빠지거나 다른 이름으로 보여, 사용자가 5시간 한도, 쿠폰 잔여, 설치 버전, 결제일을 한 화면에서 볼 수 없었다.
 - Alternatives: 구독 시작일로 다음 결제일을 월간 추정한다 — 연간 구독에서 거짓 날짜가 되므로 하지 않음. Claude 웹 쿠키로 쿠폰 수량을 읽는다 — 기존 OAuth 자격증명 경계를 넓히므로 하지 않음.
 - Impact: provider payload의 `billing`/`resetCoupons`, 사용량 카드 사실 행, CLI 버전 스탬프. 공개 배포는 `gugu9999gu/How-much-is-tokens-releases`의 바이너리만 사용한다.
+
+### 2026-09-23 — 이 PC 자격증명으로 확인한 결제일 범위
+- Decision: 결제일은 로그인한 CLI/OAuth가 실제로 주는 값만 표시한다. Cursor·Grok Bot은 billing cycle, Copilot은 할당 갱신일, Grok은 이용 기간, ElevenLabs는 다음 갱신일, Claude는 구독 상태와 구독 시작일만 보여 준다. Codex CLI 토큰의 구독/결제 API는 403이라 결제일을 만들지 않는다. Antigravity `agy -p /usage`는 5시간·주간 한도 갱신 시각만 주고 결제일은 없다. 카드는 쿠폰·결제·CLI를 한 줄 알약이 아니라 칸으로 구분한다.
+- Reason: v1.0.34는 날짜가 없으면 "결제일 정보 없음"을 모든 카드에 같은 알약으로 붙여, 조회 가능한 날짜와 불가능한 날짜가 구분되지 않았다.
+- Alternatives: 구독 시작일로 다음 결제일을 월 단위 추정한다 — 연간 구독에서 거짓이므로 하지 않음. 브라우저 쿠키로 Claude/Codex 결제 페이지를 읽는다 — 기존 CLI 자격증명 밖이라 하지 않음.
+- Impact: 카드 메타 칸, Claude planLabel, agy usage 타임아웃 25초, Windows에서 Codex 실행 파일은 `.exe`/`.cmd`를 우선 선택.

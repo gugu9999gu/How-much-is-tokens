@@ -298,46 +298,76 @@ function fiveHourWindow(provider) {
   }) || null;
 }
 
-function couponFactText(provider) {
+function metaCell(label, value, detail, extraClass) {
+  const cls = `meta-cell${extraClass ? ` ${extraClass}` : ""}`;
+  return `<div class="${cls}"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div>`;
+}
+
+function couponMeta(provider) {
   const id = baseProviderId(provider);
-  if (!COUPON_PROVIDERS.has(id)) return "";
+  if (!COUPON_PROVIDERS.has(id)) return null;
   const coupons = provider && provider.resetCoupons;
   if (!coupons || coupons.visibility === "unknown" || (coupons.availableCount == null && coupons.visibility !== "web-only")) {
-    return "리셋 쿠폰 확인 불가";
+    return { label: "리셋 쿠폰", value: "확인 불가", detail: "", missing: true };
   }
-  if (coupons.visibility === "web-only") return "리셋 쿠폰 · 웹에서 확인";
+  if (coupons.visibility === "web-only") {
+    return { label: "리셋 쿠폰", value: "웹 전용", detail: "claude.ai에서 확인", missing: true };
+  }
   const count = Math.max(0, Number(coupons.availableCount) || 0);
-  const waiting = coupons.applicableCount === 0 && count > 0 ? " · 적용 대기" : "";
-  const expiry = coupons.tickets && coupons.tickets[0] && coupons.tickets[0].expiresAt
-    ? ` · ${cycleDateText(coupons.tickets[0].expiresAt)}까지`
-    : "";
-  return `리셋 쿠폰 ${count}개${waiting}${expiry}`;
+  const detail = [
+    coupons.applicableCount === 0 && count > 0 ? "적용 대기" : "",
+    coupons.tickets && coupons.tickets[0] && coupons.tickets[0].expiresAt
+      ? `${cycleDateText(coupons.tickets[0].expiresAt)}까지`
+      : "",
+  ].filter(Boolean).join(" · ");
+  return { label: "리셋 쿠폰", value: `${count}개`, detail, missing: false };
 }
 
-function billingFactText(provider) {
+function billingMeta(provider) {
   const billing = provider && provider.billing;
-  if (!billing) return "결제일 정보 없음";
-  if (billing.renewsAt) {
-    const label = billing.label || "결제일";
-    const start = billing.startedAt ? `${cycleDateText(billing.startedAt)}–` : "";
-    return `${label} ${start}${cycleDateText(billing.renewsAt)}`;
+  if (billing && billing.renewsAt) {
+    return {
+      label: billing.label || "결제일",
+      value: cycleDateText(billing.renewsAt),
+      detail: billing.startedAt ? `${cycleDateText(billing.startedAt)} 시작` : "",
+      missing: false,
+    };
   }
-  if (billing.startedAt) return `구독 시작 ${cycleDateText(billing.startedAt)} · 다음 결제일 미제공`;
-  if (billing.note) return billing.note;
-  return "결제일 정보 없음";
+  if (billing && billing.startedAt) {
+    const plan = billing.planLabel ? `${billing.planLabel} · ` : "";
+    return {
+      label: "구독",
+      value: billing.status === "active" ? `${plan}구독 중` : "시작일 확인",
+      detail: `${cycleDateText(billing.startedAt)} 시작`,
+      missing: false,
+    };
+  }
+  if (billing && billing.note) {
+    const [value, detail = ""] = String(billing.note).split(" · ");
+    return { label: billing.label || "결제", value, detail, missing: true };
+  }
+  return { label: "결제", value: "정보 없음", detail: "결제일을 주지 않음", missing: true };
 }
 
-function renderAccountFacts(provider) {
+function renderAccountMeta(provider) {
   if (!provider || provider.status !== "ok") return "";
   const id = baseProviderId(provider);
-  const items = [];
-  const coupon = couponFactText(provider);
-  if (coupon) items.push(`<span class="fact fact-coupon">${escapeHtml(coupon)}</span>`);
-  items.push(`<span class="fact fact-billing">${escapeHtml(billingFactText(provider))}</span>`);
+  const cells = [];
+  const coupon = couponMeta(provider);
+  if (coupon) cells.push(metaCell(coupon.label, coupon.value, coupon.detail, coupon.missing ? "missing" : ""));
+  const billing = billingMeta(provider);
+  cells.push(metaCell(billing.label, billing.value, billing.detail, billing.missing ? "missing" : ""));
   if (CLI_CARD_PROVIDERS.has(id)) {
-    items.push(`<span class="fact fact-cli cli-card-line" data-cli-provider="${escapeHtml(id)}"></span>`);
+    cells.push(`<div class="meta-cell meta-cli" data-cli-provider="${escapeHtml(id)}"><span>CLI</span><b class="cli-card-version">확인 중</b><small class="cli-card-state"></small></div>`);
   }
-  return `<div class="account-facts">${items.join("")}</div>`;
+  return `<div class="account-meta">${cells.join("")}</div>`;
+}
+
+function displayPlan(plan) {
+  const text = String(plan || "").trim();
+  if (!text || /default_|_tier|claude_ai/i.test(text)) return "";
+  if (text.length > 22) return "";
+  return text.replace(/[_-]+/g, " ").replace(/\b[a-z]/g, (char) => char.toUpperCase());
 }
 
 function providerLogoKey(provider) {
@@ -349,14 +379,16 @@ function providerLogoKey(provider) {
 
 function renderProviderTitle(provider, account, plan) {
   const logo = PROVIDER_LOGOS[providerLogoKey(provider)];
-  const title = escapeHtml(`${provider.name || ""}${account}${plan}`);
-  if (!logo) return `<div class="provider-title"><b>${title}</b></div>`;
+  const title = escapeHtml(`${provider.name || ""}${account}`);
+  const badge = displayPlan(plan.replace(/^ · /, "")) ;
+  const planBadge = badge ? `<em class="plan-badge">${escapeHtml(badge)}</em>` : "";
+  if (!logo) return `<div class="provider-title"><b>${title}</b>${planBadge}</div>`;
 
   const label = escapeHtml(logo.label || provider.name || "Provider");
   const icon = logo.src
     ? `<span class="provider-logo${logo.wide ? " provider-logo--wide" : ""}" title="${label}"><img src="${logo.src}" alt="" aria-hidden="true" draggable="false"></span>`
     : `<span class="provider-logo provider-logo--fallback" title="${label}" aria-hidden="true">${escapeHtml(logo.fallback || "?")}</span>`;
-  return `<div class="provider-title">${icon}<b>${title}</b></div>`;
+  return `<div class="provider-title">${icon}<b>${title}</b>${planBadge}</div>`;
 }
 
 function renderProviderCard(provider) {
@@ -365,9 +397,12 @@ function renderProviderCard(provider) {
   const providerKey = baseProviderId(provider);
   const fiveHour = fiveHourWindow(provider);
   const resetLabel = resetText(provider.resetAt);
+  const quotaWindows = compact ? [] : (provider.windows || []);
+  const showQuotaVisuals = quotaWindows.length >= 2;
+  const showFiveInStatus = (providerKey === "claude" || providerKey === "codex") && fiveHour && !showQuotaVisuals;
   const statusLine =
     provider.status === "ok"
-      ? ((providerKey === "claude" || providerKey === "codex") && fiveHour
+      ? (showFiveInStatus
         ? `5시간 ${pctLabel(fiveHour.remainingPct)}%${resetLabel ? ` · ${resetLabel}` : ""}`
         : resetLabel)
       : provider.status === "login"
@@ -375,10 +410,9 @@ function renderProviderCard(provider) {
         : provider.status === "missing"
           ? "계정 없음"
           : provider.error || "오류";
-  const quotaWindows = compact ? [] : (provider.windows || []);
-  const showQuotaVisuals = quotaWindows.length >= 2;
   const maxExtras = Number.isFinite(Number(provider.maxExtras)) ? Math.max(0, Number(provider.maxExtras)) : 4;
   const extras = (provider.extras || [])
+    .filter((item) => item.label !== "리셋 쿠폰")
     .filter((item) => String(item.value || "").length < 36)
     .slice(0, compact ? 0 : maxExtras)
     .map((item) => `<span class="chip">${item.label} ${item.value}</span>`)
@@ -388,7 +422,7 @@ function renderProviderCard(provider) {
     : quotaWindows.map((win) => `<span class="chip">${win.label} ${pctLabel(win.remainingPct)}%</span>`).join("");
   const chips = `${quotaChips}${extras}`;
   const credits = renderCreditBalances(provider);
-  const facts = renderAccountFacts(provider);
+  const facts = renderAccountMeta(provider);
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
   const cardAttrs = ` data-provider-id="${escapeHtml(providerKey)}"`;
 

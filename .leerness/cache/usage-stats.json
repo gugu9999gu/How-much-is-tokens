@@ -1,15 +1,15 @@
 {
   "commands": {
     "gate": 3,
-    "session": 3,
-    "handoff": 1
+    "session": 4,
+    "handoff": 3
   },
   "drift": {
     "criticalSeen": 0,
-    "skipped": 1,
+    "skipped": 3,
     "autoResolved": 0
   },
   "since": "2026-09-05",
-  "lastCommand": "session",
-  "lastAt": "2026-09-23T02:27:45.383Z"
+  "lastCommand": "handoff",
+  "lastAt": "2026-09-23T03:47:38.124Z"
 }

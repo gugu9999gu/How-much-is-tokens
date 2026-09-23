@@ -380,20 +380,64 @@ button:hover { background: rgba(255,255,255,0.12); }
   line-height: 1.25;
 }
 
-.account-facts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.account-facts .fact {
-  max-width: 100%;
-  font-size: 10px;
-  line-height: 1.35;
-  color: var(--muted);
-  background: rgba(255,255,255,0.05);
+.plan-badge {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 1px 6px;
   border-radius: 999px;
-  padding: 2px 7px;
+  background: rgba(255,255,255,0.07);
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .02em;
 }
-.account-facts .fact-five-hour { color: var(--text); }
-.account-facts .cli-card-line:empty { display: none; }
-.account-facts .cli-card-line.update-available { color: var(--ok); }
-.row.compact .account-facts { margin-top: 4px; }
+.account-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.account-meta .meta-cell {
+  min-width: 0;
+  padding: 6px 7px 5px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.account-meta .meta-cell span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.account-meta .meta-cell b {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 740;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.account-meta .meta-cell small {
+  display: block;
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.3;
+}
+.account-meta .meta-cell.missing b { color: var(--muted); font-weight: 650; }
+.account-meta .meta-cell.update b,
+.account-meta .meta-cell.update small { color: var(--ok); }
+.row.compact .account-meta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 5px;
+}
+.row.compact .account-meta .meta-cell { padding: 4px 5px; }
+.row.compact .account-meta .meta-cell b { font-size: 10px; }
 .windows { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .chip {
   font-size: 10px;

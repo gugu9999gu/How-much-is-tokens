@@ -1,6 +1,6 @@
 # Session Handoff
 
-Last generated: 2026-09-23T02:27:45.666Z
+Last generated: 2026-09-23T03:44:06.646Z
 
 ## Completed
 - T-0001 Private 개발/Public Release 분리 및 Leerness 운영 경계 → next: 유지보수
@@ -10,6 +10,7 @@ Last generated: 2026-09-23T02:27:45.666Z
 - T-0005 OpenRouter 추가 프로필/API Key를 직관적으로 추가·추적·정렬·삭제하는 설정 UX → next: 운영 피드백 확인
 - T-0006 생성형 미디어 공급자 다계정 + 공식 MCP 잔여량 연동 → next: 운영 피드백 확인
 - T-0007 Claude 5시간 한도, Claude/Codex 리셋 쿠폰 잔여, 설치 CLI 버전·업데이트 가능, 플랫폼별 결제·갱신일 표시 → next: 유지보수
+- T-0008 이 PC 자격증명으로 결제일 조회 가능 범위를 확인하고 카드 UI를 칸으로 정리 → next: 배포 요청 시 버전을 올리고 공개 릴리스
 
 ## In Progress
 - 없음
@@ -57,4 +58,4 @@ Last generated: 2026-09-23T02:27:45.666Z
 - 다음 우선순위를 사용자와 정합니다.
 
 ## Next Exact Step
-- 없음. v1.0.34 공개 릴리스 run 35813268949 성공.
+- 없음
