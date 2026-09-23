@@ -31,3 +31,6 @@ doNotStore:
 
 ## 2026-09-23 session-close
 - Generated session-handoff.md and refreshed current-state.md.
+
+## 2026-09-23
+- Grok access token 만료 시 OIDC refresh로 잔여량을 유지하고, 실패해도 마지막 잔여량을 남기도록 수정. v1.0.35 공개 배포 run 35816119880.
