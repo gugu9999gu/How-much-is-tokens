@@ -1,7 +1,31 @@
 const assert = require("assert");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const { EventEmitter } = require("events");
 const { PassThrough } = require("stream");
-const { rpcLine, refreshManagedAuth } = require("../lib/codex-app-server");
+const { rpcLine, refreshManagedAuth, nativeCodexExecutable } = require("../lib/codex-app-server");
+
+const shimDir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-shim-"));
+const shim = path.join(shimDir, "codex.cmd");
+const nativeExe = path.join(
+  shimDir,
+  "node_modules",
+  "@openai",
+  "codex",
+  "node_modules",
+  "@openai",
+  "codex-win32-x64",
+  "vendor",
+  "x86_64-pc-windows-msvc",
+  "bin",
+  "codex.exe",
+);
+fs.mkdirSync(path.dirname(nativeExe), { recursive: true });
+fs.writeFileSync(shim, "@echo off\r\n");
+fs.writeFileSync(nativeExe, "");
+assert.strictEqual(nativeCodexExecutable(shim, "win32", "x64"), nativeExe, "npm codex.cmd must resolve to the native app-server executable");
+assert.strictEqual(nativeCodexExecutable(shim, "linux", "x64"), null);
 
 assert.deepStrictEqual(JSON.parse(rpcLine("account/read", 1, { refreshToken: true })), {
   method: "account/read",

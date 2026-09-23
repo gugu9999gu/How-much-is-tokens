@@ -370,16 +370,17 @@ function applySmartRoutingSettings(settings = {}) {
 
 function collectSmartRouting() {
   const result = {};
-  for (const provider of SMART_ROUTE_PROVIDERS) {
-    const enabled = document.querySelector(`[data-route-enabled="${provider.id}"]`);
-    const policy = document.querySelector(`[data-route-policy="${provider.id}"]`);
-    const threshold = document.querySelector(`[data-route-threshold="${provider.id}"]`);
-    result[provider.id] = {
-      enabled: !!(enabled && enabled.checked),
+  document.querySelectorAll("[data-route-enabled]").forEach((enabled) => {
+    const providerId = enabled.getAttribute("data-route-enabled");
+    if (!providerId) return;
+    const policy = document.querySelector(`[data-route-policy="${providerId}"]`);
+    const threshold = document.querySelector(`[data-route-threshold="${providerId}"]`);
+    result[providerId] = {
+      enabled: !!enabled.checked,
       policy: policy ? policy.value : "priority-fallback",
-      thresholdPct: threshold ? Number(threshold.value) : 0,
+      thresholdPct: threshold ? Number(threshold.value) || 0 : 0,
     };
-  }
+  });
   return result;
 }
 
