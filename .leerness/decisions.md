@@ -45,4 +45,4 @@ doNotStore:
 - Decision: Claude 사용량 조회는 `.credentials.json`의 `claudeAiOauth`가 만료됐거나 5분 이내면 `POST https://platform.claude.com/v1/oauth/token`으로 갱신한 뒤 조회한다. 요청에는 저장된 scope를 포함한다. 갱신에 성공하면 새 access/refresh와 만료 시각만 기록하고 `mcpOAuth` 등 다른 키는 유지한다. `invalid_grant`나 네트워크 실패로는 refresh token을 지우지 않는다. 429는 2분, 그 외 실패는 30초 동안 다시 치지 않고 마지막 사용량을 유지한다. 리프레시 토큰 자체도 만료됐으면 로그인으로 표시한다. 쿠폰 소비 요청은 하지 않는다.
 - Reason: 액세스 토큰은 약 8시간(`expires_in` 28800)이면 만료되는데 위젯은 만료된 토큰만 읽어, 몇 시간 뒤 사용량 추적이 끊기고 `claude` 재로그인이 필요했다.
 - Alternatives: 만료 시 카드만 숨기거나 캐시만 보여 준다 — 수치는 멈추고 다음 조회가 안 된다. 브라우저 쿠키로 사용량을 읽는다 — 기존 CLI 자격증명 밖으로 범위를 넓히므로 하지 않음.
-- Impact: `lib/providers/claude.js` 조회 경로. 공개 릴리스는 아직 아니다.
+- Impact: `lib/providers/claude.js` 조회 경로. 공개 릴리스는 v1.0.37.

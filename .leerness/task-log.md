@@ -39,7 +39,8 @@ doNotStore:
 - Generated session-handoff.md and refreshed current-state.md.
 
 ## 2026-09-27
-- Claude 액세스 토큰 만료 후 사용량 추적이 끊기던 문제를 OAuth refresh로 수정. 실패 시 refresh token은 유지하고 마지막 사용량을 남긴다. 이 PC에서 만료 토큰 갱신 후 usage 조회 성공. 공개 릴리스는 미게시.
+- Claude 액세스 토큰 만료 후 사용량 추적이 끊기던 문제를 OAuth refresh로 수정. 실패 시 refresh token은 유지하고 마지막 사용량을 남긴다. 이 PC에서 만료 토큰 갱신 후 usage 조회 성공.
+- v1.0.37 공개 배포 run 36285104521. EXE SHA-256 7e5b88cddfc997a797a2e4aa85a98ed400e92beb89870933d2f80fe9df0a0bae. 한도 갱신일 표시도 포함.
 
 ## 2026-09-27 session-close
 - Generated session-handoff.md and refreshed current-state.md.
