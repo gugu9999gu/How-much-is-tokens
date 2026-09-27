@@ -34,3 +34,15 @@ doNotStore:
 - Reason: v1.0.34는 날짜가 없으면 "결제일 정보 없음"을 모든 카드에 같은 알약으로 붙여, 조회 가능한 날짜와 불가능한 날짜가 구분되지 않았다.
 - Alternatives: 구독 시작일로 다음 결제일을 월 단위 추정한다 — 연간 구독에서 거짓이므로 하지 않음. 브라우저 쿠키로 Claude/Codex 결제 페이지를 읽는다 — 기존 CLI 자격증명 밖이라 하지 않음.
 - Impact: 카드 메타 칸, Claude planLabel, agy usage 타임아웃 25초, Windows에서 Codex 실행 파일은 `.exe`/`.cmd`를 우선 선택.
+
+### 2026-09-23 — 결제일이 없으면 주간·월간 한도 갱신일을 표시
+- Decision: 결제 주기 시각이 없는 플랫폼은 5시간 창을 결제일로 쓰지 않고, 주간 또는 월간 한도 중 가장 빠른 갱신 시각을 `한도 갱신`으로 표시한다. 구독 시작일로 다음 청구일을 계산하지 않는다.
+- Reason: 이 PC 조회에서 Claude는 주간 한도 갱신, Codex는 7일 창 갱신, Antigravity는 주간 한도 갱신만 있었고 결제일은 없었다. Cursor와 Grok은 기존 결제·이용 기간을 유지한다.
+- Alternatives: 5시간 리셋 시각을 마지막 사용일로 표시 — 세션 창이라 플랜 갱신이 아님. 구독 시작일의 매월 같은 날을 결제일로 추정 — 연간 구독에서 거짓.
+- Impact: `accessRenewal`과 카드의 한도 갱신 칸.
+
+### 2026-09-27 — Claude 사용량은 액세스 토큰이 만료돼도 재로그인 없이 갱신
+- Decision: Claude 사용량 조회는 `.credentials.json`의 `claudeAiOauth`가 만료됐거나 5분 이내면 `POST https://platform.claude.com/v1/oauth/token`으로 갱신한 뒤 조회한다. 요청에는 저장된 scope를 포함한다. 갱신에 성공하면 새 access/refresh와 만료 시각만 기록하고 `mcpOAuth` 등 다른 키는 유지한다. `invalid_grant`나 네트워크 실패로는 refresh token을 지우지 않는다. 429는 2분, 그 외 실패는 30초 동안 다시 치지 않고 마지막 사용량을 유지한다. 리프레시 토큰 자체도 만료됐으면 로그인으로 표시한다. 쿠폰 소비 요청은 하지 않는다.
+- Reason: 액세스 토큰은 약 8시간(`expires_in` 28800)이면 만료되는데 위젯은 만료된 토큰만 읽어, 몇 시간 뒤 사용량 추적이 끊기고 `claude` 재로그인이 필요했다.
+- Alternatives: 만료 시 카드만 숨기거나 캐시만 보여 준다 — 수치는 멈추고 다음 조회가 안 된다. 브라우저 쿠키로 사용량을 읽는다 — 기존 CLI 자격증명 밖으로 범위를 넓히므로 하지 않음.
+- Impact: `lib/providers/claude.js` 조회 경로. 공개 릴리스는 아직 아니다.

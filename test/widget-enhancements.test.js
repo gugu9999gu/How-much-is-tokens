@@ -30,7 +30,8 @@ assert.ok(enhancement.includes("업데이트 가능"), "installed CLI cards must
 assert.ok(enhancement.includes("stampCliCards"), "usage cards must receive the same CLI version status as connection cards");
 assert.ok(rendererApp.includes("account-meta"), "usage cards must show coupon, billing, and CLI as separate cells");
 assert.ok(rendererApp.includes("리셋 쿠폰"), "Claude and Codex reset coupon counts must be labeled on the card");
-assert.ok(rendererApp.includes("정보 없음"), "platforms without a billing date must say so instead of inventing one");
+assert.ok(rendererApp.includes("정보 없음"), "platforms without a billing or renewal date must say so instead of inventing one");
+assert.ok(rendererApp.includes("accessRenewal"), "platforms without a payment date must show the plan renewal date");
 assert.ok(rendererApp.includes("meta-cli"), "installed CLI version must have its own card cell");
 assert.ok(rendererApp.includes('data-provider-id='), "usage cards must keep a stable provider id for version stamping");
 assert.ok(rendererCss.includes(".account-meta"), "account meta cells must be styled");

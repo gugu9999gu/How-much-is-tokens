@@ -34,3 +34,12 @@ doNotStore:
 
 ## 2026-09-23
 - Grok access token 만료 시 OIDC refresh로 잔여량을 유지하고, 실패해도 마지막 잔여량을 남기도록 수정. v1.0.35 공개 배포 run 35816119880.
+
+## 2026-09-23 session-close
+- Generated session-handoff.md and refreshed current-state.md.
+
+## 2026-09-27
+- Claude 액세스 토큰 만료 후 사용량 추적이 끊기던 문제를 OAuth refresh로 수정. 실패 시 refresh token은 유지하고 마지막 사용량을 남긴다. 이 PC에서 만료 토큰 갱신 후 usage 조회 성공. 공개 릴리스는 미게시.
+
+## 2026-09-27 session-close
+- Generated session-handoff.md and refreshed current-state.md.

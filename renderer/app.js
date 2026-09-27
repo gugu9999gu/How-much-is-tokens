@@ -333,6 +333,15 @@ function billingMeta(provider) {
       missing: false,
     };
   }
+  const renewal = provider && provider.accessRenewal;
+  if (renewal && renewal.renewsAt) {
+    return {
+      label: renewal.label || "한도 갱신",
+      value: cycleDateText(renewal.renewsAt),
+      detail: renewal.windowLabel || "주간 한도",
+      missing: false,
+    };
+  }
   if (billing && billing.startedAt) {
     const plan = billing.planLabel ? `${billing.planLabel} · ` : "";
     return {
