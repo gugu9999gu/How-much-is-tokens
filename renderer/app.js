@@ -37,6 +37,7 @@ const TOKEN_AREA_MIN_HEIGHT = 120;
 const TOKEN_AREA_MAX_HEIGHT = 2000;
 
 let compact = false;
+let pinnedAccounts = [];
 let hideMissing = true;
 let visualization = "ring";
 let lastPayload = null;
@@ -120,6 +121,16 @@ function resetText(ms) {
 function visibleProviders(providers) {
   if (!hideMissing) return providers;
   return providers.filter((p) => p.status !== "missing");
+}
+
+function pinKey(provider) {
+  const id = baseProviderId(provider);
+  const profile = provider && provider.profileId ? String(provider.profileId) : "default";
+  return `${id}:${profile}`.toLowerCase();
+}
+
+function isPinned(provider) {
+  return pinnedAccounts.includes(pinKey(provider));
 }
 
 function groupProviders(providers) {
@@ -411,23 +422,63 @@ function providerLogoKey(provider) {
     .split(":")[0];
 }
 
+function renderPinButton(provider) {
+  const key = pinKey(provider);
+  const pinned = isPinned(provider);
+  const label = pinned ? "상단 고정 해제" : "상단 고정";
+  return `<button type="button" class="pin-btn${pinned ? " pinned" : ""}" data-pin-key="${escapeHtml(key)}" aria-pressed="${pinned ? "true" : "false"}" aria-label="${label}" title="${label}">📌</button>`;
+}
+
 function renderProviderTitle(provider, account, plan) {
   const logo = PROVIDER_LOGOS[providerLogoKey(provider)];
   const title = escapeHtml(`${provider.name || ""}${account}`);
   const badge = displayPlan(plan.replace(/^ · /, "")) ;
   const planBadge = badge ? `<em class="plan-badge">${escapeHtml(badge)}</em>` : "";
-  if (!logo) return `<div class="provider-title"><b>${title}</b>${planBadge}</div>`;
+  const pin = renderPinButton(provider);
+  if (!logo) return `<div class="provider-title"><b>${title}</b>${planBadge}${pin}</div>`;
 
   const label = escapeHtml(logo.label || provider.name || "Provider");
   const icon = logo.src
     ? `<span class="provider-logo${logo.wide ? " provider-logo--wide" : ""}" title="${label}"><img src="${logo.src}" alt="" aria-hidden="true" draggable="false"></span>`
     : `<span class="provider-logo provider-logo--fallback" title="${label}" aria-hidden="true">${escapeHtml(logo.fallback || "?")}</span>`;
-  return `<div class="provider-title">${icon}<b>${title}</b>${planBadge}</div>`;
+  return `<div class="provider-title">${icon}<b>${title}</b>${planBadge}${pin}</div>`;
+}
+
+function quotaRank(win) {
+  const text = `${win && win.id || ""} ${win && win.label || ""}`.toLowerCase();
+  if (/five|5시간|session|\b5h\b/.test(text)) return 0;
+  if (/week|주간|seven/.test(text)) return 1;
+  if (/month|월간/.test(text)) return 2;
+  return 5;
+}
+
+function compactQuotaWindows(provider) {
+  const windows = (Array.isArray(provider && provider.windows) ? provider.windows : [])
+    .filter((win) => win && Number.isFinite(Number(win.remainingPct)));
+  const preferred = windows.filter((win) => quotaRank(win) < 5).sort((a, b) => quotaRank(a) - quotaRank(b));
+  const chosen = (preferred.length ? preferred : windows).slice(0, 3);
+  if (chosen.length) return chosen;
+  if (provider && provider.status === "ok" && Number.isFinite(Number(provider.remainingPct))) {
+    return [{ id: "primary", label: "잔여", remainingPct: Number(provider.remainingPct), resetAt: provider.resetAt }];
+  }
+  return [];
+}
+
+function renderCompactQuotas(provider) {
+  const windows = compactQuotaWindows(provider);
+  if (!windows.length) return "";
+  return `<div class="compact-quotas">${windows.map((win) => `
+    <div class="compact-quota">
+      <span>${escapeHtml(win.label || "한도")}</span>
+      <span class="track"><i style="--pct:${Number(win.remainingPct) || 0}; --tone:${tone(win.remainingPct)};"></i></span>
+      <b>${pctLabel(win.remainingPct)}%</b>
+    </div>
+  `).join("")}</div>`;
 }
 
 function renderProviderCard(provider) {
   const plan = provider.plan ? ` · ${provider.plan}` : "";
-  const account = provider.accountLabel ? ` · ${provider.accountLabel}` : "";
+  const account = !compact && provider.accountLabel ? ` · ${provider.accountLabel}` : "";
   const providerKey = baseProviderId(provider);
   const fiveHour = fiveHourWindow(provider);
   const resetLabel = resetText(provider.resetAt);
@@ -455,10 +506,30 @@ function renderProviderCard(provider) {
     ? ""
     : quotaWindows.map((win) => `<span class="chip">${win.label} ${pctLabel(win.remainingPct)}%</span>`).join("");
   const chips = `${quotaChips}${extras}`;
-  const credits = renderCreditBalances(provider);
-  const facts = renderAccountMeta(provider);
+  const credits = compact ? "" : renderCreditBalances(provider);
+  const facts = compact ? "" : renderAccountMeta(provider);
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
-  const cardAttrs = ` data-provider-id="${escapeHtml(providerKey)}"`;
+  const cardAttrs = ` data-provider-id="${escapeHtml(providerKey)}"${isPinned(provider) ? ` data-pinned="true"` : ""}`;
+
+  if (compact) {
+    const compactStatus = provider.status === "ok"
+      ? ""
+      : provider.status === "login"
+        ? "로그인 필요"
+        : provider.status === "missing"
+          ? "계정 없음"
+          : provider.error || "오류";
+    return `
+      <article class="row compact"${cardAttrs}>
+        <div class="meta">
+          ${renderProviderTitle(provider, "", plan)}
+          ${compactStatus ? `<div class="sub">${compactStatus}${provider.stale ? " · 이전 값" : ""}</div>` : ""}
+          ${renderCompactQuotas(provider)}
+          ${hint}
+        </div>
+      </article>
+    `;
+  }
 
   if (showQuotaVisuals) {
     return `
@@ -510,6 +581,7 @@ function render(payload) {
   lastPayload = payload;
   const settings = payload.settings || {};
   compact = !!settings.compact;
+  pinnedAccounts = Array.isArray(settings.pinnedAccounts) ? settings.pinnedAccounts.map((item) => String(item || "").toLowerCase()) : [];
   hideMissing = settings.hideMissing !== false;
   visualization = normalizeVisualization(settings.visualization);
   applyContentLayoutSettings(settings);
@@ -524,7 +596,17 @@ function render(payload) {
     return;
   }
 
-  listEl.innerHTML = groupProviders(providers).map((group) => `
+  const pinned = [];
+  const rest = [];
+  for (const provider of providers) {
+    if (isPinned(provider)) pinned.push(provider);
+    else rest.push(provider);
+  }
+  pinned.sort((a, b) => pinnedAccounts.indexOf(pinKey(a)) - pinnedAccounts.indexOf(pinKey(b)));
+  const sections = [];
+  if (pinned.length) sections.push({ vendor: "고정", providers: pinned });
+  sections.push(...groupProviders(rest));
+  listEl.innerHTML = sections.map((group) => `
     <section class="provider-group">
       <div class="provider-group-head">
         <span>${group.vendor}</span>
@@ -744,6 +826,24 @@ opacityEl.oninput = (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !settingsEl.classList.contains("hidden")) {
     setSettingsOpen(false);
+  }
+});
+
+listEl.addEventListener("click", async (event) => {
+  const button = event.target.closest(".pin-btn");
+  if (!button || !lastPayload) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const key = String(button.dataset.pinKey || "").toLowerCase();
+  if (!key) return;
+  const current = Array.isArray(pinnedAccounts) ? pinnedAccounts : [];
+  const next = current.includes(key) ? current.filter((item) => item !== key) : [key, ...current];
+  button.disabled = true;
+  try {
+    const settings = await window.tokenWidget.saveSettings({ pinnedAccounts: next });
+    render({ ...lastPayload, settings });
+  } finally {
+    button.disabled = false;
   }
 });
 

@@ -18,6 +18,8 @@ assert.strictEqual(normalizeSettings({ resetDisplayMode: "absolute" }).resetDisp
 assert.strictEqual(normalizeSettings({ resetDisplayMode: "invalid" }).resetDisplayMode, "auto", "invalid reset display values must fall back safely");
 assert.strictEqual(DEFAULTS.codexAutoUseReset, false, "automatic reset-ticket consumption must be opt-in");
 assert.deepStrictEqual(DEFAULTS.accountProfiles, [], "multi-account profiles must be opt-in");
+assert.deepStrictEqual(DEFAULTS.pinnedAccounts, [], "pinned accounts must start empty");
+assert.deepStrictEqual(normalizeSettings({ pinnedAccounts: ["Codex:default", "bad", "codex:default"] }).pinnedAccounts, ["codex:default"]);
 assert.deepStrictEqual(DEFAULTS.openRouterProfiles, [], "OpenRouter key profiles must be opt-in");
 assert.deepStrictEqual(DEFAULTS.mediaProviderProfiles, [], "media-provider account profiles must be opt-in");
 assert.strictEqual(DEFAULTS.openRouterRouter.enabled, false, "localhost API router must be opt-in");

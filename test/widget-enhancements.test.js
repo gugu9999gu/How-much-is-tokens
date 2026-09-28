@@ -57,6 +57,9 @@ assert.ok(rendererCss.includes(".account-meta .meta-account { grid-column: 1;"),
 assert.ok(rendererCss.includes(".account-meta .meta-billing { grid-column: 2; }"), "renewal slot column must be fixed");
 assert.ok(rendererCss.includes(".account-meta .meta-cli { grid-column: 3; }"), "version slot column must be fixed");
 assert.ok(rendererCss.includes(".row.compact .account-meta"), "compact mode must restyle account meta cards");
+assert.ok(rendererApp.includes("compact-quotas"), "compact mode must show quota windows instead of account meta");
+assert.ok(rendererApp.includes("pin-btn"), "usage cards must expose a pin control");
+assert.ok(rendererCss.includes(".compact-quota"), "compact quotas must be styled");
 assert.ok(rendererCss.includes(".row.compact .meta-billing > small"), "compact mode must hide secondary renewal detail");
 assert.ok(rendererCss.includes(".row.compact .meta-cli > small"), "compact mode must hide secondary version detail");
 assert.ok(identityUi.includes("deduplicatedAccounts"), "duplicate-account suppression should provide a user-facing explanation");

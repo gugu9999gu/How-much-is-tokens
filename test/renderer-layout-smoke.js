@@ -149,13 +149,17 @@ app.whenReady().then(async () => {
         versionDisplay: versionDetail ? getComputedStyle(versionDetail).display : "",
         accountDisplay: accountDetail ? getComputedStyle(accountDetail).display : "",
         accountText: card.querySelector(".account-identity-line")?.textContent || "",
+        quota: card.querySelector(".compact-quota")?.textContent || "",
+        pin: !!card.querySelector(".pin-btn"),
       };
     })()`);
     assert.strictEqual(compactMeta.compact, true, "compact toggle must mark the usage card");
-    assert.strictEqual(compactMeta.billingDisplay, "none", "compact mode must hide the renewal card's secondary line");
-    assert.strictEqual(compactMeta.versionDisplay, "none", "compact mode must hide the version card's secondary line");
-    assert.notStrictEqual(compactMeta.accountDisplay, "none", "compact mode must keep the account ID visible");
-    assert.ok(compactMeta.accountText.includes("acct_codex_123"), "compact account chip must still include the account ID");
+    assert.strictEqual(compactMeta.billingDisplay, "", "compact mode must omit renewal, version, and account detail cards");
+    assert.strictEqual(compactMeta.versionDisplay, "", "compact mode must omit the version card");
+    assert.strictEqual(compactMeta.accountDisplay, "", "compact mode must omit account details");
+    assert.strictEqual(compactMeta.accountText, "");
+    assert.ok(compactMeta.quota.includes("75%"), "compact mode must show the remaining quota directly");
+    assert.strictEqual(compactMeta.pin, true, "each token card must expose a pin control");
 
     const headerToggleWorked = await win.webContents.executeJavaScript(`(async () => {
       document.getElementById('headerEdgeDockToggle').click();

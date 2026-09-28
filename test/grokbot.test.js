@@ -76,7 +76,14 @@ assert.strictEqual(result.creditBalances[0].used, 25);
 assert.strictEqual(result.creditBalances[0].limit, 100);
 assert.strictEqual(result.creditBalances[0].balance, 75);
 assert.ok(!result.extras.some((item) => /On-demand (사용|잔여|한도)/.test(item.label)), "money details must use the common credit model, not duplicate chips");
-assert.ok(result.extras.some((item) => item.label === "계정" && item.value === "Cursor"));
+assert.ok(!result.extras.some((item) => item.label === "계정"), "Grok Bot must not label the account as the word Cursor");
+const sandPlan = resultFromPayloads({
+  usagePercent: 22,
+  hasAvailableUsage: true,
+  cursorPlanName: "Ultra",
+  grokPlanLabel: "Grok Bot Plan",
+}, null);
+assert.strictEqual(sandPlan.plan, "Ultra", "Grok Bot must show the Cursor plan name from the same login");
 assert.strictEqual(result.billing.label, "결제일");
 assert.strictEqual(result.billing.renewsAt, Date.parse("2026-10-01T00:00:00Z"));
 
