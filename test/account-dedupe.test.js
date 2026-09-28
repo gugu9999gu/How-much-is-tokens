@@ -91,4 +91,20 @@ assert.strictEqual(verifiedAccountIdentityKey({ ...rows[1], stale: true }), null
 assert.strictEqual(stale.duplicates.length, 0, "cached usage must never remove an account profile");
 assert.strictEqual(stale.accountProfiles.length, 2);
 
+const claudeProfiles = require("../lib/account-profiles").normalizeAccountProfiles([
+  { providerId: "claude", label: "Claude 2", configDir: path.join(baseDir, "claude-2") },
+  { providerId: "claude", label: "Claude 3", configDir: path.join(baseDir, "claude-3") },
+]);
+const claudeDuplicate = dedupeManagedAccountRows({
+  accountProfiles: claudeProfiles,
+}, [
+  { id: "claude", providerId: "claude", status: "ok", accountOrder: 0, accountKey: "claude:default", accountId: "uuid-a", accountLabel: "기본 계정" },
+  { id: `claude:profile:${claudeProfiles[0].id}`, providerId: "claude", profileId: claudeProfiles[0].id, status: "ok", accountOrder: 1, accountKey: "claude:default", accountId: "uuid-a", accountLabel: "Claude 2" },
+  { id: `claude:profile:${claudeProfiles[1].id}`, providerId: "claude", profileId: claudeProfiles[1].id, status: "ok", accountOrder: 2, accountKey: "claude:default", accountId: "uuid-b", accountLabel: "Claude 3" },
+]);
+assert.strictEqual(claudeDuplicate.duplicates.length, 1, "the same Claude account id must not stay duplicated when the auth token has no account id");
+assert.strictEqual(claudeDuplicate.duplicates[0].profileId, claudeProfiles[0].id);
+assert.ok(claudeDuplicate.accountProfiles.some((profile) => profile.id === claudeProfiles[1].id));
+assert.ok(!claudeDuplicate.accountProfiles.some((profile) => profile.id === claudeProfiles[0].id));
+
 console.log("authenticated account deduplication tests passed");

@@ -298,9 +298,31 @@ function fiveHourWindow(provider) {
   }) || null;
 }
 
-function metaCell(label, value, detail, extraClass) {
+function metaCell(label, value, detail, extraClass, slot) {
   const cls = `meta-cell${extraClass ? ` ${extraClass}` : ""}`;
-  return `<div class="${cls}"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div>`;
+  const slotAttr = slot ? ` data-meta-slot="${escapeHtml(slot)}"` : "";
+  return `<div class="${cls}"${slotAttr}><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div>`;
+}
+
+function cleanMeta(value) {
+  return value == null ? "" : String(value).trim();
+}
+
+function accountFactParts(row) {
+  const email = cleanMeta(row && row.accountEmail);
+  const login = cleanMeta(row && row.accountLogin);
+  const accountId = cleanMeta(row && row.accountId);
+  const label = cleanMeta(row && row.accountIdentityLabel);
+  const value = email || login || accountId || label;
+  const details = [];
+  if (login && login !== email && login !== value) details.push(login);
+  if (accountId && accountId !== email && accountId !== login && accountId !== value) details.push(`ID ${accountId}`);
+  return {
+    value: value || "정보 없음",
+    detail: details.join(" · "),
+    title: [value, ...details].filter(Boolean).join(" · "),
+    missing: !value,
+  };
 }
 
 function couponMeta(provider) {
@@ -361,14 +383,17 @@ function billingMeta(provider) {
 function renderAccountMeta(provider) {
   if (!provider || provider.status !== "ok") return "";
   const id = baseProviderId(provider);
-  const cells = [];
-  const coupon = couponMeta(provider);
-  if (coupon) cells.push(metaCell(coupon.label, coupon.value, coupon.detail, coupon.missing ? "missing" : ""));
+  const account = accountFactParts(provider);
+  const cells = [
+    `<div class="meta-cell meta-account${account.missing ? " missing" : ""}" data-meta-slot="account"${account.title ? ` title="${escapeHtml(account.title)}"` : ""}><span>계정</span><div class="account-identity-line"><b>${escapeHtml(account.value)}</b>${account.detail ? `<small>${escapeHtml(account.detail)}</small>` : ""}</div></div>`,
+  ];
   const billing = billingMeta(provider);
-  cells.push(metaCell(billing.label, billing.value, billing.detail, billing.missing ? "missing" : ""));
+  cells.push(metaCell(billing.label, billing.value, billing.detail, `meta-billing${billing.missing ? " missing" : ""}`, "billing"));
   if (CLI_CARD_PROVIDERS.has(id)) {
-    cells.push(`<div class="meta-cell meta-cli" data-cli-provider="${escapeHtml(id)}"><span>CLI</span><b class="cli-card-version">확인 중</b><small class="cli-card-state"></small></div>`);
+    cells.push(`<div class="meta-cell meta-cli" data-meta-slot="version" data-cli-provider="${escapeHtml(id)}"><span>버전</span><b class="cli-card-version">확인 중</b><small class="cli-card-state"></small></div>`);
   }
+  const coupon = couponMeta(provider);
+  if (coupon) cells.push(metaCell(coupon.label, coupon.value, coupon.detail, `meta-coupon${coupon.missing ? " missing" : ""}`, "coupon"));
   return `<div class="account-meta">${cells.join("")}</div>`;
 }
 

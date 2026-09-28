@@ -47,7 +47,18 @@ assert.ok(css.includes("max-height: none"), "settings must remove the legacy fix
 assert.ok(identityUi.includes("accountEmail"), "quota cards must consume authenticated account email metadata");
 assert.ok(identityUi.includes("accountId"), "quota cards must consume authenticated account ID metadata");
 assert.ok(identityUi.includes("account-identity-line"), "quota cards must render a minimal identity line");
-assert.ok(identityUi.includes(":scope > .provider-title, :scope > b"), "account identity insertion must remain compatible with logo-wrapped provider titles");
+assert.ok(identityUi.includes(".meta-account"), "account identity must stay in the shared account slot instead of a floating line");
+assert.ok(identityUi.includes(':scope > .account-identity-line'), "legacy identity lines must not shift card contents");
+assert.ok(rendererApp.includes('data-meta-slot="account"'), "account info must occupy the first meta slot on every card");
+assert.ok(rendererApp.includes('meta-billing') && rendererApp.includes(', "billing"'), "billing or limit renewal must occupy the second meta slot");
+assert.ok(rendererApp.includes('data-meta-slot="version"'), "version info must occupy the third meta slot");
+assert.ok(rendererApp.includes('meta-coupon') && rendererApp.includes(', "coupon"'), "reset coupons must occupy the fourth meta slot");
+assert.ok(rendererCss.includes(".account-meta .meta-account { grid-column: 1;"), "account slot column must be fixed");
+assert.ok(rendererCss.includes(".account-meta .meta-billing { grid-column: 2; }"), "renewal slot column must be fixed");
+assert.ok(rendererCss.includes(".account-meta .meta-cli { grid-column: 3; }"), "version slot column must be fixed");
+assert.ok(rendererCss.includes(".row.compact .account-meta"), "compact mode must restyle account meta cards");
+assert.ok(rendererCss.includes(".row.compact .meta-billing > small"), "compact mode must hide secondary renewal detail");
+assert.ok(rendererCss.includes(".row.compact .meta-cli > small"), "compact mode must hide secondary version detail");
 assert.ok(identityUi.includes("deduplicatedAccounts"), "duplicate-account suppression should provide a user-facing explanation");
 assert.ok(identityCss.includes(".account-identity-line"));
 

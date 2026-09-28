@@ -15,10 +15,12 @@ doNotStore:
 <!-- leerness:managed -->
 # Current State
 
-Updated: 2026-09-23
+Updated: 2026-09-27
 
 ## Now
 - 대기 중 <!-- leerness:auto -->
+- 사용량 카드 사실 칸은 계정 → 결제/한도 갱신 → 버전 → 리셋 쿠폰 순으로 고정했다. Claude 계정 ID는 `oauthAccount.accountUuid`와 OAuth profile `account.uuid`로 표시하고, 간소화 모드에서는 그 칸들의 보조 설명을 숨긴다.
+- 같은 계정으로 다시 로그인하면 새 프로필을 만들지 않고, 로그아웃으로 비활성화된 기존 프로필을 다시 연다. 계정 ID가 같은 활성 카드는 하나만 남긴다.
 - 개발 저장소 `gugu9999gu/How-much-is-tokens`는 Private, `gugu9999gu/How-much-is-tokens-releases`는 Public 바이너리 배포 전용으로 운영 중.
 - Leerness v1.36.184를 고정 설치하고 Windows CI에서 `leerness gate`를 필수 검증으로 실행함.
 - 기본 설정 UX는 8개 공급자 카드(Codex/Claude/Grok/Cursor/Grok Bot/Copilot/Antigravity/OpenRouter)의 `연결 상태 + 로그인/다시 로그인 + 가능한 경우 계정 추가`와 `항상 위에/시작 시 실행/빈 계정 숨기기` 3개 기본 옵션만 바로 표시함.

@@ -15,12 +15,11 @@ assert.strictEqual(
 assert.strictEqual(creatorUserIdFromPayload({ data: {} }), null);
 
 const integration = fs.readFileSync(path.join(__dirname, "..", "lib", "openrouter-main-integration.js"), "utf8");
-assert.ok(integration.includes("duplicateOpenRouterAccount"), "OAuth flow must invoke the account-identity duplicate guard");
-assert.ok(integration.includes('reason: "duplicate-account"'), "duplicate OAuth account must return an explicit duplicate-account result");
-assert.ok(integration.includes("selection.isNew !== true"), "duplicate rejection must apply only to +account OAuth, preserving normal reconnect behavior");
+assert.ok(integration.includes("assignOpenRouterLogin"), "OAuth flow must assign a repeated account to the existing profile");
+assert.ok(integration.includes("reusedProfile"), "OAuth must report when the existing profile was reused");
 assert.ok(
-  integration.indexOf("duplicateOpenRouterAccount(selection, apiKey)") < integration.indexOf("saveOpenRouterProfileSecrets(selection.profile.id"),
-  "duplicate-account check must happen before persisting the new OAuth key",
+  integration.indexOf("assignOpenRouterLogin(selection, apiKey)") < integration.indexOf("saveOpenRouterProfileSecrets(storedTarget.id"),
+  "same-account assignment must happen before persisting the OAuth key",
 );
 
 const profiles = [
@@ -73,6 +72,14 @@ async function requestFixture(url, init) {
     requestJsonImpl: requestFixture,
   });
   assert.strictEqual(excluded, null, "reconnecting a profile must not compare the profile against itself");
+
+  const remembered = await findExistingOpenRouterAccount([
+    { id: "logged-out", label: "개인", priority: 10, enabled: false, accountId: "user-primary" },
+  ], "user-primary", {
+    loadProfileSecrets: () => ({ apiKey: "" }),
+    requestJsonImpl: requestFixture,
+  });
+  assert.strictEqual(remembered && remembered.id, "logged-out", "logout must keep the account id so the next login reuses that profile");
 
   assert.strictEqual(await creatorUserIdForApiKey("", { requestJsonImpl: requestFixture }), null);
   console.log("OpenRouter OAuth account identity tests passed");

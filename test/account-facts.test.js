@@ -123,7 +123,18 @@ clearClaudeFactCache();
       if (String(url).endsWith("/profile")) {
         return {
           ok: true,
-          json: { organization: { subscription_created_at: "2025-07-22T00:43:28.093226Z", subscription_status: "active" } },
+          json: {
+            account: {
+              uuid: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              email: "claude@example.com",
+              display_name: "Claude User",
+            },
+            organization: {
+              uuid: "99999999-bbbb-cccc-dddd-eeeeeeeeeeee",
+              subscription_created_at: "2025-07-22T00:43:28.093226Z",
+              subscription_status: "active",
+            },
+          },
         };
       }
       throw new Error(`unexpected ${url}`);
@@ -133,6 +144,9 @@ clearClaudeFactCache();
   assert.strictEqual(facts.resetCoupons.availableCount, null);
   assert.strictEqual(facts.billing.startedAt, Date.parse("2025-07-22T00:43:28.093226Z"));
   assert.strictEqual(facts.billing.renewsAt, null);
+  assert.strictEqual(facts.identity.accountEmail, "claude@example.com");
+  assert.strictEqual(facts.identity.accountId, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+  assert.notStrictEqual(facts.identity.accountId, "99999999-bbbb-cccc-dddd-eeeeeeeeeeee");
   console.log("account fact / reset coupon / billing cycle tests passed");
 })().catch((err) => {
   console.error(err);

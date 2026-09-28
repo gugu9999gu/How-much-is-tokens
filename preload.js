@@ -2,7 +2,12 @@ const path = require("path");
 const { contextBridge, ipcRenderer } = require("electron");
 const { appData } = require("./lib/paths");
 const { selectRoute, profileForSelection } = require("./lib/account-router");
-const { normalizeAccountProfiles } = require("./lib/account-profiles");
+const {
+  normalizeAccountProfiles,
+  profileToResume,
+  reviveManagedProfile,
+  disableManagedProfile,
+} = require("./lib/account-profiles");
 const { normalizeOpenRouterProfiles } = require("./lib/openrouter-profiles");
 const { apiProviderCatalog } = require("./lib/api-providers/registry");
 const { launchRoutedCli, installRouterLaunchers } = require("./lib/routed-launcher");
@@ -16,6 +21,7 @@ const {
   PROFILE_LOGIN_PROVIDERS,
   launchCredentialLogin,
   nextManagedProfile,
+  vacantManagedProfile,
   ensureProfileDirectory,
   findProfile,
 } = require("./lib/credential-login");
@@ -131,6 +137,32 @@ async function reenableDefaultCredential(providerId, settings) {
   return saveSettingsBridge({ disabledCredentialProviders: [...disabled] });
 }
 
+function providerHasVisibleLogin(providerId) {
+  if (!lastUsagePayload) return true;
+  const rows = Array.isArray(lastUsagePayload.providers) ? lastUsagePayload.providers : [];
+  return rows.some((row) => {
+    const id = String((row && (row.providerId || row.id)) || "").toLowerCase().split(":")[0];
+    return id === providerId && row && row.status && row.status !== "missing";
+  });
+}
+
+async function resumeManagedLogin(providerId, settings) {
+  const resume = profileToResume(settings.accountProfiles, providerId);
+  if (!resume) return null;
+  ensureProfileDirectory(resume);
+  const result = launchCredentialLogin(providerId, resume);
+  if (!result || result.ok !== true) return result ? { ...result, reusedProfile: true, accountLabel: resume.label } : null;
+  const profiles = reviveManagedProfile(settings.accountProfiles, resume.id);
+  const saved = await saveSettingsBridge({ accountProfiles: profiles });
+  return {
+    ...result,
+    reusedProfile: true,
+    accountLabel: resume.label,
+    settings: saved,
+    accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles),
+  };
+}
+
 async function connectCredential(providerId, options = {}) {
   const id = String(providerId || "").toLowerCase();
   if (id === "openrouter") return ipcRenderer.invoke("connect-openrouter-oauth", options || {});
@@ -138,6 +170,10 @@ async function connectCredential(providerId, options = {}) {
   const profileId = String((options && options.profileId) || "");
   const profileProvider = id === "grokbot" ? "cursor" : id;
   const profile = profileId ? findProfile(settings, profileProvider, profileId) : null;
+  if (!profileId && !disabledProviderSet(settings).has(profileProvider) && !providerHasVisibleLogin(profileProvider)) {
+    const resumed = await resumeManagedLogin(profileProvider, settings);
+    if (resumed) return resumed;
+  }
   const result = launchCredentialLogin(id, profile);
   if (result && result.ok && !profileId) {
     const nextSettings = await reenableDefaultCredential(id, settings);
@@ -152,6 +188,19 @@ async function addCredentialAccount(providerId) {
   if (id === "antigravity") return launchAntigravityAccountLogin();
   if (!PROFILE_LOGIN_PROVIDERS.has(id)) return { ok: false, providerId: id, reason: "profiles-not-supported" };
   const settings = await getSettingsBridge();
+  const resumed = await resumeManagedLogin(id, settings);
+  if (resumed) return resumed;
+  const vacant = vacantManagedProfile(settings, id);
+  if (vacant) {
+    ensureProfileDirectory(vacant);
+    const result = launchCredentialLogin(id, vacant);
+    return {
+      ...result,
+      reusedProfile: true,
+      accountLabel: vacant.label,
+      accountProfilesText: formatAccountProfilesForUi(settings.accountProfiles),
+    };
+  }
   const proposal = nextManagedProfile(settings, id);
   if (!proposal) return { ok: false, providerId: id, reason: "profiles-not-supported" };
   ensureProfileDirectory(proposal);
@@ -175,13 +224,21 @@ async function disconnectCredential(providerId, options = {}) {
 
   if (id === "openrouter") {
     const profiles = normalizeOpenRouterProfiles(settings.openRouterProfiles);
-    const targets = profileId ? profiles.filter((profile) => profile.id === profileId) : profiles;
+    const targets = profileId
+      ? profiles.filter((profile) => profile.id === profileId)
+      : profiles.filter((profile) => profile.enabled !== false);
     if (!targets.length) return { ok: false, providerId: id, reason: "profile-not-found" };
     for (const profile of targets) await ipcRenderer.invoke("clear-openrouter-profile-secrets", profile.id);
-    const removed = new Set(targets.map((profile) => profile.id));
-    const remaining = profiles.filter((profile) => !removed.has(profile.id));
-    const saved = await saveSettingsBridge({ openRouterProfiles: remaining, openRouterEnabled: remaining.length > 0 });
-    return { ok: true, providerId: id, profileId: profileId || null, settings: saved };
+    const targetIds = new Set(targets.map((profile) => profile.id));
+    const disabledAt = Date.now();
+    const nextProfiles = profiles.map((profile) => targetIds.has(profile.id)
+      ? { ...profile, enabled: false, disabledAt }
+      : profile);
+    const saved = await saveSettingsBridge({
+      openRouterProfiles: nextProfiles,
+      openRouterEnabled: nextProfiles.some((profile) => profile.enabled !== false),
+    });
+    return { ok: true, providerId: id, profileId: profileId || null, settings: saved, reusedProfile: true };
   }
 
   if (id === "antigravity" && profileId) {
@@ -195,11 +252,10 @@ async function disconnectCredential(providerId, options = {}) {
   if (profileId) {
     const profiles = normalizeAccountProfiles(settings.accountProfiles);
     const profileProviderId = id === "grokbot" ? "cursor" : id;
-    const exists = profiles.some((profile) => profile.providerId === profileProviderId && profile.id === profileId);
-    if (!exists) return { ok: false, providerId: id, profileId, reason: "profile-not-found" };
-    const remaining = profiles.filter((profile) => !(profile.providerId === profileProviderId && profile.id === profileId));
-    const saved = await saveSettingsBridge({ accountProfiles: remaining });
-    return { ok: true, providerId: id, profileId, sharedCredentialProvider: profileProviderId !== id ? profileProviderId : null, settings: saved, accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles) };
+    const disabled = disableManagedProfile(profiles, profileProviderId, profileId);
+    if (!disabled) return { ok: false, providerId: id, profileId, reason: "profile-not-found" };
+    const saved = await saveSettingsBridge({ accountProfiles: disabled });
+    return { ok: true, providerId: id, profileId, sharedCredentialProvider: profileProviderId !== id ? profileProviderId : null, settings: saved, accountProfilesText: formatAccountProfilesForUi(saved.accountProfiles), reusedProfile: true };
   }
 
   const supported = new Set(["codex", "claude", "grok", "cursor", "grokbot", "copilot", "antigravity"]);

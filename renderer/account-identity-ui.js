@@ -40,22 +40,12 @@
       const row = rows[index];
       const meta = card.querySelector(".meta");
       if (!meta) return;
+      const legacy = meta.querySelector(":scope > .account-identity-line");
+      if (legacy) legacy.remove();
+      const slot = meta.querySelector(".meta-account");
+      if (!slot) return;
       const text = identityText(row);
-      let line = meta.querySelector(":scope > .account-identity-line");
-      if (!text) {
-        if (line) line.remove();
-        return;
-      }
-      if (!line) {
-        line = document.createElement("div");
-        line.className = "account-identity-line";
-        const heading = meta.querySelector(":scope > .provider-title, :scope > b");
-        if (heading && heading.nextSibling) meta.insertBefore(line, heading.nextSibling);
-        else if (heading) meta.appendChild(line);
-        else meta.prepend(line);
-      }
-      if (line.textContent !== text) line.textContent = text;
-      line.title = text;
+      if (text && slot.title !== text) slot.title = text;
     });
   }
 

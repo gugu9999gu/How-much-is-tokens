@@ -112,6 +112,51 @@ app.whenReady().then(async () => {
     assert.ok(connectionUi.codexIdentity.includes("codex@example.com"), "token card must show authenticated account email when available");
     assert.ok(connectionUi.codexIdentity.includes("acct_codex_123"), "token card must show authenticated account ID when available");
 
+    const metaSlots = await win.webContents.executeJavaScript(`(() => {
+      const slotNames = (providerId) => [...document.querySelectorAll('article[data-provider-id="' + providerId + '"] [data-meta-slot]')].map((el) => el.dataset.metaSlot);
+      const column = (providerId, slot) => {
+        const el = document.querySelector('article[data-provider-id="' + providerId + '"] [data-meta-slot="' + slot + '"]');
+        return el ? getComputedStyle(el).gridColumnStart : "";
+      };
+      return {
+        codex: slotNames("codex"),
+        fal: slotNames("falai"),
+        codexAccount: column("codex", "account"),
+        codexBilling: column("codex", "billing"),
+        codexVersion: column("codex", "version"),
+        falAccount: column("falai", "account"),
+        falBilling: column("falai", "billing"),
+      };
+    })()`);
+    assert.deepStrictEqual(metaSlots.codex, ["account", "billing", "version", "coupon"], "Codex meta slots must stay in a fixed order");
+    assert.deepStrictEqual(metaSlots.fal, ["account", "billing"], "providers without CLI or coupons must not insert extra leading slots");
+    assert.strictEqual(metaSlots.codexAccount, "1");
+    assert.strictEqual(metaSlots.falAccount, "1");
+    assert.strictEqual(metaSlots.codexBilling, "2");
+    assert.strictEqual(metaSlots.falBilling, "2", "limit renewal must line up with the same column on every platform");
+    assert.strictEqual(metaSlots.codexVersion, "3");
+
+    const compactMeta = await win.webContents.executeJavaScript(`(async () => {
+      document.getElementById("compactBtn").click();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      const card = document.querySelector('article[data-provider-id="codex"]');
+      const billingDetail = card.querySelector(".meta-billing small");
+      const versionDetail = card.querySelector(".meta-cli small");
+      const accountDetail = card.querySelector(".meta-account small");
+      return {
+        compact: card.classList.contains("compact"),
+        billingDisplay: billingDetail ? getComputedStyle(billingDetail).display : "",
+        versionDisplay: versionDetail ? getComputedStyle(versionDetail).display : "",
+        accountDisplay: accountDetail ? getComputedStyle(accountDetail).display : "",
+        accountText: card.querySelector(".account-identity-line")?.textContent || "",
+      };
+    })()`);
+    assert.strictEqual(compactMeta.compact, true, "compact toggle must mark the usage card");
+    assert.strictEqual(compactMeta.billingDisplay, "none", "compact mode must hide the renewal card's secondary line");
+    assert.strictEqual(compactMeta.versionDisplay, "none", "compact mode must hide the version card's secondary line");
+    assert.notStrictEqual(compactMeta.accountDisplay, "none", "compact mode must keep the account ID visible");
+    assert.ok(compactMeta.accountText.includes("acct_codex_123"), "compact account chip must still include the account ID");
+
     const headerToggleWorked = await win.webContents.executeJavaScript(`(async () => {
       document.getElementById('headerEdgeDockToggle').click();
       await new Promise((resolve) => setTimeout(resolve, 25));

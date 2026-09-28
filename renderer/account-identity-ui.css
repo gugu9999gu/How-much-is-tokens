@@ -1,4 +1,4 @@
-.account-identity-line {
+.meta > .account-identity-line {
   max-width: 100%;
   margin-top: 1px;
   color: rgba(196, 204, 219, 0.78);
@@ -11,7 +11,7 @@
   user-select: text;
 }
 
-.row.compact .account-identity-line {
+.row.compact .meta > .account-identity-line {
   font-size: 8px;
   opacity: 0.88;
 }

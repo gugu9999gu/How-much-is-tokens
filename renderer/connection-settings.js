@@ -149,7 +149,11 @@ async function runConnect(provider, button) {
     const settings = await window.tokenWidget.getSettings();
     syncAdvancedInputs(settings);
     if (result.needsRefresh) {
-      setConnectionMessage(`${provider.label} 로그인 창을 열었습니다. 브라우저/터미널에서 완료한 뒤 ‘상태 새로고침’을 누르세요.`);
+      const reused = result.reusedProfile ? `${result.accountLabel || provider.label} 기존 프로필로 로그인을 엽니다. ` : "";
+      setConnectionMessage(`${reused}${provider.label} 로그인 창을 열었습니다. 브라우저/터미널에서 완료한 뒤 ‘상태 새로고침’을 누르세요.`);
+    } else if (result.reusedProfile) {
+      setConnectionMessage(`${result.accountLabel || provider.label} 기존 프로필에 다시 연결했습니다.`);
+      await window.tokenWidget.refresh();
     } else {
       setConnectionMessage(`${provider.label} 연결이 완료되었습니다.`);
       await window.tokenWidget.refresh();
@@ -173,7 +177,13 @@ async function runAddAccount(provider, button) {
     const settings = await window.tokenWidget.getSettings();
     syncAdvancedInputs(settings);
     if (result.needsRefresh) {
-      setConnectionMessage(`${result.accountLabel || provider.label} 격리 프로필을 만들고 로그인 창을 열었습니다. 로그인 완료 후 상태를 새로고침하세요.`);
+      const created = result.reusedProfile
+        ? `${result.accountLabel || provider.label} 기존 프로필로 로그인을 엽니다.`
+        : `${result.accountLabel || provider.label} 격리 프로필을 만들고 로그인 창을 열었습니다.`;
+      setConnectionMessage(`${created} 로그인 완료 후 상태를 새로고침하세요.`);
+    } else if (result.reusedProfile) {
+      setConnectionMessage(`${result.accountLabel || provider.label} 기존 프로필에 다시 연결했습니다.`);
+      await window.tokenWidget.refresh();
     } else {
       setConnectionMessage(`${result.accountLabel || provider.label} 연결이 완료되었습니다.`);
       await window.tokenWidget.refresh();

@@ -11,6 +11,8 @@ const {
   nextOpenRouterProfileId,
   nextOpenRouterPriority,
   createOpenRouterProfile,
+  selectOpenRouterLoginProfile,
+  mergeOpenRouterProfiles,
 } = require("../lib/openrouter-profiles");
 
 assert.strictEqual(cleanProfileId(" Primary_1 "), "primary_1");
@@ -77,5 +79,27 @@ const tooMany = normalizeOpenRouterProfiles(Array.from({ length: 20 }, (_, index
 })));
 assert.strictEqual(tooMany.length, MAX_PROFILES);
 assert.strictEqual(createOpenRouterProfile(tooMany, { label: "too many" }), null);
+
+const loggedOut = selectOpenRouterLoginProfile([
+  { id: "default", label: "기본 키", priority: 10, enabled: false, disabledAt: 10, accountId: "user-a" },
+  { id: "key-2", label: "효식", priority: 20, enabled: false, disabledAt: 20, accountId: "user-b" },
+], { createNew: true });
+assert.strictEqual(loggedOut.isNew, false);
+assert.strictEqual(loggedOut.resumed, true);
+assert.strictEqual(loggedOut.profile.id, "key-2", "login after logout must reuse the most recently logged-out profile");
+
+const reconnect = selectOpenRouterLoginProfile([
+  { id: "default", label: "기본 키", priority: 10, enabled: true, accountId: "user-a" },
+  { id: "key-2", label: "효식", priority: 20, enabled: false, disabledAt: 20, accountId: "user-b" },
+], {});
+assert.strictEqual(reconnect.profile.id, "default", "an active profile must stay the reconnect target");
+
+const merged = mergeOpenRouterProfiles([
+  { id: "default", label: "기본 키", priority: 10, enabled: false, disabledAt: 5, accountId: "user-a" },
+], [
+  { id: "default", label: "기본 키", priority: 10, enabled: false },
+]);
+assert.strictEqual(merged[0].accountId, "user-a");
+assert.strictEqual(merged[0].disabledAt, 5);
 
 console.log("OpenRouter profile model tests passed");

@@ -369,6 +369,41 @@ assert.strictEqual(canRefresh({
   });
   assert.strictEqual(absent.status, "missing");
 
+  clearClaudeFactCache();
+  const identifiedFile = path.join(authDir, "identified.json");
+  writeCreds(identifiedFile, { ...expiredOauth, accessToken: "identified-access", expiresAt: now + 60 * 60 * 1000 });
+  const identified = await fetchUsage({}, {}, null, {
+    credentialsFile: identifiedFile,
+    now,
+    requestJson: async (url) => {
+      if (url === "https://api.anthropic.com/api/oauth/usage") {
+        return {
+          ok: true,
+          status: 200,
+          json: { five_hour: { utilization: 20, resets_at: "2026-09-27T08:00:00.000Z" } },
+        };
+      }
+      if (url === "https://api.anthropic.com/api/oauth/profile") {
+        return {
+          ok: true,
+          status: 200,
+          json: {
+            account: {
+              uuid: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              email: "claude@example.com",
+              display_name: "Claude User",
+            },
+          },
+        };
+      }
+      return { ok: false, status: 404, json: null };
+    },
+  });
+  assert.strictEqual(identified.status, "ok");
+  assert.strictEqual(identified.accountEmail, "claude@example.com");
+  assert.strictEqual(identified.accountId, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+  assert.strictEqual(identified.accountLogin, "Claude User");
+
   const limitedFile = path.join(authDir, "limited.json");
   writeCreds(limitedFile, expiredOauth);
   let limitedCalls = 0;

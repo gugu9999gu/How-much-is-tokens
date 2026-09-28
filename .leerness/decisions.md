@@ -41,6 +41,18 @@ doNotStore:
 - Alternatives: 5시간 리셋 시각을 마지막 사용일로 표시 — 세션 창이라 플랜 갱신이 아님. 구독 시작일의 매월 같은 날을 결제일로 추정 — 연간 구독에서 거짓.
 - Impact: `accessRenewal`과 카드의 한도 갱신 칸.
 
+### 2026-09-28 — 같은 계정 재로그인은 기존 프로필을 다시 쓴다
+- Decision: CLI 추가 계정과 OpenRouter 프로필은 로그아웃해도 프로필 기록을 지우지 않고 비활성화한다. 다시 로그인하거나 계정을 추가할 때 비활성화된 프로필이 있으면 새 디렉터리나 새 키 프로필을 만들지 않고 가장 최근에 해제한 프로필에서 로그인을 연다. 사용량 조회에서 계정 ID가 같은 활성 프로필이 둘이면 나중 것을 제거하고, 계정 ID가 없는 `accountKey: *:default`만으로는 지우지 않는다. OpenRouter에서 같은 계정이면 새 키 프로필을 만들지 않고 기존 프로필에 키를 다시 저장한다.
+- Reason: 해제하면 프로필이 설정에서 사라졌고, 다음 로그인은 비어 있는 디렉터리를 건너뛰어 새 번호를 할당했다. Claude처럼 토큰에 계정 ID가 없으면 중복 카드가 그대로 남았다.
+- Alternatives: 로그아웃 때 자격증명 디렉터리까지 삭제한다 — 다시 로그인할 기존 프로필이 없어진다. 계정 ID를 확인하기 전에는 항상 새 프로필을 만들고 나중에만 숨긴다 — 번호가 계속 늘고 빈 프로필이 쌓인다.
+- Impact: `accountProfiles`/`openRouterProfiles`의 비활성 상태와 `accountId`. 수동으로 추가한 서로 다른 OpenRouter API Key는 그대로 여러 개 둘 수 있다.
+
+### 2026-09-28 — 계정·한도 갱신·버전은 플랫폼이 달라도 같은 칸에 둔다
+- Decision: 사용량 카드의 사실 칸 순서는 계정, 결제/한도 갱신, 버전, 리셋 쿠폰으로 고정한다. 쿠폰이나 CLI가 없는 플랫폼은 그 칸을 비워 앞 칸이 밀리지 않게 한다. Claude 계정 ID는 OAuth 토큰에 없으므로 `~/.claude.json`의 `oauthAccount.accountUuid`와 `GET /api/oauth/profile`의 `account.uuid`만 사용하고, 설치별 `userID`나 조직 UUID는 계정 ID로 쓰지 않는다. 간소화 모드에서는 이 칸들을 한 줄 알약으로 줄이고, 한도 갱신·버전·쿠폰의 보조 설명은 숨기되 계정 ID는 남긴다.
+- Reason: 쿠폰 칸이 앞에 있으면 Claude/Codex만 한도 갱신과 버전이 한 칸씩 밀렸고, Claude는 불투명 토큰이라 계정 ID가 비었다. 간소화 모드가 잔여량만 줄이고 사실 칸은 그대로라 카드 높이가 줄지 않았다.
+- Alternatives: 계정 ID가 없는 카드에서 계정 칸을 제거한다 — 다음 칸이 왼쪽으로 밀려 플랫폼마다 위치가 달라진다. 조직 UUID를 계정 ID로 보여 준다 — 계정과 다른 값이다.
+- Impact: 사용량 카드 메타 칸, Claude 프로필 조회 결과의 `identity`. 공개 배포는 하지 않는다.
+
 ### 2026-09-27 — Claude 사용량은 액세스 토큰이 만료돼도 재로그인 없이 갱신
 - Decision: Claude 사용량 조회는 `.credentials.json`의 `claudeAiOauth`가 만료됐거나 5분 이내면 `POST https://platform.claude.com/v1/oauth/token`으로 갱신한 뒤 조회한다. 요청에는 저장된 scope를 포함한다. 갱신에 성공하면 새 access/refresh와 만료 시각만 기록하고 `mcpOAuth` 등 다른 키는 유지한다. `invalid_grant`나 네트워크 실패로는 refresh token을 지우지 않는다. 429는 2분, 그 외 실패는 30초 동안 다시 치지 않고 마지막 사용량을 유지한다. 리프레시 토큰 자체도 만료됐으면 로그인으로 표시한다. 쿠폰 소비 요청은 하지 않는다.
 - Reason: 액세스 토큰은 약 8시간(`expires_in` 28800)이면 만료되는데 위젯은 만료된 토큰만 읽어, 몇 시간 뒤 사용량 추적이 끊기고 `claude` 재로그인이 필요했다.

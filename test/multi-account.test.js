@@ -5,6 +5,10 @@ const fs = require("fs");
 const {
   normalizeAccountProfiles,
   activeAccountProfiles,
+  profileToResume,
+  reviveManagedProfile,
+  disableManagedProfile,
+  mergeAccountProfiles,
   stableProfileId,
   profileInstanceKey,
   profileEnvironment,
@@ -69,6 +73,16 @@ assert.strictEqual(map.get("grok").length, 1);
 assert.strictEqual(map.get("cursor").length, 1);
 assert.strictEqual(map.get("grokbot").length, 1, "Grok Bot must mirror isolated Cursor profiles because both use the same auth source");
 assert.strictEqual(map.get("copilot").length, 1);
+
+const disabled = disableManagedProfile(profiles, "codex", profiles[0].id, 50);
+assert.ok(disabled);
+assert.strictEqual(disabled.find((profile) => profile.id === profiles[0].id).enabled, false);
+assert.strictEqual(profileToResume(disabled, "codex").id, profiles[0].id);
+const revived = reviveManagedProfile(disabled, profiles[0].id);
+assert.strictEqual(revived.find((profile) => profile.id === profiles[0].id).enabled, true);
+assert.strictEqual(revived.find((profile) => profile.id === profiles[0].id).disabledAt, undefined);
+const kept = mergeAccountProfiles(disabled, disabled.filter((profile) => profile.enabled !== false));
+assert.ok(kept.some((profile) => profile.id === profiles[0].id && profile.enabled === false), "a logged-out profile omitted from the editor must stay available for the next login");
 
 const contextual = withAccountContext({
   id: "codex",

@@ -11,6 +11,7 @@ const {
   interactiveLoginCommand,
   launchCredentialLogin,
   nextManagedProfile,
+  vacantManagedProfile,
 } = require("../lib/credential-login");
 
 assert.deepStrictEqual([...PROFILE_LOGIN_PROVIDERS].sort(), ["claude", "codex", "copilot", "cursor", "grok"]);
@@ -105,6 +106,15 @@ try {
   }, "codex", { rootDir: root });
   assert.strictEqual(collisionSafe.label, "Codex 4");
   assert.strictEqual(collisionSafe.configDir, path.join(root, "codex", "account-4"));
+  fs.mkdirSync(existingAccount2, { recursive: true });
+  const vacant = vacantManagedProfile({
+    accountProfiles: [
+      { providerId: "codex", label: "개인계정", configDir: existingAccount2 },
+      { providerId: "codex", label: "온스계정", configDir: path.join(root, "codex", "account-8"), accountId: "acct_other" },
+    ],
+  }, "codex");
+  assert.strictEqual(vacant && vacant.label, "개인계정", "an existing profile with no login must be reused instead of allocating a new one");
+  assert.notStrictEqual(vacant.configDir, path.join(root, "codex", "account-8"));
   const cursorProposal = nextManagedProfile({}, "cursor", { rootDir: root });
   const copilotProposal = nextManagedProfile({}, "copilot", { rootDir: root });
   assert.strictEqual(cursorProposal.label, "Cursor 2");

@@ -305,8 +305,8 @@
     const label = accountLabel(row);
     const destructive = providerId === "openrouter";
     const prompt = destructive
-      ? `${label} OpenRouter 키를 앱 보안 저장소에서 삭제하고 연결을 해제할까요?`
-      : `${label} 연결을 위젯에서 해제할까요? CLI 자체 로그인 정보는 유지됩니다.`;
+      ? `${label} OpenRouter 키를 앱 보안 저장소에서 삭제하고 연결을 해제할까요? 프로필은 남아 있어 같은 계정으로 다시 로그인하면 그 프로필을 사용합니다.`
+      : `${label} 연결을 위젯에서 해제할까요? 같은 계정으로 다시 로그인하면 이 프로필을 그대로 사용하고, CLI 로그인 정보는 유지됩니다.`;
     if (!window.confirm(prompt)) return;
 
     button.disabled = true;
