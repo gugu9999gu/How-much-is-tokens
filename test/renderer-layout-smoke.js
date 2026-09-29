@@ -162,15 +162,23 @@ app.whenReady().then(async () => {
     assert.strictEqual(compactMeta.pin, true, "each token card must expose a pin control");
 
     const pinOrder = await win.webContents.executeJavaScript(`(async () => {
+      const pin = async (providerId) => {
+        document.querySelector('article[data-provider-id="' + providerId + '"] .pin-btn').click();
+        await new Promise((resolve) => setTimeout(resolve, 30));
+      };
+      await pin("falai");
+      await pin("codex");
       const keys = () => [...document.querySelectorAll("[data-pin-group] article")].map((el) => el.dataset.pinKey);
+      const before = keys();
       const cards = [...document.querySelectorAll("[data-pin-group] article")];
       const data = typeof DataTransfer === "function" ? new DataTransfer() : null;
       cards[1].dispatchEvent(new DragEvent("dragstart", { bubbles: true, cancelable: true, dataTransfer: data }));
       cards[0].dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: data }));
       cards[0].dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: data }));
       await new Promise((resolve) => setTimeout(resolve, 40));
-      return { before: ["codex:default", "falai:default"], after: keys(), saved: (await window.tokenWidget.getSettings()).pinnedAccounts };
+      return { before, after: keys(), saved: (await window.tokenWidget.getSettings()).pinnedAccounts };
     })()`);
+    assert.deepStrictEqual(pinOrder.before, ["codex:default", "falai:default"], "pinning must place the newest account first");
     assert.deepStrictEqual(pinOrder.after, ["falai:default", "codex:default"], "dropping a pinned card must move it ahead of the target");
     assert.deepStrictEqual(pinOrder.saved, ["falai:default", "codex:default"], "the new pin order must be saved");
 
