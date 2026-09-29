@@ -161,6 +161,19 @@ app.whenReady().then(async () => {
     assert.ok(compactMeta.quota.includes("75%"), "compact mode must show the remaining quota directly");
     assert.strictEqual(compactMeta.pin, true, "each token card must expose a pin control");
 
+    const pinOrder = await win.webContents.executeJavaScript(`(async () => {
+      const keys = () => [...document.querySelectorAll("[data-pin-group] article")].map((el) => el.dataset.pinKey);
+      const cards = [...document.querySelectorAll("[data-pin-group] article")];
+      const data = typeof DataTransfer === "function" ? new DataTransfer() : null;
+      cards[1].dispatchEvent(new DragEvent("dragstart", { bubbles: true, cancelable: true, dataTransfer: data }));
+      cards[0].dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: data }));
+      cards[0].dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: data }));
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      return { before: ["codex:default", "falai:default"], after: keys(), saved: (await window.tokenWidget.getSettings()).pinnedAccounts };
+    })()`);
+    assert.deepStrictEqual(pinOrder.after, ["falai:default", "codex:default"], "dropping a pinned card must move it ahead of the target");
+    assert.deepStrictEqual(pinOrder.saved, ["falai:default", "codex:default"], "the new pin order must be saved");
+
     const headerToggleWorked = await win.webContents.executeJavaScript(`(async () => {
       document.getElementById('headerEdgeDockToggle').click();
       await new Promise((resolve) => setTimeout(resolve, 25));

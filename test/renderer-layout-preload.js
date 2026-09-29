@@ -30,6 +30,7 @@ const settings = {
   openRouterLocalRouterTokenConfigured: false,
   apiProviderStatuses: { falai: { apiKey: true }, magnific: { apiKey: true } },
   secureStorageAvailable: true,
+  pinnedAccounts: ["codex:default", "falai:default"],
 };
 
 const API_PROVIDER_CATALOG = [

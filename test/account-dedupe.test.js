@@ -1,4 +1,5 @@
 const assert = require("assert");
+const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { dedupeManagedAccountRows, verifiedAccountIdentityKey } = require("../lib/account-dedupe");
@@ -106,5 +107,36 @@ assert.strictEqual(claudeDuplicate.duplicates.length, 1, "the same Claude accoun
 assert.strictEqual(claudeDuplicate.duplicates[0].profileId, claudeProfiles[0].id);
 assert.ok(claudeDuplicate.accountProfiles.some((profile) => profile.id === claudeProfiles[1].id));
 assert.ok(!claudeDuplicate.accountProfiles.some((profile) => profile.id === claudeProfiles[0].id));
+
+const distinctDir = path.join(baseDir, "claude-distinct");
+fs.mkdirSync(distinctDir, { recursive: true });
+fs.writeFileSync(path.join(distinctDir, ".claude.json"), JSON.stringify({
+  oauthAccount: { accountUuid: "uuid-distinct", emailAddress: "other@example.com" },
+}));
+const distinctProfiles = require("../lib/account-profiles").normalizeAccountProfiles([
+  { providerId: "claude", label: "Claude 6", configDir: distinctDir },
+]);
+const poisoned = dedupeManagedAccountRows({ accountProfiles: distinctProfiles }, [
+  { id: "claude", providerId: "claude", status: "ok", accountOrder: 0, accountKey: "claude:default", accountId: "uuid-default", accountLabel: "기본 계정" },
+  { id: `claude:profile:${distinctProfiles[0].id}`, providerId: "claude", profileId: distinctProfiles[0].id, status: "ok", accountOrder: 1, accountKey: "claude:default", accountId: "uuid-default", accountLabel: "Claude 6" },
+]);
+assert.strictEqual(poisoned.duplicates.length, 0, "a profile whose own Claude account id differs must not be removed when the usage row repeats another account");
+assert.strictEqual(poisoned.accountProfiles.length, 1);
+assert.strictEqual(poisoned.providers.length, 2);
+
+const sameDir = path.join(baseDir, "claude-same");
+fs.mkdirSync(sameDir, { recursive: true });
+fs.writeFileSync(path.join(sameDir, ".claude.json"), JSON.stringify({
+  oauthAccount: { accountUuid: "uuid-default", emailAddress: "same@example.com" },
+}));
+const sameProfiles = require("../lib/account-profiles").normalizeAccountProfiles([
+  { providerId: "claude", label: "Claude 2", configDir: sameDir },
+]);
+const confirmed = dedupeManagedAccountRows({ accountProfiles: sameProfiles }, [
+  { id: "claude", providerId: "claude", status: "ok", accountOrder: 0, accountKey: "claude:default", accountId: "uuid-default", accountLabel: "기본 계정" },
+  { id: `claude:profile:${sameProfiles[0].id}`, providerId: "claude", profileId: sameProfiles[0].id, status: "ok", accountOrder: 1, accountKey: "claude:default", accountId: "uuid-default", accountLabel: "Claude 2" },
+]);
+assert.strictEqual(confirmed.duplicates.length, 1, "matching on-disk Claude account id is still a duplicate");
+assert.strictEqual(confirmed.accountProfiles.length, 0);
 
 console.log("authenticated account deduplication tests passed");

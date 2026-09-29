@@ -428,6 +428,46 @@ assert.strictEqual(canRefresh({
   assert.strictEqual(limitedCalls, 1, "a 429 must back off before another refresh");
   assert.strictEqual(JSON.parse(fs.readFileSync(limitedFile, "utf8")).claudeAiOauth.refreshToken, "old-refresh");
 
+  clearClaudeFactCache();
+  const isolatedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "claude-isolated-"));
+  const profileA = { providerId: "claude", id: "profile-a", label: "Claude A", configDir: path.join(isolatedRoot, "a") };
+  const profileB = { providerId: "claude", id: "profile-b", label: "Claude B", configDir: path.join(isolatedRoot, "b") };
+  fs.mkdirSync(profileA.configDir, { recursive: true });
+  fs.mkdirSync(profileB.configDir, { recursive: true });
+  const freshOauth = {
+    ...expiredOauth,
+    expiresAt: now + 60 * 60 * 1000,
+  };
+  writeCreds(path.join(profileA.configDir, ".credentials.json"), { ...freshOauth, accessToken: "token-a" });
+  writeCreds(path.join(profileB.configDir, ".credentials.json"), { ...freshOauth, accessToken: "token-b" });
+  const profileCalls = [];
+  async function isolatedRequest(url, init) {
+    const bearer = init && init.headers && init.headers.Authorization || "";
+    if (url === "https://api.anthropic.com/api/oauth/usage") {
+      return {
+        ok: true,
+        status: 200,
+        json: { five_hour: { utilization: 10, resets_at: "2026-09-27T08:00:00.000Z" } },
+      };
+    }
+    if (url === "https://api.anthropic.com/api/oauth/profile") {
+      const accountId = bearer.includes("token-b") ? "uuid-b" : "uuid-a";
+      profileCalls.push(accountId);
+      return {
+        ok: true,
+        status: 200,
+        json: { account: { uuid: accountId, email: `${accountId}@example.com` } },
+      };
+    }
+    return { ok: false, status: 404, json: null };
+  }
+  const firstAccount = await fetchUsage({}, {}, profileA, { now, requestJson: isolatedRequest });
+  const secondAccount = await fetchUsage({}, {}, profileB, { now, requestJson: isolatedRequest });
+  assert.strictEqual(firstAccount.accountId, "uuid-a");
+  assert.strictEqual(secondAccount.accountId, "uuid-b", "a second Claude profile must not reuse the first account's cached identity");
+  assert.deepStrictEqual(profileCalls, ["uuid-a", "uuid-b"]);
+  fs.rmSync(isolatedRoot, { recursive: true, force: true });
+
   fs.rmSync(authDir, { recursive: true, force: true });
   console.log("Claude OAuth refresh tests passed");
 })().catch((err) => {

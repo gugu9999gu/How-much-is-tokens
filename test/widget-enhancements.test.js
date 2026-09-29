@@ -59,6 +59,10 @@ assert.ok(rendererCss.includes(".account-meta .meta-cli { grid-column: 3; }"), "
 assert.ok(rendererCss.includes(".row.compact .account-meta"), "compact mode must restyle account meta cards");
 assert.ok(rendererApp.includes("compact-quotas"), "compact mode must show quota windows instead of account meta");
 assert.ok(rendererApp.includes("pin-btn"), "usage cards must expose a pin control");
+assert.ok(rendererApp.includes('draggable="true"'), "pinned usage cards must be draggable");
+assert.ok(rendererApp.includes("reorderPinnedAccounts"), "pinned cards must reorder through the saved pin list");
+assert.ok(rendererApp.includes('data-pin-group="true"'), "pinned cards must stay in their own reorderable group");
+assert.ok(rendererCss.includes(".row.pin-drop-target"), "pin drag must show a drop target");
 assert.ok(rendererCss.includes(".compact-quota"), "compact quotas must be styled");
 assert.ok(rendererCss.includes(".row.compact .meta-billing > small"), "compact mode must hide secondary renewal detail");
 assert.ok(rendererCss.includes(".row.compact .meta-cli > small"), "compact mode must hide secondary version detail");

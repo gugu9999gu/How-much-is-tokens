@@ -509,7 +509,7 @@ function renderProviderCard(provider) {
   const credits = compact ? "" : renderCreditBalances(provider);
   const facts = compact ? "" : renderAccountMeta(provider);
   const hint = provider.status !== "ok" && provider.hint ? `<div class="hint">${provider.hint}</div>` : "";
-  const cardAttrs = ` data-provider-id="${escapeHtml(providerKey)}"${isPinned(provider) ? ` data-pinned="true"` : ""}`;
+  const cardAttrs = ` data-provider-id="${escapeHtml(providerKey)}"${isPinned(provider) ? ` data-pinned="true" data-pin-key="${escapeHtml(pinKey(provider))}" draggable="true"` : ""}`;
 
   if (compact) {
     const compactStatus = provider.status === "ok"
@@ -604,12 +604,13 @@ function render(payload) {
   }
   pinned.sort((a, b) => pinnedAccounts.indexOf(pinKey(a)) - pinnedAccounts.indexOf(pinKey(b)));
   const sections = [];
-  if (pinned.length) sections.push({ vendor: "고정", providers: pinned });
+  if (pinned.length) sections.push({ vendor: "고정", providers: pinned, reorderable: true });
   sections.push(...groupProviders(rest));
   listEl.innerHTML = sections.map((group) => `
-    <section class="provider-group">
+    <section class="provider-group"${group.reorderable ? ' data-pin-group="true"' : ""}>
       <div class="provider-group-head">
         <span>${group.vendor}</span>
+        ${group.reorderable ? '<small class="pin-order-hint">드래그로 순서</small>' : ""}
         <i></i>
       </div>
       <div class="provider-group-cards">
@@ -827,6 +828,79 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !settingsEl.classList.contains("hidden")) {
     setSettingsOpen(false);
   }
+});
+
+function reorderPinnedAccounts(keys, fromKey, toKey) {
+  const list = (Array.isArray(keys) ? keys : []).map((item) => String(item || "").toLowerCase());
+  const from = list.indexOf(fromKey);
+  const to = list.indexOf(toKey);
+  if (from < 0 || to < 0 || from === to) return list;
+  const next = list.slice();
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
+
+function clearPinDragState() {
+  pinDragKey = "";
+  listEl.querySelectorAll(".pin-dragging, .pin-drop-target").forEach((el) => {
+    el.classList.remove("pin-dragging", "pin-drop-target");
+  });
+}
+
+let pinDragKey = "";
+
+listEl.addEventListener("dragstart", (event) => {
+  const card = event.target.closest("article[data-pin-key]");
+  if (!card) return;
+  if (event.target.closest("button, a, input, textarea, select")) {
+    event.preventDefault();
+    return;
+  }
+  pinDragKey = String(card.dataset.pinKey || "").toLowerCase();
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", pinDragKey);
+  }
+  card.classList.add("pin-dragging");
+});
+
+listEl.addEventListener("dragover", (event) => {
+  const card = event.target.closest("article[data-pin-key]");
+  if (!card) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  listEl.querySelectorAll(".pin-drop-target").forEach((el) => {
+    if (el !== card) el.classList.remove("pin-drop-target");
+  });
+  card.classList.add("pin-drop-target");
+});
+
+listEl.addEventListener("dragleave", (event) => {
+  const card = event.target.closest("article[data-pin-key]");
+  if (card && !card.contains(event.relatedTarget)) card.classList.remove("pin-drop-target");
+});
+
+listEl.addEventListener("drop", async (event) => {
+  const card = event.target.closest("article[data-pin-key]");
+  if (!card || !lastPayload) return;
+  event.preventDefault();
+  const fromKey = String((event.dataTransfer && event.dataTransfer.getData("text/plain")) || pinDragKey || "").toLowerCase();
+  const toKey = String(card.dataset.pinKey || "").toLowerCase();
+  clearPinDragState();
+  if (!fromKey || !toKey || fromKey === toKey) return;
+  const next = reorderPinnedAccounts(pinnedAccounts, fromKey, toKey);
+  if (next.join("\n") === pinnedAccounts.join("\n")) return;
+  try {
+    const settings = await window.tokenWidget.saveSettings({ pinnedAccounts: next });
+    render({ ...lastPayload, settings });
+  } catch {
+    render(lastPayload);
+  }
+});
+
+listEl.addEventListener("dragend", () => {
+  clearPinDragState();
 });
 
 listEl.addEventListener("click", async (event) => {
