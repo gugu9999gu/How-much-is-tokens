@@ -153,6 +153,7 @@ app.whenReady().then(async () => {
         pin: !!card.querySelector(".pin-btn"),
         falCredit: document.querySelector('article[data-provider-id="falai"] .compact-credit')?.textContent || "",
         elevenCredit: document.querySelector('article[data-provider-id="elevenlabs"] .compact-credit')?.textContent || "",
+        codexCredit: document.querySelector('article[data-provider-id="codex"] .compact-credit')?.textContent || "",
       };
     })()`);
     assert.strictEqual(compactMeta.compact, true, "compact toggle must mark the usage card");
@@ -162,7 +163,8 @@ app.whenReady().then(async () => {
     assert.strictEqual(compactMeta.accountText, "");
     assert.ok(compactMeta.quota.includes("75%"), "compact mode must show the remaining quota directly");
     assert.ok(compactMeta.falCredit.includes("$42.50"), "compact mode must show held credits when AI usage is zero");
-    assert.strictEqual(compactMeta.elevenCredit, "", "compact mode must keep credits hidden while AI usage remains");
+    assert.strictEqual(compactMeta.elevenCredit, "", "compact mode must keep a usage meter from being repeated as credits");
+    assert.ok(compactMeta.codexCredit.includes("1200"), "compact mode must show Codex credits while a quota window is still in use");
     assert.strictEqual(compactMeta.pin, true, "each token card must expose a pin control");
 
     const pinOrder = await win.webContents.executeJavaScript(`(async () => {

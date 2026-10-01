@@ -506,9 +506,16 @@ function heldCreditBalances(provider) {
   }).slice(0, 3);
 }
 
-function renderCompactCredits(provider) {
-  if (!aiUsageIsZero(provider)) return "";
+function compactCreditBalances(provider) {
   const balances = heldCreditBalances(provider);
+  if (aiUsageIsZero(provider)) return balances;
+  // Codex workspace credits and prepaid balances are a separate pool from the
+  // 5-hour or weekly meter. Keep those visible after the included quota is used.
+  return balances.filter((balance) => !Number.isFinite(Number(balance.remainingPct)));
+}
+
+function renderCompactCredits(provider) {
+  const balances = compactCreditBalances(provider);
   if (!balances.length) return "";
   return `<div class="compact-quotas compact-credits">${balances.map((balance) => {
     const amount = creditBalanceText(balance);
