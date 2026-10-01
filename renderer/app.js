@@ -506,12 +506,18 @@ function heldCreditBalances(provider) {
   }).slice(0, 3);
 }
 
+function finitePercent(value) {
+  if (value == null || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 function compactCreditBalances(provider) {
   const balances = heldCreditBalances(provider);
   if (aiUsageIsZero(provider)) return balances;
-  // Codex workspace credits and prepaid balances are a separate pool from the
-  // 5-hour or weekly meter. Keep those visible after the included quota is used.
-  return balances.filter((balance) => !Number.isFinite(Number(balance.remainingPct)));
+  // A missing percent is not 0. Number(null) is 0, which hid Codex credits
+  // whose remainingPct is explicitly null.
+  return balances.filter((balance) => finitePercent(balance.remainingPct) == null);
 }
 
 function renderCompactCredits(provider) {
@@ -519,10 +525,10 @@ function renderCompactCredits(provider) {
   if (!balances.length) return "";
   return `<div class="compact-quotas compact-credits">${balances.map((balance) => {
     const amount = creditBalanceText(balance);
-    const pct = Number(balance.remainingPct);
-    const track = Number.isFinite(pct)
-      ? `<span class="track"><i style="--pct:${pct}; --tone:${tone(pct)};"></i></span>`
-      : "";
+    const pct = finitePercent(balance.remainingPct);
+    const track = pct == null
+      ? ""
+      : `<span class="track"><i style="--pct:${pct}; --tone:${tone(pct)};"></i></span>`;
     return `<div class="compact-quota compact-credit"><span>${escapeHtml(balance.label || "크레딧")}</span>${track}<b>${escapeHtml(amount)}</b></div>`;
   }).join("")}</div>`;
 }

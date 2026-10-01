@@ -60,6 +60,7 @@ assert.ok(rendererCss.includes(".row.compact .account-meta"), "compact mode must
 assert.ok(rendererApp.includes("compact-quotas"), "compact mode must show quota windows instead of account meta");
 assert.ok(rendererApp.includes("renderCompactCredits"), "compact mode must show held credits when AI usage is zero");
 assert.ok(rendererApp.includes("compactCreditBalances"), "separate credit pools must stay visible beside an active quota window");
+assert.ok(rendererApp.includes("function finitePercent"), "a null credit percent must not be treated as zero");
 assert.ok(rendererApp.includes("aiUsageIsZero"), "usage-linked credits must stay hidden while a quota window is in use");
 assert.ok(rendererCss.includes(".compact-quota.compact-credit"), "compact credit remainder must be styled");
 assert.ok(rendererApp.includes("pin-btn"), "usage cards must expose a pin control");

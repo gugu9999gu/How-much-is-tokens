@@ -47,7 +47,7 @@ let lastPayload = {
       id: "codex", providerId: "codex", name: "Codex", status: "ok", remainingPct: 75,
       resetAt: Date.now() + 60 * 60 * 1000,
       windows: [{ id: "weekly", label: "주간 한도", remainingPct: 75, usedPct: 25 }],
-      creditBalances: [{ id: "workspace-credits", label: "보유 크레딧", balance: 1200, unit: "크레딧" }],
+      creditBalances: [{ id: "workspace-credits", label: "보유 크레딧", balance: 1200, unit: "크레딧", remainingPct: null }],
       accountEmail: "codex@example.com", accountLogin: "codex-user", accountId: "acct_codex_123",
     },
     { id: "claude", providerId: "claude", name: "Claude", status: "missing" },
