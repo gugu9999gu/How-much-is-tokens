@@ -58,6 +58,9 @@ assert.ok(rendererCss.includes(".account-meta .meta-billing { grid-column: 2; }"
 assert.ok(rendererCss.includes(".account-meta .meta-cli { grid-column: 3; }"), "version slot column must be fixed");
 assert.ok(rendererCss.includes(".row.compact .account-meta"), "compact mode must restyle account meta cards");
 assert.ok(rendererApp.includes("compact-quotas"), "compact mode must show quota windows instead of account meta");
+assert.ok(rendererApp.includes("renderCompactCredits"), "compact mode must show held credits when AI usage is zero");
+assert.ok(rendererApp.includes("aiUsageIsZero"), "credit fallback must apply only when AI usage is zero");
+assert.ok(rendererCss.includes(".compact-quota.compact-credit"), "compact credit remainder must be styled");
 assert.ok(rendererApp.includes("pin-btn"), "usage cards must expose a pin control");
 assert.ok(rendererApp.includes('draggable="true"'), "pinned usage cards must be draggable");
 assert.ok(rendererApp.includes("reorderPinnedAccounts"), "pinned cards must reorder through the saved pin list");

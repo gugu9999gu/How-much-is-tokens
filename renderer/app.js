@@ -476,6 +476,50 @@ function renderCompactQuotas(provider) {
   `).join("")}</div>`;
 }
 
+function measuredUsagePct(source) {
+  const used = Number(source && source.usedPct);
+  if (Number.isFinite(used)) return used;
+  const remaining = Number(source && source.remainingPct);
+  if (Number.isFinite(remaining)) return 100 - remaining;
+  return null;
+}
+
+function aiUsageIsZero(provider) {
+  if (!provider || provider.status !== "ok") return false;
+  const windows = Array.isArray(provider.windows) ? provider.windows : [];
+  const measured = windows.map(measuredUsagePct).filter((value) => value != null);
+  if (measured.length) return measured.every((value) => value === 0);
+  const providerUsage = measuredUsagePct(provider);
+  if (providerUsage != null) return providerUsage === 0;
+  return true;
+}
+
+function heldCreditBalances(provider) {
+  const balances = Array.isArray(provider.creditBalances) ? provider.creditBalances : [];
+  return balances.filter((balance) => {
+    if (!balance || !creditBalanceText(balance)) return false;
+    if (balance.unlimited === true) return true;
+    const remaining = Number(balance.balance);
+    if (Number.isFinite(remaining)) return remaining > 0;
+    const pct = Number(balance.remainingPct);
+    return Number.isFinite(pct) && pct > 0;
+  }).slice(0, 3);
+}
+
+function renderCompactCredits(provider) {
+  if (!aiUsageIsZero(provider)) return "";
+  const balances = heldCreditBalances(provider);
+  if (!balances.length) return "";
+  return `<div class="compact-quotas compact-credits">${balances.map((balance) => {
+    const amount = creditBalanceText(balance);
+    const pct = Number(balance.remainingPct);
+    const track = Number.isFinite(pct)
+      ? `<span class="track"><i style="--pct:${pct}; --tone:${tone(pct)};"></i></span>`
+      : "";
+    return `<div class="compact-quota compact-credit"><span>${escapeHtml(balance.label || "크레딧")}</span>${track}<b>${escapeHtml(amount)}</b></div>`;
+  }).join("")}</div>`;
+}
+
 function renderProviderCard(provider) {
   const plan = provider.plan ? ` · ${provider.plan}` : "";
   const account = !compact && provider.accountLabel ? ` · ${provider.accountLabel}` : "";
@@ -525,6 +569,7 @@ function renderProviderCard(provider) {
           ${renderProviderTitle(provider, "", plan)}
           ${compactStatus ? `<div class="sub">${compactStatus}${provider.stale ? " · 이전 값" : ""}</div>` : ""}
           ${renderCompactQuotas(provider)}
+          ${renderCompactCredits(provider)}
           ${hint}
         </div>
       </article>
