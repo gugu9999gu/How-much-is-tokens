@@ -570,7 +570,7 @@ function renderProviderCard(provider) {
 
   if (compact) {
     const compactStatus = provider.status === "ok"
-      ? ""
+      ? (provider.limitReached ? "한도 도달" : "")
       : provider.status === "login"
         ? "로그인 필요"
         : provider.status === "missing"

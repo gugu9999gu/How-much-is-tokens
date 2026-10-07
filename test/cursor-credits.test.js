@@ -2,6 +2,8 @@ const assert = require("assert");
 const {
   moneyBalance,
   cursorCreditBalances,
+  cursorQuotaWindows,
+  cursorBonusCents,
 } = require("../lib/providers/cursor");
 
 const resetAt = Date.parse("2026-10-01T00:00:00Z");
@@ -49,5 +51,57 @@ assert.strictEqual(balances[2].balance, 400);
 assert.ok(balances.every((item) => item.resetAt === resetAt));
 
 assert.deepStrictEqual(cursorCreditBalances({}, resetAt), [], "missing money data must not fabricate credits");
+
+const exhausted = cursorQuotaWindows({
+  individualUsage: {
+    plan: {
+      used: 40000,
+      limit: 40000,
+      remaining: 0,
+      breakdown: { included: 40000, bonus: 12728, total: 52728 },
+      autoPercentUsed: 15.23,
+      apiPercentUsed: 56.62,
+      totalPercentUsed: 16.88,
+    },
+  },
+}, resetAt);
+assert.deepStrictEqual(exhausted.map((win) => win.id), ["included", "auto", "api"]);
+assert.strictEqual(exhausted[0].label, "포함 사용량");
+assert.strictEqual(exhausted[0].remainingPct, 0);
+assert.strictEqual(exhausted[0].usedPct, 100);
+assert.ok(Math.abs(exhausted[1].remainingPct - 84.77) < 0.001);
+assert.ok(Math.abs(exhausted[2].remainingPct - 43.38) < 0.001);
+assert.ok(!exhausted.some((win) => win.id === "total"), "an exhausted included allowance must not be hidden behind totalPercentUsed");
+assert.strictEqual(cursorBonusCents({ individualUsage: { plan: { breakdown: { bonus: 12728 } } } }), 12728);
+
+const partial = cursorQuotaWindows({
+  individualUsage: {
+    plan: {
+      used: 26848,
+      limit: 40000,
+      remaining: 13152,
+      autoPercentUsed: 6.7,
+      apiPercentUsed: 53.85,
+      totalPercentUsed: 8.59,
+    },
+  },
+}, resetAt);
+assert.strictEqual(partial[0].id, "included");
+assert.ok(Math.abs(partial[0].remainingPct - 32.88) < 0.001, "included remaining must follow remaining/limit, not totalPercentUsed");
+
+const percentOnly = cursorQuotaWindows({
+  individualUsage: {
+    plan: {
+      used: 0,
+      limit: 0,
+      remaining: 0,
+      totalPercentUsed: 40,
+      autoPercentUsed: 10,
+      apiPercentUsed: 70,
+    },
+  },
+}, resetAt);
+assert.deepStrictEqual(percentOnly.map((win) => win.id), ["total", "auto", "api"]);
+assert.strictEqual(percentOnly[0].remainingPct, 60);
 
 console.log("Cursor credit balance tests passed");

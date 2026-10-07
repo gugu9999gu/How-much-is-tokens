@@ -61,6 +61,7 @@ assert.ok(rendererApp.includes("compact-quotas"), "compact mode must show quota 
 assert.ok(rendererApp.includes("renderCompactCredits"), "compact mode must show held credits when AI usage is zero");
 assert.ok(rendererApp.includes("compactCreditBalances"), "separate credit pools must stay visible beside an active quota window");
 assert.ok(rendererApp.includes("function finitePercent"), "a null credit percent must not be treated as zero");
+assert.ok(rendererApp.includes('provider.limitReached ? "한도 도달"'), "compact mode must show when a provider has reached its allowance");
 assert.ok(rendererApp.includes("aiUsageIsZero"), "usage-linked credits must stay hidden while a quota window is in use");
 assert.ok(rendererCss.includes(".compact-quota.compact-credit"), "compact credit remainder must be styled");
 assert.ok(rendererApp.includes("pin-btn"), "usage cards must expose a pin control");
