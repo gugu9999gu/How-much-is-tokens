@@ -576,11 +576,12 @@ function renderProviderCard(provider) {
         : provider.status === "missing"
           ? "계정 없음"
           : provider.error || "오류";
+    const compactNote = [compactStatus, provider.stale ? "이전 값" : ""].filter(Boolean).join(" · ");
     return `
       <article class="row compact"${cardAttrs}>
         <div class="meta">
           ${renderProviderTitle(provider, "", plan)}
-          ${compactStatus ? `<div class="sub">${compactStatus}${provider.stale ? " · 이전 값" : ""}</div>` : ""}
+          ${compactNote ? `<div class="sub">${compactNote}</div>` : ""}
           ${renderCompactQuotas(provider)}
           ${renderCompactCredits(provider)}
           ${hint}

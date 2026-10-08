@@ -2,7 +2,7 @@ const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { getCursorAuth, profileAuthFiles } = require("../lib/providers/cursor-auth");
+const { getCursorAuth, profileAuthFiles, replacementCursorAuth } = require("../lib/providers/cursor-auth");
 const { cursorIdentity } = require("../lib/account-display-identity");
 
 function jwt(payload) {
@@ -32,5 +32,28 @@ try {
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
 }
+
+const rejected = { userId: "user-1", cookie: "WorkosCursorSessionToken=old" };
+const local = { userId: "user-1", cookie: "WorkosCursorSessionToken=current" };
+assert.strictEqual(
+  replacementCursorAuth(rejected, local, { configuredCookie: true }),
+  local,
+  "an expired saved cookie must fall back to the current local login for the same account",
+);
+assert.strictEqual(
+  replacementCursorAuth(rejected, { userId: "user-2", cookie: "WorkosCursorSessionToken=other" }, { configuredCookie: true }),
+  null,
+  "a saved cookie must not be replaced by a different Cursor account",
+);
+assert.strictEqual(
+  replacementCursorAuth(rejected, local, { configuredCookie: true, profile: { id: "account-2" } }),
+  null,
+  "an extra Cursor profile must keep its own session",
+);
+assert.strictEqual(replacementCursorAuth(rejected, local, { configuredCookie: false }), null);
+assert.strictEqual(
+  replacementCursorAuth(rejected, { userId: "user-1", cookie: rejected.cookie }, { configuredCookie: true }),
+  null,
+);
 
 console.log("Cursor isolated account credential tests passed");
