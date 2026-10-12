@@ -24,6 +24,7 @@ Contains only:
 
 - public release repository `README.md`
 - Windows portable EXE release assets
+- macOS Apple Silicon DMG/ZIP release assets
 - `SHA256SUMS.txt`
 - release notes / release metadata
 - public user issues if enabled

@@ -6,7 +6,7 @@
 
 ## 포터블 실행 파일
 
-설치 없이 [Releases](https://github.com/gugu9999gu/How-much-is-tokens-releases/releases) 또는 GitHub Actions의 Windows build artifact에서 `How-much-is-tokens-*-portable.exe`를 받아 실행하세요.
+설치 없이 [Releases](https://github.com/gugu9999gu/How-much-is-tokens-releases/releases)에서 Windows `How-much-is-tokens-*-portable.exe` 또는 macOS Apple Silicon `How-much-is-tokens-*-mac-arm64.dmg` / `.zip`을 받아 실행하세요. GitHub Actions Windows build artifact에서도 Windows 포터블 exe를 받을 수 있습니다.
 
 - 설치 마법사 없음
 - 작업 표시줄 없이 트레이/위젯으로만 표시
@@ -21,7 +21,7 @@
 - v1.0.12부터 화면 높이를 넘으면 카드 영역만 스크롤하며, `촘촘하게`와 상/우/하/좌 **엣지 숨김 패널**을 지원합니다.
 - v1.0.13부터 **토큰 영역 최대 높이**를 직접 지정할 수 있고, 엣지 방향을 연속 변경해도 헤더가 화면 밖으로 밀리지 않도록 재배치 로직을 안정화했습니다.
 
-Windows가 SmartScreen 경고를 띄우면 **추가 정보 → 실행**을 누르면 됩니다. 코드 서명은 없습니다.
+Windows가 SmartScreen 경고를 띄우면 **추가 정보 → 실행**을 누르면 됩니다. macOS는 처음 실행할 때 **우클릭 → 열기**를 사용하세요. 코드 서명은 없습니다. macOS 빌드는 Apple Silicon(M1 이상)용입니다.
 
 ## 개발 실행
 
@@ -37,7 +37,15 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.26-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.45-portable.exe`입니다.
+
+macOS Apple Silicon 앱은 macOS에서:
+
+```bash
+npm run dist:mac
+```
+
+결과물은 `dist/How-much-is-tokens-1.0.45-mac-arm64.dmg`와 `dist/How-much-is-tokens-1.0.45-mac-arm64.zip`입니다. 코드 서명은 하지 않습니다.
 
 ## 사용
 

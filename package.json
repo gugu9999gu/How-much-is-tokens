@@ -16,6 +16,7 @@
     "test:renderer-layout": "electron test/renderer-layout-smoke.js --disable-gpu && electron test/responsive-layout-smoke.js --disable-gpu && electron test/reset-display-mode-smoke.js --disable-gpu && electron test/account-automation-renderer-smoke.js --disable-gpu && electron test/openrouter-profile-ui-smoke.js --disable-gpu && electron test/media-provider-ui-smoke.js --disable-gpu",
     "test:secure-secrets": "electron test/secure-secrets-smoke.js --disable-gpu && electron test/openrouter-tracked-profile-smoke.js --disable-gpu && electron test/media-provider-accounts-smoke.js --disable-gpu",
     "dist": "electron-builder --win portable",
+    "dist:mac": "electron-builder --mac dmg zip --arm64",
     "leerness:init": "leerness init . --yes --minimal --language ko --no-stale-check",
     "leerness:status": "leerness status . --json",
     "leerness:handoff": "leerness handoff . --quiet --no-drift-check",
@@ -60,6 +61,32 @@
     },
     "portable": {
       "artifactName": "How-much-is-tokens-${version}-portable.exe"
+    },
+    "mac": {
+      "icon": "assets/icon-mac.png",
+      "category": "public.app-category.utilities",
+      "artifactName": "How-much-is-tokens-${version}-mac-${arch}.${ext}",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "artifactName": "How-much-is-tokens-${version}-mac-${arch}.${ext}",
+      "sign": false
     },
     "compression": "maximum"
   }

@@ -22,6 +22,10 @@ assert.ok(agents.includes(".leerness/protected-files.md"), "development agents m
 assert.ok(agents.includes(".leerness/anti-lazy-work-policy.md"), "development agents must honor the anti-lazy evidence policy");
 assert.ok(pkg.scripts["leerness:gate"], "Leerness evidence gate script must exist");
 assert.ok(pkg.scripts["leerness:close"].includes("session close"), "session close must use the current Leerness session workflow");
+assert.ok(pkg.scripts["dist:mac"], "macOS dist script must exist");
+assert.ok(pkg.scripts["dist:mac"].includes("--mac"), "dist:mac must invoke electron-builder mac targets");
+assert.strictEqual(pkg.build.mac.identity, null, "macOS builds must skip code signing");
+assert.ok(fs.existsSync(path.join(root, "assets", "icon-mac.png")), "macOS electron-builder icon must be committed");
 
 const publicReleaseUrl = "https://github.com/gugu9999gu/How-much-is-tokens-releases/releases";
 assert.ok(readme.includes(publicReleaseUrl), "README downloads must point to the public release repository");
