@@ -89,7 +89,7 @@ assert.strictEqual(linuxBlocked.reason, "unsupported-platform");
 const darwinEnv = posixCommandEnv({ PATH: "/usr/bin:/bin", HOME: "/Users/test" }, { platform: "darwin", homeDir: "/Users/test" });
 assert.ok(darwinEnv.PATH.startsWith("/opt/homebrew/bin:"), "GUI apps on macOS must search Homebrew before the stripped Electron PATH");
 assert.ok(darwinEnv.PATH.includes("/usr/local/bin"));
-assert.ok(darwinEnv.PATH.includes("/Users/test/.local/bin"));
+assert.ok(darwinEnv.PATH.split(":").includes("/Users/test/.local/bin"), "posix PATH extras must keep forward slashes on every host OS");
 
 if (process.platform === "darwin") {
   const smokeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-mac-login-quoting-"));
