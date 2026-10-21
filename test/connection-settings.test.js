@@ -12,7 +12,10 @@ const oauth = fs.readFileSync(path.join(root, "lib", "openrouter-oauth.js"), "ut
 const mainIntegration = fs.readFileSync(path.join(root, "lib", "openrouter-main-integration.js"), "utf8");
 
 assert.ok(html.includes('<script src="connection-settings.js"></script>'), "minimal connection hub must load explicitly");
+assert.ok(html.includes('id="cliAutoUpdate"'), "settings must expose a CLI auto-update toggle");
+assert.ok(html.includes("CLI 자동 업데이트"));
 assert.ok(ui.includes("계정 연결"));
+assert.ok(ui.includes("cliAutoUpdate"), "CLI auto-update toggle must move into the basic settings group");
 assert.ok(ui.includes("키 파일이나 경로를 직접 입력하지 않고 로그인부터 시작합니다."));
 assert.ok(ui.includes("고급 설정"));
 assert.ok(ui.includes("API Key 직접 입력"), "manual credential fallback must remain available under advanced settings");
@@ -43,6 +46,9 @@ assert.ok(login.includes('commands: ["cursor-agent", "agent"]'));
 assert.ok(login.includes('commands: ["gh"]'));
 assert.ok(login.includes('commands: ["agy"]'));
 assert.ok(login.includes("profileEnvironment(profile)"), "isolated CLI accounts must use provider-specific environment roots");
+assert.ok(login.includes("darwin"), "settings login must support macOS Terminal");
+assert.ok(login.includes("launchInteractiveCli"), "Windows and macOS login must share one interactive launcher");
+assert.ok(ui.includes("Windows와 macOS"), "connection hub must describe macOS login support");
 assert.ok(!login.includes("copyFileSync"), "credential login flow must not copy authentication files");
 assert.ok(!login.includes("renameSync"), "credential login flow must not swap authentication files");
 

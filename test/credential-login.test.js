@@ -7,6 +7,10 @@ const {
   LOGIN_SPECS,
   PROFILE_LOGIN_PROVIDERS,
   preferredWindowsCommand,
+  posixCommandEnv,
+  posixShellQuote,
+  posixLoginScriptLines,
+  writePosixLoginScript,
   resolveCommand,
   interactiveLoginCommand,
   launchCredentialLogin,
@@ -66,6 +70,46 @@ assert.ok(commandLine.includes('start "" "C:\\Windows\\System32\\cmd.exe" /d /k'
 assert.ok(commandLine.includes('call "C:\\Tools\\claude.exe" auth login'));
 assert.strictEqual(interactiveLoginCommand("bad\npath", ["login"], "cmd.exe"), null);
 assert.strictEqual(interactiveLoginCommand("tool.exe", ["bad arg"], "cmd.exe"), null);
+
+assert.strictEqual(posixShellQuote("codex"), "codex");
+assert.strictEqual(posixShellQuote("it's"), `'it'\\''s'`);
+assert.ok(posixLoginScriptLines("/opt/homebrew/bin/claude", ["auth", "login"], {
+  PATH: "/opt/homebrew/bin:/usr/bin",
+  CLAUDE_CONFIG_DIR: "/Users/test/.claude",
+}).some((line) => line.includes("export CLAUDE_CONFIG_DIR=")));
+
+const linuxBlocked = launchCredentialLogin("codex", null, {
+  platform: "linux",
+  executable: "/usr/bin/codex",
+  spawnImpl() { throw new Error("must not spawn on unsupported platforms"); },
+});
+assert.strictEqual(linuxBlocked.ok, false);
+assert.strictEqual(linuxBlocked.reason, "unsupported-platform");
+
+const darwinEnv = posixCommandEnv({ PATH: "/usr/bin:/bin", HOME: "/Users/test" }, { platform: "darwin", homeDir: "/Users/test" });
+assert.ok(darwinEnv.PATH.startsWith("/opt/homebrew/bin:"), "GUI apps on macOS must search Homebrew before the stripped Electron PATH");
+assert.ok(darwinEnv.PATH.includes("/usr/local/bin"));
+assert.ok(darwinEnv.PATH.includes("/Users/test/.local/bin"));
+
+if (process.platform === "darwin") {
+  const smokeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-mac-login-quoting-"));
+  try {
+    const shim = path.join(smokeRoot, "login-shim");
+    const marker = path.join(smokeRoot, "marker.txt");
+    fs.writeFileSync(shim, `#!/bin/zsh\necho "$1" > ${posixShellQuote(marker)}\nexit 0\n`, "utf8");
+    fs.chmodSync(shim, 0o700);
+    const script = writePosixLoginScript(shim, ["login"], {
+      PATH: "/usr/bin:/bin",
+      HOME: smokeRoot,
+    }, { scriptDir: smokeRoot, keepShell: false });
+    const smoke = spawnSync("/bin/zsh", [script], { encoding: "utf8", timeout: 8_000 });
+    assert.ifError(smoke.error);
+    assert.strictEqual(smoke.status, 0, `macOS login script smoke failed: ${smoke.stderr || smoke.stdout || "unknown error"}`);
+    assert.strictEqual(fs.readFileSync(marker, "utf8").trim(), "login");
+  } finally {
+    fs.rmSync(smokeRoot, { recursive: true, force: true });
+  }
+}
 
 if (process.platform === "win32") {
   const smokeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-login-quoting-"));
@@ -161,6 +205,52 @@ try {
     spawnImpl(command, args, options) { spawnCall = { command, args, options }; return { unref() {} }; },
   }).ok, true);
   assert.strictEqual(spawnCall.options.env.GH_CONFIG_DIR, copilotProfile.configDir);
+
+  const darwinRoot = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-mac-login-"));
+  try {
+    spawnCall = null;
+    const macLaunched = launchCredentialLogin("claude", null, {
+      platform: "darwin",
+      executable: "/opt/homebrew/bin/claude",
+      scriptDir: darwinRoot,
+      spawnImpl(command, args, options) {
+        spawnCall = { command, args, options };
+        return { unref() {} };
+      },
+    });
+    assert.strictEqual(macLaunched.ok, true, "macOS settings login must open Terminal instead of failing as unsupported");
+    assert.strictEqual(spawnCall.command, "open");
+    assert.strictEqual(spawnCall.args[0], "-a");
+    assert.strictEqual(spawnCall.args[1], "Terminal");
+    assert.ok(spawnCall.args[2] && spawnCall.args[2].endsWith(".command"));
+    const script = fs.readFileSync(spawnCall.args[2], "utf8");
+    assert.ok(script.includes("/opt/homebrew/bin/claude"));
+    assert.ok(script.includes("auth login"));
+    assert.ok(script.includes("로그인 완료 후 이 창을 닫아도 됩니다."));
+
+    spawnCall = null;
+    const macProfile = {
+      id: "codex-mac",
+      providerId: "codex",
+      label: "Codex 2",
+      configDir: path.join(darwinRoot, "codex-2"),
+    };
+    const macProfileLogin = launchCredentialLogin("codex", macProfile, {
+      platform: "darwin",
+      executable: "/opt/homebrew/bin/codex",
+      scriptDir: darwinRoot,
+      spawnImpl(command, args, options) {
+        spawnCall = { command, args, options };
+        return { unref() {} };
+      },
+    });
+    assert.strictEqual(macProfileLogin.ok, true);
+    assert.strictEqual(spawnCall.options.env.CODEX_HOME, macProfile.configDir);
+    const profileScript = fs.readFileSync(spawnCall.args[2], "utf8");
+    assert.ok(profileScript.includes(`export CODEX_HOME=${posixShellQuote(macProfile.configDir)}`) || profileScript.includes("export CODEX_HOME="));
+  } finally {
+    fs.rmSync(darwinRoot, { recursive: true, force: true });
+  }
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
 }

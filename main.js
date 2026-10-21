@@ -15,7 +15,6 @@ const {
   interpolateBounds,
 } = require("./lib/edge-dock");
 
-app.commandLine.appendSwitch("js-flags", "--experimental-sqlite");
 app.setAppUserModelId("com.tokenwidget.desktop");
 
 const EDGE_POLL_MS = 50;
@@ -585,6 +584,10 @@ ipcMain.handle("save-settings", (_event, patch) => {
   if (Object.prototype.hasOwnProperty.call(patch || {}, "opacity") && win) win.setOpacity(next.opacity);
   if (Object.prototype.hasOwnProperty.call(patch || {}, "openAtLogin")) applyOpenAtLogin(!!next.openAtLogin);
   if (Object.prototype.hasOwnProperty.call(patch || {}, "refreshSeconds")) scheduleRefresh();
+  if (Object.prototype.hasOwnProperty.call(patch || {}, "cliAutoUpdate") && next.cliAutoUpdate === true) {
+    const { queueCliAutoUpdate } = require("./lib/cli-maintenance-main-integration");
+    queueCliAutoUpdate();
+  }
   if (
     Object.prototype.hasOwnProperty.call(patch || {}, "edgeDockEnabled") ||
     Object.prototype.hasOwnProperty.call(patch || {}, "edgeDockSide")

@@ -25,6 +25,8 @@ assert.ok(enhancement.includes('id = "headerEdgeDockToggle"'), "header edge-dock
 assert.ok(enhancement.includes("manualWindowResize"), "renderer border handles must drive native window bounds");
 assert.ok(enhancement.includes("disconnectCredential"), "connection cards must expose disconnect controls");
 assert.ok(enhancement.includes("getCliVersions"), "connection cards must display detected CLI versions");
+assert.ok(enhancement.includes("onCliVersions"), "renderer must apply CLI versions pushed after automatic updates");
+assert.ok(enhancement.includes("token-widget-refresh-cli"), "settings toggle must be able to force a CLI version refresh");
 assert.ok(enhancement.includes("updateAvailable && status.updateSupported"), "CLI update button must appear only when a newer version is detected and updating is supported");
 assert.ok(enhancement.includes("업데이트 가능"), "installed CLI cards must say when an update is available");
 assert.ok(enhancement.includes("stampCliCards"), "usage cards must receive the same CLI version status as connection cards");
@@ -81,8 +83,13 @@ assert.ok(preload.includes("widget-enhancements.js"), "preload must inject the e
 assert.ok(preload.includes("account-identity-ui.js"), "preload must inject authenticated-account identity UI");
 assert.ok(preload.includes("account-identity-ui.css"), "preload must inject minimal authenticated-account identity styling");
 assert.ok(preload.includes("manualHeightLocked"), "content auto-height must stop overriding a manually selected height");
+assert.ok(preload.includes("autoUpdateCli"), "preload must expose CLI auto-update");
+assert.ok(preload.includes("onCliVersions"), "preload must expose CLI version push events");
 assert.ok(integration.includes('require("./window-resize-main-integration")'));
 assert.ok(integration.includes('require("./cli-maintenance-main-integration")'));
+const cliIntegration = fs.readFileSync(path.join(root, "lib", "cli-maintenance-main-integration.js"), "utf8");
+assert.ok(cliIntegration.includes("auto-update-cli"), "main process must expose CLI auto-update");
+assert.ok(cliIntegration.includes("maybeAutoUpdateCli"), "main process must run eligible CLI updates when the setting is on");
 
 const expectedPlatformLogos = [
   "openai",

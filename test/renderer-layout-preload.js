@@ -9,6 +9,7 @@ const settings = {
   edgeDockSide: "top",
   openAtLogin: false,
   hideMissing: true,
+  cliAutoUpdate: false,
   visualization: "ring",
   resetDisplayMode: "auto",
   opacity: 0.94,
@@ -207,6 +208,8 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   installAntigravityAccountManager: async () => ({ ok: true, status: { installed: true, ready: true } }),
   getCliVersions: async () => cliFixture(),
   updateCli: async (providerId) => ({ ok: true, providerId, status: { providerId, installed: true, installedVersion: "latest" } }),
+  autoUpdateCli: async () => ({ attempted: false, reason: "disabled", results: [] }),
+  onCliVersions: () => () => {},
   getApiProviderCatalog: () => API_PROVIDER_CATALOG.map((provider) => ({ ...provider, credentials: provider.credentials.map((cred) => ({ ...cred })) })),
   saveApiProviderSecret: async (providerId, patch = {}) => {
     settings.apiProviderStatuses = { ...(settings.apiProviderStatuses || {}) };

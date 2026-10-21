@@ -69,6 +69,19 @@ assert.strictEqual(captured.options.windowsHide, false);
 assert.strictEqual(captured.options.windowsVerbatimArguments, true);
 
 captured = null;
+const macDir = fs.mkdtempSync(path.join(os.tmpdir(), "how-tokens-mac-route-"));
+assert.strictEqual(launchRoutedCli("codex", profile, {
+  platform: "darwin",
+  executable: "/opt/homebrew/bin/codex",
+  spawnImpl,
+  scriptDir: macDir,
+}).ok, true, "Smart Routing must launch Codex from Terminal on macOS");
+assert.strictEqual(captured.command, "open");
+assert.strictEqual(captured.args[1], "Terminal");
+assert.strictEqual(captured.options.env.CODEX_HOME, profile.configDir);
+fs.rmSync(macDir, { recursive: true, force: true });
+
+captured = null;
 assert.strictEqual(launchRoutedCli("cursor", profiles[1], {
   platform: "win32", executable: "C:\\Tools\\agent.exe", spawnImpl, comspec: "cmd.exe",
 }).ok, true);

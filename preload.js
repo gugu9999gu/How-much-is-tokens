@@ -304,6 +304,12 @@ contextBridge.exposeInMainWorld("tokenWidget", {
   installAntigravityAccountManager: () => installAntigravityManager(),
   getCliVersions: (options) => ipcRenderer.invoke("get-cli-versions", options || {}),
   updateCli: (providerId) => ipcRenderer.invoke("update-cli", providerId),
+  autoUpdateCli: () => ipcRenderer.invoke("auto-update-cli"),
+  onCliVersions: (cb) => {
+    const listener = (_event, statuses) => cb(statuses);
+    ipcRenderer.on("cli-versions", listener);
+    return () => ipcRenderer.removeListener("cli-versions", listener);
+  },
   getApiProviderCatalog: () => apiProviderCatalog(),
   saveApiProviderSecret: (providerId, patch) => ipcRenderer.invoke("save-api-provider-secret", providerId, patch || {}),
   clearApiProviderSecret: (providerId) => ipcRenderer.invoke("clear-api-provider-secret", providerId),

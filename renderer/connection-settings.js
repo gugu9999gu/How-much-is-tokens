@@ -82,7 +82,7 @@ function failureCopy(result, provider) {
     const commands = Array.isArray(result.commands) ? result.commands.join(" / ") : provider.label;
     return `${commands} CLI를 찾지 못했습니다. CLI 설치 후 다시 시도하거나 고급 설정의 수동 연결을 사용하세요.`;
   }
-  if (reason === "unsupported-platform") return "현재 로그인 실행은 Windows 앱에서 지원합니다.";
+  if (reason === "unsupported-platform") return "현재 로그인 실행은 Windows와 macOS에서 지원합니다.";
   if (reason === "profiles-not-supported") return `${provider.label}은 현재 앱에서 추가 계정 프로필을 자동 생성하지 않습니다.`;
   if (reason === "profile-save-failed") return "격리 로그인 프로필을 저장하지 못했습니다.";
   return (result && (result.error || result.reason)) || "로그인 흐름을 시작하지 못했습니다.";
@@ -259,7 +259,7 @@ function moveEssentialSettings(displayGroup, settings, hub) {
   heading.innerHTML = "<h2>기본</h2><p>자주 쓰는 옵션만 표시합니다.</p>";
   basic.appendChild(heading);
 
-  for (const id of ["alwaysOnTop", "openAtLogin", "hideMissing"]) {
+  for (const id of ["alwaysOnTop", "openAtLogin", "hideMissing", "cliAutoUpdate"]) {
     const input = document.getElementById(id);
     const row = input && input.closest("label.toggle");
     if (row) basic.appendChild(row);

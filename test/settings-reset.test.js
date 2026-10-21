@@ -17,6 +17,7 @@ assert.strictEqual(normalizeSettings({ resetDisplayMode: "relative" }).resetDisp
 assert.strictEqual(normalizeSettings({ resetDisplayMode: "absolute" }).resetDisplayMode, "absolute");
 assert.strictEqual(normalizeSettings({ resetDisplayMode: "invalid" }).resetDisplayMode, "auto", "invalid reset display values must fall back safely");
 assert.strictEqual(DEFAULTS.codexAutoUseReset, false, "automatic reset-ticket consumption must be opt-in");
+assert.strictEqual(DEFAULTS.cliAutoUpdate, false, "CLI auto-update must be opt-in");
 assert.deepStrictEqual(DEFAULTS.accountProfiles, [], "multi-account profiles must be opt-in");
 assert.deepStrictEqual(DEFAULTS.pinnedAccounts, [], "pinned accounts must start empty");
 assert.deepStrictEqual(normalizeSettings({ pinnedAccounts: ["Codex:default", "bad", "codex:default"] }).pinnedAccounts, ["codex:default"]);
@@ -41,6 +42,7 @@ const current = {
   edgeDockSide: "bottom",
   tokenAreaMaxHeight: 480,
   codexAutoUseReset: true,
+  cliAutoUpdate: true,
   smartRouting: {
     codex: { enabled: true, policy: "max-remaining", thresholdPct: 5 },
     claude: { enabled: true, policy: "priority-fallback", thresholdPct: 1 },
@@ -70,6 +72,7 @@ for (const [key, value] of Object.entries(DEFAULTS)) {
 }
 assert.strictEqual(safeReset.resetDisplayMode, "auto", "settings reset must restore automatic reset-time display");
 assert.strictEqual(safeReset.codexAutoUseReset, false, "settings reset must turn destructive automation back off");
+assert.strictEqual(safeReset.cliAutoUpdate, false, "settings reset must turn CLI auto-update back off");
 assert.strictEqual(safeReset.smartRouting.codex.enabled, false, "settings reset must disable automatic account routing");
 assert.strictEqual(safeReset.openRouterRouter.enabled, false, "settings reset must stop localhost API routing");
 assert.strictEqual(safeReset.githubToken, "github-secret");
@@ -93,6 +96,7 @@ assert.ok(main.includes("EDGE_STARTUP_GRACE_MS"), "edge startup recovery needs a
 assert.ok(main.includes('label: "설정값 초기화"'), "tray reset menu must exist");
 assert.ok(main.includes("resetSettings({ preserveCredentials: true })"), "tray reset must preserve account credentials");
 assert.ok(main.includes("reloadIgnoringCache"), "renderer settings should refresh after reset");
+assert.ok(main.includes("cliAutoUpdate"), "enabling CLI auto-update from settings must start eligible updates");
 
 const html = fs.readFileSync(path.join(__dirname, "..", "renderer", "index.html"), "utf8");
 const renderer = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
@@ -100,12 +104,15 @@ const providerSettings = fs.readFileSync(path.join(__dirname, "..", "renderer", 
 const mediaSettings = fs.readFileSync(path.join(__dirname, "..", "renderer", "api-providers-settings.js"), "utf8");
 const preload = fs.readFileSync(path.join(__dirname, "..", "preload.js"), "utf8");
 assert.ok(html.includes('id="codexAutoUseReset"'), "Codex auto reset toggle must exist");
+assert.ok(html.includes('id="cliAutoUpdate"'), "CLI auto-update toggle must exist");
 assert.ok(html.includes("기본값은 꺼짐"));
 assert.ok(html.includes('id="accountProfiles"'), "multi-account profile editor must exist");
 assert.ok(html.includes('id="openRouterProfiles"'), "OpenRouter key-profile editor must exist");
 assert.ok(html.includes('id="openRouterRouterEnabled"'), "localhost OpenRouter router toggle must exist");
 assert.ok(renderer.includes("parseAccountProfiles"), "multi-account profile editor must be wired to settings");
 assert.ok(renderer.includes("codexAutoUseReset"));
+assert.ok(renderer.includes("cliAutoUpdate"));
+assert.ok(renderer.includes("autoUpdateCli"), "enabling CLI auto-update must immediately run eligible updates");
 assert.ok(renderer.includes("creditBalances"), "shared credit balance rendering must be wired");
 assert.ok(providerSettings.includes("parseOpenRouterProfiles"), "OpenRouter profile editor must be wired");
 assert.ok(providerSettings.includes("openRouterRouterPolicy"), "OpenRouter router policy controls must be wired");

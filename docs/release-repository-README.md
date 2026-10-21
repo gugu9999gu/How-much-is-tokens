@@ -15,7 +15,7 @@ GitHub Releases에서 최신 버전을 받으세요.
 - `How-much-is-tokens-<version>-mac-arm64.zip` — macOS Apple Silicon `.app` 압축 파일
 - `SHA256SUMS.txt`
 
-macOS 앱은 Apple Silicon(M1 이상)용입니다. 코드 서명이 없으므로 처음 실행할 때 **우클릭 → 열기**를 사용하세요.
+macOS 앱은 Apple Silicon(M1 이상)용입니다. Apple 공증이 없으면 처음 실행할 때 **우클릭 → 열기**를 사용하세요.
 
 ## 무결성 확인
 

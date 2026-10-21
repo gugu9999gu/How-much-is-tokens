@@ -59,7 +59,7 @@ The workflow:
 4. calculates SHA-256;
 5. verifies that the public release repository is reachable with `RELEASE_REPO_TOKEN`;
 6. initializes only the public release README if the target repository is empty;
-7. creates or updates the matching GitHub Release and uploads only the portable executable and `SHA256SUMS.txt`.
+7. creates or updates the matching GitHub Release and uploads the portable executable and `SHA256SUMS.txt`. Existing macOS packages on that release stay in place; their checksum lines are kept.
 
 No source directory, `.leerness` state, OAuth material, local settings, or private workflow file is uploaded.
 

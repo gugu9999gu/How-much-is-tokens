@@ -24,7 +24,13 @@ assert.ok(pkg.scripts["leerness:gate"], "Leerness evidence gate script must exis
 assert.ok(pkg.scripts["leerness:close"].includes("session close"), "session close must use the current Leerness session workflow");
 assert.ok(pkg.scripts["dist:mac"], "macOS dist script must exist");
 assert.ok(pkg.scripts["dist:mac"].includes("--mac"), "dist:mac must invoke electron-builder mac targets");
-assert.strictEqual(pkg.build.mac.identity, null, "macOS builds must skip code signing");
+assert.strictEqual(pkg.build.mac.identity, null, "macOS electron-builder must not require an Apple Developer ID");
+assert.ok(pkg.build.afterPack && String(pkg.build.afterPack).includes("after-pack-sign-mac"), "macOS packages must be ad-hoc signed after pack so they can run locally");
+assert.ok(fs.existsSync(path.join(root, "tools", "after-pack-sign-mac.js")), "macOS ad-hoc signing hook must be committed");
+assert.ok(fs.existsSync(path.join(root, "build", "entitlements.mac.plist")), "macOS entitlements used for ad-hoc signing must be committed");
+const macSignHook = require(path.join(root, "tools", "after-pack-sign-mac.js"));
+assert.strictEqual(typeof macSignHook, "function", "electron-builder afterPack hook must be a function");
+assert.strictEqual(typeof macSignHook.signMacApp, "function", "macOS ad-hoc signer must be exported for verification");
 assert.ok(fs.existsSync(path.join(root, "assets", "icon-mac.png")), "macOS electron-builder icon must be committed");
 
 const publicReleaseUrl = "https://github.com/gugu9999gu/How-much-is-tokens-releases/releases";

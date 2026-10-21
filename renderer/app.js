@@ -4,6 +4,7 @@ const settingsEl = document.getElementById("settings");
 const settingsBtn = document.getElementById("settingsBtn");
 const shellEl = document.querySelector(".shell");
 const alwaysOnTopEl = document.getElementById("alwaysOnTop");
+const cliAutoUpdateEl = document.getElementById("cliAutoUpdate");
 const denseLayoutEl = document.getElementById("denseLayout");
 const tokenAreaMaxHeightEl = document.getElementById("tokenAreaMaxHeight");
 const accountProfilesEl = document.getElementById("accountProfiles");
@@ -778,6 +779,7 @@ function fillSettings(settings) {
   codexAutoUseResetEl.checked = settings.codexAutoUseReset === true;
   document.getElementById("openAtLogin").checked = !!settings.openAtLogin;
   document.getElementById("hideMissing").checked = settings.hideMissing !== false;
+  if (cliAutoUpdateEl) cliAutoUpdateEl.checked = settings.cliAutoUpdate === true;
   setVisualizationUi(settings.visualization || "ring");
   setEdgeDockUi(settings);
   applyContentLayoutSettings(settings);
@@ -801,6 +803,19 @@ alwaysOnTopEl.onchange = async () => {
   alwaysOnTopEl.checked = !!settings.alwaysOnTop;
   mergePayloadSettings({ alwaysOnTop: !!settings.alwaysOnTop });
 };
+if (cliAutoUpdateEl) {
+  cliAutoUpdateEl.onchange = async () => {
+    const settings = await window.tokenWidget.saveSettings({ cliAutoUpdate: !!cliAutoUpdateEl.checked });
+    cliAutoUpdateEl.checked = settings.cliAutoUpdate === true;
+    mergePayloadSettings({ cliAutoUpdate: settings.cliAutoUpdate === true });
+    if (settings.cliAutoUpdate === true && typeof window.tokenWidget.autoUpdateCli === "function") {
+      try {
+        await window.tokenWidget.autoUpdateCli();
+      } catch {}
+      window.dispatchEvent(new Event("token-widget-refresh-cli"));
+    }
+  };
+}
 denseLayoutEl.onchange = async () => {
   const settings = await window.tokenWidget.saveSettings({ denseLayout: !!denseLayoutEl.checked });
   denseLayoutEl.checked = !!settings.denseLayout;
@@ -866,6 +881,7 @@ document.getElementById("saveBtn").onclick = async () => {
     edgeDockSide: selectedEdgeDockSide(),
     openAtLogin: document.getElementById("openAtLogin").checked,
     hideMissing: document.getElementById("hideMissing").checked,
+    cliAutoUpdate: !!(cliAutoUpdateEl && cliAutoUpdateEl.checked),
     visualization: selectedVisualization(),
     opacity: Number(opacityEl.value),
     refreshSeconds: Number(document.getElementById("refreshSeconds").value),

@@ -396,7 +396,7 @@ function routeStatusText(result) {
     "no-usable-account": "최신 사용량 기준으로 실행 가능한 계정이 없습니다.",
     "primary-unavailable": "기본 계정을 사용할 수 없습니다.",
     "cli-not-found": "CLI 실행 파일을 찾지 못했습니다.",
-    "unsupported-platform": "현재는 Windows 런처만 지원합니다.",
+    "unsupported-platform": "현재는 Windows와 macOS 런처를 지원합니다.",
   };
   return reasons[result.reason] || result.error || `라우팅 실패: ${result.reason || "unknown"}`;
 }

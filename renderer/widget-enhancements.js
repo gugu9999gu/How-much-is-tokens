@@ -475,6 +475,12 @@
     syncDisconnectControls();
     refreshCliVersions(false).catch(() => {});
     cliTimer = setInterval(() => refreshCliVersions(false).catch(() => {}), CLI_REFRESH_INTERVAL_MS);
+    window.addEventListener("token-widget-refresh-cli", () => {
+      refreshCliVersions(true).catch(() => {});
+    });
+    if (typeof api.onCliVersions === "function") {
+      api.onCliVersions((statuses) => renderCliStatuses(statuses));
+    }
   }
 
   if (typeof api.onUsage === "function") {

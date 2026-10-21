@@ -1,6 +1,6 @@
 # Session Handoff
 
-Last generated: 2026-09-23T03:44:06.646Z
+Last generated: 2026-10-21T03:45:18.970Z
 
 ## Completed
 - T-0001 Private 개발/Public Release 분리 및 Leerness 운영 경계 → next: 유지보수
@@ -10,7 +10,11 @@ Last generated: 2026-09-23T03:44:06.646Z
 - T-0005 OpenRouter 추가 프로필/API Key를 직관적으로 추가·추적·정렬·삭제하는 설정 UX → next: 운영 피드백 확인
 - T-0006 생성형 미디어 공급자 다계정 + 공식 MCP 잔여량 연동 → next: 운영 피드백 확인
 - T-0007 Claude 5시간 한도, Claude/Codex 리셋 쿠폰 잔여, 설치 CLI 버전·업데이트 가능, 플랫폼별 결제·갱신일 표시 → next: 유지보수
-- T-0008 이 PC 자격증명으로 결제일 조회 가능 범위를 확인하고 카드 UI를 칸으로 정리 → next: 배포 요청 시 버전을 올리고 공개 릴리스
+- T-0008 이 PC 자격증명으로 결제일 조회 가능 범위를 확인하고 카드 UI를 칸으로 정리 → next: 유지보수
+- T-0009 Grok을 몇 시간 사용하지 않아도 잔여량이 카드에서 사라지지 않게 하고 배포 → next: 유지보수
+- T-0010 스마트 라우팅과 Codex 리셋 쿠폰 자동 사용이 Windows에서 동작하는지 확인하고 배포 → next: 유지보수
+- T-0011 결제일이 없는 플랫폼에 주간·월간 한도 갱신일을 표시 → next: 유지보수
+- T-0012 Claude 사용량이 몇 시간 후 추적을 멈추고 재로그인을 요구하는 문제 → next: 유지보수
 
 ## In Progress
 - 없음

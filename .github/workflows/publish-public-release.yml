@@ -103,7 +103,7 @@ jobs:
             @(
               "# How much is tokens $env:RELEASE_TAG",
               "",
-              "Windows portable release.",
+              "Windows portable and macOS Apple Silicon release.",
               "",
               "Verify the executable with the attached SHA256SUMS.txt before running it."
             ) | Set-Content -LiteralPath $notesTarget -Encoding utf8
@@ -144,7 +144,20 @@ jobs:
           & gh release view $env:RELEASE_TAG --repo $env:RELEASE_REPO *> $null
           if ($LASTEXITCODE -eq 0) { $releaseExists = $true }
 
+          $exeName = [IO.Path]::GetFileName($env:ARTIFACT_PATH)
           if ($releaseExists) {
+            $sumDir = Join-Path $env:TEMP "how-tokens-release-sums"
+            New-Item -ItemType Directory -Force -Path $sumDir | Out-Null
+            & gh release download $env:RELEASE_TAG --repo $env:RELEASE_REPO --pattern SHA256SUMS.txt --dir $sumDir --clobber *> $null
+            $existingSums = Join-Path $sumDir "SHA256SUMS.txt"
+            if (Test-Path -LiteralPath $existingSums) {
+              $exeLine = (Get-Content -LiteralPath "dist\SHA256SUMS.txt" -ErrorAction Stop | Select-Object -First 1)
+              $kept = @(Get-Content -LiteralPath $existingSums | Where-Object {
+                $_.Trim() -and ($_ -notmatch [regex]::Escape($exeName) + "$")
+              })
+              @($kept + $exeLine | Where-Object { $_.Trim() }) | Set-Content -LiteralPath "dist\SHA256SUMS.txt" -Encoding ascii
+            }
+
             & gh release edit $env:RELEASE_TAG `
               --repo $env:RELEASE_REPO `
               --title "How much is tokens $env:RELEASE_TAG" `

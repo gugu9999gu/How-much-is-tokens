@@ -67,6 +67,7 @@ app.whenReady().then(async () => {
       const alwaysOnTop = document.getElementById('alwaysOnTop');
       const openAtLogin = document.getElementById('openAtLogin');
       const hideMissing = document.getElementById('hideMissing');
+      const cliAutoUpdate = document.getElementById('cliAutoUpdate');
       const denseLayout = document.getElementById('denseLayout');
       const opacity = document.getElementById('opacity');
       return {
@@ -78,6 +79,7 @@ app.whenReady().then(async () => {
         alwaysOnTopBasic: !!(alwaysOnTop && alwaysOnTop.closest('#basicSettings')),
         openAtLoginBasic: !!(openAtLogin && openAtLogin.closest('#basicSettings')),
         hideMissingBasic: !!(hideMissing && hideMissing.closest('#basicSettings')),
+        cliAutoUpdateBasic: !!(cliAutoUpdate && cliAutoUpdate.closest('#basicSettings')),
         denseAdvanced: !!(denseLayout && denseLayout.closest('#advancedSettings')),
         opacityAdvanced: !!(opacity && opacity.closest('#advancedSettings')),
         manualProfileAdvanced: !!(manualProfile && manualProfile.closest('#advancedSettings')),
@@ -99,6 +101,7 @@ app.whenReady().then(async () => {
     assert.strictEqual(connectionUi.alwaysOnTopBasic, true, "always-on-top should stay immediately accessible");
     assert.strictEqual(connectionUi.openAtLoginBasic, true, "startup toggle should stay immediately accessible");
     assert.strictEqual(connectionUi.hideMissingBasic, true, "hide-missing toggle should stay immediately accessible");
+    assert.strictEqual(connectionUi.cliAutoUpdateBasic, true, "CLI auto-update toggle should stay immediately accessible");
     assert.strictEqual(connectionUi.denseAdvanced, true, "dense layout should be hidden under advanced settings");
     assert.strictEqual(connectionUi.opacityAdvanced, true, "opacity should be hidden under advanced settings");
     assert.strictEqual(connectionUi.manualProfileAdvanced, true, "raw account profile editor must move under advanced settings");

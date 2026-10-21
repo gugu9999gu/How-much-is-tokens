@@ -17,7 +17,11 @@ const {
   versionFromGithubRelease,
   versionFromManifest,
   latestVersionFor,
+  isCliAutoUpdateCandidate,
+  maybeAutoUpdateCli,
+  clearCliAutoUpdateAttempts,
 } = require("../lib/cli-maintenance");
+const { posixCommandEnv } = require("../lib/credential-login");
 
 assert.strictEqual(extractVersion("codex-cli 1.2.3"), "1.2.3");
 assert.strictEqual(extractVersion("claude version v2.1.7-beta.1"), "2.1.7-beta.1");
@@ -66,6 +70,41 @@ assert.strictEqual(copilotUpdateKind("C:\\Users\\test\\AppData\\Roaming\\npm\\co
 assert.strictEqual(copilotUpdateKind("C:\\Users\\test\\AppData\\Local\\Microsoft\\WinGet\\Links\\copilot.exe", "win32"), "winget");
 assert.strictEqual(copilotUpdateKind("C:\\Tools\\copilot.exe", "win32"), null, "unknown install methods must not expose an unsafe update button");
 
+assert.strictEqual(isCliAutoUpdateCandidate({
+  providerId: "codex",
+  installed: true,
+  updateAvailable: true,
+  updateSupported: true,
+}), true, "Codex must auto-update when an update is available and supported");
+assert.strictEqual(isCliAutoUpdateCandidate({
+  providerId: "claude",
+  installed: true,
+  updateAvailable: true,
+  updateSupported: true,
+}), true, "Claude Code must auto-update when an update is available and supported");
+assert.strictEqual(isCliAutoUpdateCandidate({
+  providerId: "grokbot",
+  sourceId: "cursor",
+  installed: true,
+  updateAvailable: true,
+  updateSupported: true,
+}), false, "alias CLIs must not be updated twice");
+assert.strictEqual(isCliAutoUpdateCandidate({
+  providerId: "codex",
+  installed: true,
+  updateAvailable: false,
+  updateSupported: true,
+}), false, "up-to-date CLIs must not be updated");
+
+const posixPath = posixCommandEnv({ PATH: "/usr/bin:/bin" }, { platform: "darwin", homeDir: "/Users/test" }).PATH;
+assert.ok(posixPath.includes("/opt/homebrew/bin"), "macOS CLI lookup must include Homebrew");
+assert.ok(posixPath.includes("/Users/test/.local/bin"), "macOS CLI lookup must include the user local bin");
+assert.deepStrictEqual(
+  posixCommandEnv({ PATH: "C:\\Windows" }, { platform: "win32" }),
+  { PATH: "C:\\Windows" },
+  "Windows command lookup must keep the original PATH",
+);
+
 Promise.all([
   latestVersionFor(CLI_SPECS.cursor, { fetchTextImpl: async () => "$version = '2026.09.01-bbbbbbb'" }),
   latestVersionFor(CLI_SPECS.antigravity, { fetchTextImpl: async () => JSON.stringify({ version: "1.2.8" }) }),
@@ -76,9 +115,63 @@ Promise.all([
   assert.strictEqual(result.ok, true);
   assert.ok(extractVersion(result.stdout));
   return runResolvedCommand(process.execPath, ["bad arg with spaces"]);
-}).then((invalid) => {
+}).then(async (invalid) => {
   assert.strictEqual(invalid.ok, false);
   assert.strictEqual(invalid.error, "invalid-command-arg");
+
+  clearCliAutoUpdateAttempts();
+  const disabled = await maybeAutoUpdateCli({
+    settings: { cliAutoUpdate: false },
+    statuses: [{ providerId: "codex", installed: true, updateAvailable: true, updateSupported: true }],
+    updateCli: async () => ({ ok: true, providerId: "codex" }),
+  });
+  assert.strictEqual(disabled.attempted, false);
+  assert.strictEqual(disabled.reason, "disabled");
+
+  const updatedIds = [];
+  const statuses = [
+    { providerId: "codex", installed: true, updateAvailable: true, updateSupported: true },
+    { providerId: "claude", installed: true, updateAvailable: true, updateSupported: true },
+    { providerId: "grokbot", sourceId: "cursor", installed: true, updateAvailable: true, updateSupported: true },
+    { providerId: "cursor", installed: true, updateAvailable: false, updateSupported: true, autoUpdate: true },
+  ];
+  const updated = await maybeAutoUpdateCli({
+    settings: { cliAutoUpdate: true },
+    statuses,
+    updateCli: async (providerId) => {
+      updatedIds.push(providerId);
+      return { ok: true, providerId };
+    },
+  });
+  assert.strictEqual(updated.attempted, true);
+  assert.deepStrictEqual(updatedIds, ["codex", "claude"]);
+
+  clearCliAutoUpdateAttempts();
+  const retriedIds = [];
+  const cooldown = await maybeAutoUpdateCli({
+    settings: { cliAutoUpdate: true },
+    now: 1_000,
+    retryMs: 60_000,
+    statuses: [{ providerId: "codex", installed: true, updateAvailable: true, updateSupported: true }],
+    updateCli: async (providerId) => {
+      retriedIds.push(providerId);
+      return { ok: false, providerId, reason: "update-failed" };
+    },
+  });
+  assert.strictEqual(cooldown.attempted, true);
+  const skipped = await maybeAutoUpdateCli({
+    settings: { cliAutoUpdate: true },
+    now: 2_000,
+    retryMs: 60_000,
+    statuses: [{ providerId: "codex", installed: true, updateAvailable: true, updateSupported: true }],
+    updateCli: async (providerId) => {
+      retriedIds.push(providerId);
+      return { ok: true, providerId };
+    },
+  });
+  assert.strictEqual(skipped.results[0].reason, "cooldown");
+  assert.deepStrictEqual(retriedIds, ["codex"]);
+
   console.log("CLI maintenance tests passed");
 }).catch((err) => {
   console.error(err);
