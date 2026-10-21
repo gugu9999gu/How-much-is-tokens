@@ -83,7 +83,9 @@
       ],
       "identity": null,
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "dmg": {
       "artifactName": "How-much-is-tokens-${version}-mac-${arch}.${ext}",
