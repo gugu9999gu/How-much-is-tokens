@@ -47,3 +47,6 @@ doNotStore:
 
 ## 2026-10-21 session-close
 - Generated session-handoff.md and refreshed current-state.md.
+
+## 2026-10-26
+- The X Subscription 목록가를 v1.0.47에 반영. Ultra 사용량 모델, SuperGrok 개별 가격, 주간 풀 퍼센트는 추정하지 않음.

@@ -58,3 +58,9 @@ doNotStore:
 - Reason: 액세스 토큰은 약 8시간(`expires_in` 28800)이면 만료되는데 위젯은 만료된 토큰만 읽어, 몇 시간 뒤 사용량 추적이 끊기고 `claude` 재로그인이 필요했다.
 - Alternatives: 만료 시 카드만 숨기거나 캐시만 보여 준다 — 수치는 멈추고 다음 조회가 안 된다. 브라우저 쿠키로 사용량을 읽는다 — 기존 CLI 자격증명 밖으로 범위를 넓히므로 하지 않음.
 - Impact: `lib/providers/claude.js` 조회 경로. 공개 릴리스는 v1.0.37.
+
+### 2026-10-26 — The X Subscription 목록가만 표시하고 Ultra는 추정하지 않는다
+- Decision: Plus, Premium, Super, Free는 The X Subscription 목록가와 포함 배수를 표시한다. Plus와 Free, SuperGrok Lite는 Grok Bot 미포함이다. Plus, Premium, Super는 Other Models를 포함 한도로 두지 않고 초과 사용을 추가 사용으로 표시한다. Ultra는 레거시 Cursor Ultra와 X Subscription Ultra가 둘 다 월 $200이라 사용량 모델을 바꾸지 않는다. SuperGrok 개별 가격과 주간 공유 풀 퍼센트는 공식 필드가 없으면 만들지 않는다. 레거시 Hobby, Start, Pro, Pro+, Teams Standard, Teams Premium 목록가는 유지한다.
+- Reason: 2026-10-26 공식 문서는 통합 요금과 기존 플랜의 공존을 같이 말한다. Ultra 이름과 `usage-summary`의 주간 퍼센트 필드는 문서로 구분되지 않는다.
+- Alternatives: Ultra를 X Subscription Ultra로 단정한다 — 레거시 Ultra의 월간 두 풀과 on-demand를 지운다. SuperGrok 가격을 비슷한 티어로 채운다 — 문서에 없는 금액이다. autoPercentUsed를 주간 공유 풀로 바꾼다 — 필드 의미가 문서에 없다.
+- Impact: `lib/x-subscription.js`, Cursor/Grok/Grok Bot 표시. 공개 릴리스는 v1.0.47이며 바이너리와 공개 노트만 `How-much-is-tokens-releases`에 둔다.
