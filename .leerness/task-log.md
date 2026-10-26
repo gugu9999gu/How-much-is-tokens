@@ -50,3 +50,7 @@ doNotStore:
 
 ## 2026-10-26
 - The X Subscription 목록가를 v1.0.47에 반영. Ultra 사용량 모델, SuperGrok 개별 가격, 주간 풀 퍼센트는 추정하지 않음.
+- 공개 릴리스 run 40256604156. EXE SHA-256 372d1e23fea54d6c62d472c008833a7833857ae155a66d5309c8565faa904f74. Windows CI run 40256627454 success.
+
+## 2026-10-26 session-close
+- Generated session-handoff.md and refreshed current-state.md.
