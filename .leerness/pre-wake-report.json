@@ -99,7 +99,27 @@
         "infoCount": 1,
         "needsAttention": false
       }
+    },
+    {
+      "auditedAt": "2026-10-26T02:00:56.418Z",
+      "auditVersion": "1.36.184",
+      "findings": {
+        "critical": [],
+        "warning": [],
+        "info": [
+          {
+            "kind": "no-auto-resume-plan",
+            "detail": "auto-resume-plan.json 없음 — 다음 라운드 진입 시 manual context"
+          }
+        ]
+      },
+      "summary": {
+        "criticalCount": 0,
+        "warningCount": 0,
+        "infoCount": 1,
+        "needsAttention": false
+      }
     }
   ],
-  "updatedAt": "2026-10-21T03:45:19.384Z"
+  "updatedAt": "2026-10-26T02:00:56.429Z"
 }

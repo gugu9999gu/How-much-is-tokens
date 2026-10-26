@@ -98,6 +98,7 @@ jobs:
           node --check lib/providers/codex.js
           node --check lib/providers/copilot.js
           node --check lib/providers/cursor-auth.js
+          node --check lib/x-subscription.js
           node --check lib/providers/cursor.js
           node --check lib/providers/grok.js
           node --check lib/providers/grokbot.js
@@ -110,6 +111,7 @@ jobs:
           node --check renderer/account-identity-ui.js
           node --check test/claude-usage.test.js
           node --check test/cursor-credits.test.js
+          node --check test/x-subscription.test.js
           node --check test/copilot-credits.test.js
           node --check test/codex-credits.test.js
           node --check test/codex-auto-reset.test.js

@@ -1,6 +1,6 @@
 # Session Handoff
 
-Last generated: 2026-10-21T03:45:18.970Z
+Last generated: 2026-10-26T02:00:55.787Z
 
 ## Completed
 - T-0001 Private 개발/Public Release 분리 및 Leerness 운영 경계 → next: 유지보수
@@ -15,6 +15,7 @@ Last generated: 2026-10-21T03:45:18.970Z
 - T-0010 스마트 라우팅과 Codex 리셋 쿠폰 자동 사용이 Windows에서 동작하는지 확인하고 배포 → next: 유지보수
 - T-0011 결제일이 없는 플랫폼에 주간·월간 한도 갱신일을 표시 → next: 유지보수
 - T-0012 Claude 사용량이 몇 시간 후 추적을 멈추고 재로그인을 요구하는 문제 → next: 유지보수
+- T-0013 The X Subscription 목록가를 Cursor, Grok, Grok Bot에 반영하고 v1.0.47로 공개 배포 → next: 유지보수
 
 ## In Progress
 - 없음

@@ -37,7 +37,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.46-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.47-portable.exe`입니다.
 
 macOS Apple Silicon 앱은 macOS에서:
 
@@ -45,7 +45,7 @@ macOS Apple Silicon 앱은 macOS에서:
 npm run dist:mac
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.46-mac-arm64.dmg`와 `dist/How-much-is-tokens-1.0.46-mac-arm64.zip`입니다. Apple Developer ID가 없으면 패키징 후 ad-hoc 서명합니다.
+결과물은 `dist/How-much-is-tokens-1.0.47-mac-arm64.dmg`와 `dist/How-much-is-tokens-1.0.47-mac-arm64.zip`입니다. Apple Developer ID가 없으면 패키징 후 ad-hoc 서명합니다.
 
 ## 사용
 
@@ -154,9 +154,10 @@ fal.ai, Higgsfield, Magnific, ElevenLabs, Stability AI 등은 설정 → `생성
 
 Grok Bot은 일반 Grok/Grok Build와 별도 카드로 표시합니다. Grok Bot 자체가 Cursor 계정으로 로그인하고 사용량/결제를 Cursor 계정에서 관리하므로, 위젯도 Cursor가 로컬에 보유한 로그인 세션을 읽기 전용으로 재사용합니다.
 
-- `GetSandUsageStatus`: Grok Bot 주간 사용률, 남은 %, 리셋 시각, 사용 가능/소진 상태
-- `GetCurrentPeriodUsage`: on-demand 사용액, 한도, 잔액 및 결제 주기 종료 시각
-- Cursor 카드와 Grok Bot 카드는 같은 로그인 세션을 공유하지만 quota는 서로 다른 product meter로 구분해 표시
+- `GetSandUsageStatus`: 주간 사용률, 남은 %, 리셋 시각, 사용 가능/소진 상태
+- `GetCurrentPeriodUsage`: 포함량 초과 사용액, 한도, 잔액 및 결제 주기 종료 시각
+- The X Subscription(Free $0, Plus 월 $8/연 $80, Premium 월 $30/연 $300, Super 월 $100/연 $1000, Ultra 월 $200/연 $2000)에서는 Grok, Grok Bot, Cursor가 하나의 주간 공유 풀을 씁니다. Grok Bot은 Premium, Super, Ultra에만 포함되고 Plus와 Free에는 없습니다. 서드파티 모델은 포함 풀이 아니므로 Other Models 잔여 한도로 계산하지 않습니다. 포함량을 넘기면 on-demand가 아니라 추가 사용(top-up)입니다.
+- 기존 Cursor Hobby/Start/Pro/Pro+/Teams와 SuperGrok은 그대로입니다. Pro·Pro+·Teams는 Cursor Models와 Other Models 월간 풀, 그리고 on-demand를 유지합니다. 플랜 이름이 Ultra이면 레거시 Cursor Ultra와 X Subscription Ultra가 둘 다 월 $200이라 사용량 모델을 추정하지 않습니다.
 - Grok Bot 인증정보를 별도 파일에 복사하거나 저장하지 않음
 
 Cursor/Grok Bot 사용량 RPC는 현재 Cursor 앱/대시보드가 사용하는 계정 API이며 공개 REST 문서로 고정된 API는 아닙니다. 응답 스키마가 바뀔 수 있으므로 parser 테스트를 함께 유지합니다.
