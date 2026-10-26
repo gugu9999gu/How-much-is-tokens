@@ -54,3 +54,6 @@ doNotStore:
 
 ## 2026-10-26 session-close
 - Generated session-handoff.md and refreshed current-state.md.
+
+## 2026-10-26
+- 통합 플래그가 있는 계정은 Cursor, Grok, Grok Bot을 X Subscription 카드 한 장으로 합침. 이 PC는 Premium, 공유 주간 풀, 포함 제품 Cursor · Grok · Grok Bot. 플래그 없는 레거시는 카드를 유지. v1.0.48.

@@ -64,3 +64,9 @@ doNotStore:
 - Reason: 2026-10-26 공식 문서는 통합 요금과 기존 플랜의 공존을 같이 말한다. Ultra 이름과 `usage-summary`의 주간 퍼센트 필드는 문서로 구분되지 않는다.
 - Alternatives: Ultra를 X Subscription Ultra로 단정한다 — 레거시 Ultra의 월간 두 풀과 on-demand를 지운다. SuperGrok 가격을 비슷한 티어로 채운다 — 문서에 없는 금액이다. autoPercentUsed를 주간 공유 풀로 바꾼다 — 필드 의미가 문서에 없다.
 - Impact: `lib/x-subscription.js`, Cursor/Grok/Grok Bot 표시. 공개 릴리스는 v1.0.47이며 바이너리와 공개 노트만 `How-much-is-tokens-releases`에 둔다.
+
+### 2026-10-26 — 통합 플래그가 있으면 X Subscription 카드 한 장
+- Decision: 라이브 응답의 `isUnifiedBillingUser` 또는 `isUnified`가 참이면 Cursor, Grok, Grok Bot을 X Subscription 카드 한 장으로 합친다. 사용량은 그 응답의 공유 주간 풀을 쓰고, 포함 제품은 Cursor · Grok · Grok Bot으로 표시한다. 플래그가 없는 레거시 계정은 카드를 나누어 둔다.
+- Reason: 이 PC의 Premium 계정은 세 제품이 한 주간 풀을 쓰고 있었다. v1.0.47은 목록가만 붙이고 카드는 세 장으로 남겼다.
+- Alternatives: 플랜 이름만으로 항상 한 장으로 합친다 — Ultra처럼 레거시와 이름이 겹치면 레거시 계정이 합쳐진다. Cursor usage-summary의 0% 풀을 공유 한도로 쓴다 — 통합 계정의 주간 풀과 숫자가 달랐다.
+- Impact: `lib/unified-subscription.js`와 사용량 카드. 공개 릴리스는 v1.0.48이며 바이너리와 공개 노트만 `How-much-is-tokens-releases`에 둔다.
