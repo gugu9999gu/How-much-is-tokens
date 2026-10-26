@@ -25,6 +25,7 @@ const PROVIDER_LOGOS = {
   antigravity: { src: "./assets/platform-logos/antigravity.svg", label: "Google Antigravity", wide: true },
   grok: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
   grokbot: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
+  "x-subscription": { src: "./assets/platform-logos/grok.svg", label: "X Subscription" },
   cursor: { src: "./assets/platform-logos/cursor.svg", label: "Cursor" },
   copilot: { src: "./assets/platform-logos/github.svg", label: "GitHub" },
   openrouter: { src: "./assets/platform-logos/openrouter.svg", label: "OpenRouter" },

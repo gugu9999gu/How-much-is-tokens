@@ -37,7 +37,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.47-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.48-portable.exe`입니다.
 
 macOS Apple Silicon 앱은 macOS에서:
 
@@ -45,7 +45,7 @@ macOS Apple Silicon 앱은 macOS에서:
 npm run dist:mac
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.47-mac-arm64.dmg`와 `dist/How-much-is-tokens-1.0.47-mac-arm64.zip`입니다. Apple Developer ID가 없으면 패키징 후 ad-hoc 서명합니다.
+결과물은 `dist/How-much-is-tokens-1.0.48-mac-arm64.dmg`와 `dist/How-much-is-tokens-1.0.48-mac-arm64.zip`입니다. Apple Developer ID가 없으면 패키징 후 ad-hoc 서명합니다.
 
 ## 사용
 
@@ -152,7 +152,7 @@ fal.ai, Higgsfield, Magnific, ElevenLabs, Stability AI 등은 설정 → `생성
 
 ### Grok Bot
 
-Grok Bot은 일반 Grok/Grok Build와 별도 카드로 표시합니다. Grok Bot 자체가 Cursor 계정으로 로그인하고 사용량/결제를 Cursor 계정에서 관리하므로, 위젯도 Cursor가 로컬에 보유한 로그인 세션을 읽기 전용으로 재사용합니다.
+Grok Bot은 Cursor 로그인 세션을 읽기 전용으로 재사용합니다. 라이브 응답이 `isUnifiedBillingUser` 또는 `isUnified`이면 Cursor, Grok, Grok Bot은 한 장의 X Subscription 카드로 합칩니다. 그 플래그가 없는 레거시 계정은 카드를 나누어 둡니다.
 
 - `GetSandUsageStatus`: 주간 사용률, 남은 %, 리셋 시각, 사용 가능/소진 상태
 - `GetCurrentPeriodUsage`: 포함량 초과 사용액, 한도, 잔액 및 결제 주기 종료 시각
