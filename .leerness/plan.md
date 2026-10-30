@@ -102,3 +102,17 @@ Tasks:
 - [x] 사용량 카드에 설치 CLI 버전과 업데이트 가능 여부 표시
 - [x] 공급자가 준 결제·갱신일만 표시하고, 없으면 추정하지 않음
 - [x] 커밋 후 Public v1.0.34 Release를 `How-much-is-tokens-releases`에 게시
+
+### M-0005. OpenAI·Anthropic API 분석 계정 추적
+Status: in-progress
+Progress: 80%
+
+Tasks:
+- [x] OpenAI Admin 사용량/비용 API, Anthropic Analytics API(베타) 계약 검증
+- [x] API 키 원문은 Electron safeStorage에만 암호화하고 다계정 프로필 격리
+- [x] API Key ID별 월간 비용과 토큰 사용량, 페이지네이션 및 권한 오류 처리
+- [x] 사용액과 실제 잔여 크레딧을 구별하고 불가능한 잔액 조회는 미지원 표시
+- [x] 설정의 API 키 등록 바로가기·설명 및 간소화 UI 표시
+- [x] 단위 파서/보안 경계/옵션/페이지네이션 테스트 추가
+- [ ] 정식 PR Windows CI에서 npm test, 렌더러 스모크, Leerness gate 확인
+- [ ] 사용자 소유 관리자 자격증명으로 실제 API 값 검증
