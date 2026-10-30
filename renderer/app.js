@@ -502,7 +502,9 @@ function heldCreditBalances(provider) {
   return balances.filter((balance) => {
     if (!balance || !creditBalanceText(balance)) return false;
     if (balance.unlimited === true) return true;
-    const remaining = Number(balance.balance);
+    // Spend-only API analytics is valuable even without a remaining-balance field.
+    if (balance.balance == null && balance.used != null && Number.isFinite(Number(balance.used))) return true;
+    const remaining = balance.balance == null ? NaN : Number(balance.balance);
     if (Number.isFinite(remaining)) return remaining > 0;
     const pct = Number(balance.remainingPct);
     return Number.isFinite(pct) && pct > 0;
