@@ -72,7 +72,7 @@ document.head.appendChild(apiProvidersStyle);
       if (first.unit) return `사용 ${value.toLocaleString()} ${first.unit}`;
       return `사용 ${value}`;
     }
-    if (Number.isFinite(Number(row.remainingPct))) return `${Number(row.remainingPct).toFixed(1)}% 남음`;
+    if (row.remainingPct != null && Number.isFinite(Number(row.remainingPct))) return `${Number(row.remainingPct).toFixed(1)}% 남음`;
     if (row.status === "login") return "재연결 필요";
     if (row.status === "error") return "조회 오류";
     return row.status === "ok" ? "연결됨" : "잔여량 확인 전";
@@ -86,6 +86,7 @@ document.head.appendChild(apiProvidersStyle);
       input.type = "password";
       input.dataset.apiField = cred.key;
       input.placeholder = values[cred.key] || cred.placeholder || cred.label || cred.key;
+      if (cred.required === false) input.required = false;
       input.autocomplete = "off";
       input.spellcheck = false;
       label.appendChild(input);
