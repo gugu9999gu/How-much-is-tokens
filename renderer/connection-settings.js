@@ -290,7 +290,25 @@ function installConnectionHub() {
     try { await refreshConnections(); } catch (err) { setConnectionMessage(err.message || String(err), true); }
     finally { refresh.disabled = false; }
   });
-  heading.appendChild(refresh);
+  const openApiKeys = document.createElement("button");
+  openApiKeys.type = "button";
+  openApiKeys.className = "btn primary compact-btn";
+  openApiKeys.textContent = "API 키 등록";
+  openApiKeys.addEventListener("click", () => {
+    const panel = document.getElementById("advancedSettings");
+    if (panel) panel.open = true;
+    const section = document.getElementById("apiProvidersGroup")?.closest(".settings-section");
+    if (section) {
+      section.classList.add("is-open");
+      section.querySelector(".settings-section-summary")?.setAttribute("aria-expanded", "true");
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    window.dispatchEvent(new Event("resize"));
+  });
+  const headingActions = document.createElement("div");
+  headingActions.className = "connections-heading-actions";
+  headingActions.append(refresh, openApiKeys);
+  heading.appendChild(headingActions);
 
   const grid = document.createElement("div");
   grid.className = "connection-grid";
