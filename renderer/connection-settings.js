@@ -27,7 +27,7 @@ const SECTION_META = {
   "동기화": { icon: "↻", hint: "새로고침 간격" },
   "Smart Routing": { icon: "⇉", hint: "잔여량 기반 CLI 계정 자동 선택" },
   "API 공급자": { icon: "⇄", hint: "OpenRouter 키 · localhost 라우터" },
-  "생성형 미디어 API": { icon: "✦", hint: "fal.ai · Higgsfield · Magnific …" },
+  "AI API 키·크레딧": { icon: "✦", hint: "GPT · Claude API 사용액 · 미디어 크레딧" },
   "연결": { icon: "⚿", hint: "수동 토큰 · 쿠키 (대체 수단)" },
 };
 
