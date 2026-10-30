@@ -82,6 +82,9 @@ jobs:
           node --check lib/api-providers-main-integration.js
           node --check lib/api-providers/common.js
           node --check lib/api-providers/registry.js
+          node --check lib/api-providers/analytics-common.js
+          node --check lib/api-providers/openai-api.js
+          node --check lib/api-providers/anthropic-api.js
           node --check lib/api-providers/falai.js
           node --check lib/api-providers/higgsfield.js
           node --check lib/api-providers/magnific.js
@@ -123,6 +126,7 @@ jobs:
           node --check test/credential-login.test.js
           node --check test/connection-settings.test.js
           node --check test/api-providers.test.js
+          node --check test/llm-api-providers.test.js
           node --check test/api-provider-secrets.test.js
           node --check test/openrouter-profiles.test.js
           node --check test/openrouter-request-router.test.js
