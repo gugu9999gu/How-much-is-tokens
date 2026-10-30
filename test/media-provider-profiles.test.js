@@ -7,7 +7,7 @@ const {
   officialMcpFor,
 } = require("../lib/media-provider-profiles");
 
-assert.deepStrictEqual(MEDIA_PROVIDER_IDS, ["falai", "higgsfield", "magnific", "elevenlabs", "stability"]);
+assert.deepStrictEqual(MEDIA_PROVIDER_IDS, ["openai-api", "anthropic-api", "falai", "higgsfield", "magnific", "elevenlabs", "stability"]);
 const profiles = normalizeMediaProviderProfiles([
   { providerId: "falai", id: "work", label: "Fal Work", mode: "mcp", priority: 20 },
   { providerId: "falai", id: "personal", label: "Fal Personal", mode: "api", priority: 10 },

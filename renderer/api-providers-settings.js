@@ -60,13 +60,19 @@ document.head.appendChild(apiProvidersStyle);
     if (!row) return "새로고침 후 잔여량 표시";
     const balances = Array.isArray(row.creditBalances) ? row.creditBalances : [];
     const first = balances[0];
-    if (first && Number.isFinite(Number(first.balance))) {
+    if (first && first.balance != null && Number.isFinite(Number(first.balance))) {
       const value = Number(first.balance);
-      if (first.currency) return `${value.toFixed(2)} ${first.currency}`;
-      if (first.unit) return `${value.toLocaleString()} ${first.unit}`;
-      return String(value);
+      if (first.currency) return `잔여 ${value.toFixed(2)} ${first.currency}`;
+      if (first.unit) return `잔여 ${value.toLocaleString()} ${first.unit}`;
+      return `잔여 ${value}`;
     }
-    if (Number.isFinite(Number(row.remainingPct))) return `${Number(row.remainingPct).toFixed(1)}% 남음`;
+    if (first && first.used != null && Number.isFinite(Number(first.used))) {
+      const value = Number(first.used);
+      if (first.currency) return `사용 ${value.toFixed(2)} ${first.currency}`;
+      if (first.unit) return `사용 ${value.toLocaleString()} ${first.unit}`;
+      return `사용 ${value}`;
+    }
+    if (row.remainingPct != null && Number.isFinite(Number(row.remainingPct))) return `${Number(row.remainingPct).toFixed(1)}% 남음`;
     if (row.status === "login") return "재연결 필요";
     if (row.status === "error") return "조회 오류";
     return row.status === "ok" ? "연결됨" : "잔여량 확인 전";
@@ -80,6 +86,7 @@ document.head.appendChild(apiProvidersStyle);
       input.type = "password";
       input.dataset.apiField = cred.key;
       input.placeholder = values[cred.key] || cred.placeholder || cred.label || cred.key;
+      if (cred.required === false) input.required = false;
       input.autocomplete = "off";
       input.spellcheck = false;
       label.appendChild(input);
@@ -279,6 +286,7 @@ document.head.appendChild(apiProvidersStyle);
     const head = el("div", "api-provider-head");
     const copy = el("div", "api-provider-copy");
     copy.append(el("b", "", provider.name), el("small", "", provider.detail || ""));
+    if (provider.note) copy.appendChild(el("p", "api-provider-note", provider.note));
     const status = el("span", "api-provider-status missing", "미설정");
     status.dataset.apiStatus = provider.id;
     head.append(copy, status);
@@ -348,7 +356,8 @@ document.head.appendChild(apiProvidersStyle);
       const badge = card && card.querySelector(`[data-api-status="${provider.id}"]`);
       if (!card || !badge) return;
       const configured = statuses[provider.id] || {};
-      const defaultConfigured = (provider.credentials || []).some((cred) => configured[cred.key]);
+      const requiredCredentials = (provider.credentials || []).filter((cred) => cred.required !== false);
+      const defaultConfigured = requiredCredentials.length > 0 && requiredCredentials.every((cred) => configured[cred.key]);
       const profiles = providerProfiles(provider.id, currentSettings);
       const active = profiles.filter((profile) => profile.enabled !== false).length;
       const totalConnections = (defaultConfigured ? 1 : 0) + active;
