@@ -21,7 +21,9 @@ const EDGE_DOCK_SIDES = new Set(["top", "right", "bottom", "left"]);
 const MULTI_ACCOUNT_PROVIDERS = new Set(["codex", "claude", "grok", "cursor", "copilot"]);
 const PROVIDER_LOGOS = {
   codex: { src: "./assets/platform-logos/openai.svg", label: "OpenAI" },
+  "openai-api": { src: "./assets/platform-logos/openai.svg", label: "OpenAI API" },
   claude: { src: "./assets/platform-logos/anthropic.svg", label: "Anthropic" },
+  "anthropic-api": { src: "./assets/platform-logos/anthropic.svg", label: "Anthropic API" },
   antigravity: { src: "./assets/platform-logos/antigravity.svg", label: "Google Antigravity", wide: true },
   grok: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
   grokbot: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
