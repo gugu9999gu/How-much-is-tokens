@@ -71,6 +71,7 @@ assert.strictEqual(reportStatus({ ok: true, status: 200 }, { ok: false, status: 
 assert.strictEqual(reportStatus({ ok: false, status: 429 }, { ok: false, status: 500 }), "error");
 const rendererSource = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
 assert.ok(rendererSource.includes('if (value == null || value === "") return null;'), "null remaining must not render as $0");
+assert.ok(rendererSource.includes('balance.balance == null && balance.used != null'), "spend-only credits must be visible even in compact mode");
 
 (async () => {
   const requests = [];
