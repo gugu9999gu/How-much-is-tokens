@@ -60,11 +60,17 @@ document.head.appendChild(apiProvidersStyle);
     if (!row) return "새로고침 후 잔여량 표시";
     const balances = Array.isArray(row.creditBalances) ? row.creditBalances : [];
     const first = balances[0];
-    if (first && Number.isFinite(Number(first.balance))) {
+    if (first && first.balance != null && Number.isFinite(Number(first.balance))) {
       const value = Number(first.balance);
-      if (first.currency) return `${value.toFixed(2)} ${first.currency}`;
-      if (first.unit) return `${value.toLocaleString()} ${first.unit}`;
-      return String(value);
+      if (first.currency) return `잔여 ${value.toFixed(2)} ${first.currency}`;
+      if (first.unit) return `잔여 ${value.toLocaleString()} ${first.unit}`;
+      return `잔여 ${value}`;
+    }
+    if (first && first.used != null && Number.isFinite(Number(first.used))) {
+      const value = Number(first.used);
+      if (first.currency) return `사용 ${value.toFixed(2)} ${first.currency}`;
+      if (first.unit) return `사용 ${value.toLocaleString()} ${first.unit}`;
+      return `사용 ${value}`;
     }
     if (Number.isFinite(Number(row.remainingPct))) return `${Number(row.remainingPct).toFixed(1)}% 남음`;
     if (row.status === "login") return "재연결 필요";
@@ -279,6 +285,7 @@ document.head.appendChild(apiProvidersStyle);
     const head = el("div", "api-provider-head");
     const copy = el("div", "api-provider-copy");
     copy.append(el("b", "", provider.name), el("small", "", provider.detail || ""));
+    if (provider.note) copy.appendChild(el("p", "api-provider-note", provider.note));
     const status = el("span", "api-provider-status missing", "미설정");
     status.dataset.apiStatus = provider.id;
     head.append(copy, status);
