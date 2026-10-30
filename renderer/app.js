@@ -229,6 +229,7 @@ function renderSummaryVisual(provider) {
 }
 
 function creditAmount(value, balance) {
+  if (value == null || value === "") return null;
   const number = Number(value);
   if (!Number.isFinite(number)) return null;
   if (balance.currency) {
@@ -258,7 +259,7 @@ function renderCreditBalances(provider) {
   return `<div class="credit-balances">${visible.map((balance) => {
     const text = creditBalanceText(balance);
     const reset = resetText(balance.resetAt);
-    const pct = Number.isFinite(Number(balance.remainingPct)) ? `${Math.round(Number(balance.remainingPct))}%` : "";
+    const pct = balance.remainingPct != null && Number.isFinite(Number(balance.remainingPct)) ? `${Math.round(Number(balance.remainingPct))}%` : "";
     const detail = [text, pct, reset].filter(Boolean).join(" · ");
     return `<span class="credit-chip"><b>${balance.label || "크레딧"}</b>${detail ? `<small>${detail}</small>` : ""}</span>`;
   }).join("")}</div>`;
