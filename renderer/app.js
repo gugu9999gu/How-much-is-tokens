@@ -21,7 +21,9 @@ const EDGE_DOCK_SIDES = new Set(["top", "right", "bottom", "left"]);
 const MULTI_ACCOUNT_PROVIDERS = new Set(["codex", "claude", "grok", "cursor", "copilot"]);
 const PROVIDER_LOGOS = {
   codex: { src: "./assets/platform-logos/openai.svg", label: "OpenAI" },
+  "openai-api": { src: "./assets/platform-logos/openai.svg", label: "OpenAI API" },
   claude: { src: "./assets/platform-logos/anthropic.svg", label: "Anthropic" },
+  "anthropic-api": { src: "./assets/platform-logos/anthropic.svg", label: "Anthropic API" },
   antigravity: { src: "./assets/platform-logos/antigravity.svg", label: "Google Antigravity", wide: true },
   grok: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
   grokbot: { src: "./assets/platform-logos/grok.svg", label: "Grok" },
@@ -229,6 +231,7 @@ function renderSummaryVisual(provider) {
 }
 
 function creditAmount(value, balance) {
+  if (value == null || value === "") return null;
   const number = Number(value);
   if (!Number.isFinite(number)) return null;
   if (balance.currency) {
@@ -258,7 +261,7 @@ function renderCreditBalances(provider) {
   return `<div class="credit-balances">${visible.map((balance) => {
     const text = creditBalanceText(balance);
     const reset = resetText(balance.resetAt);
-    const pct = Number.isFinite(Number(balance.remainingPct)) ? `${Math.round(Number(balance.remainingPct))}%` : "";
+    const pct = balance.remainingPct != null && Number.isFinite(Number(balance.remainingPct)) ? `${Math.round(Number(balance.remainingPct))}%` : "";
     const detail = [text, pct, reset].filter(Boolean).join(" · ");
     return `<span class="credit-chip"><b>${balance.label || "크레딧"}</b>${detail ? `<small>${detail}</small>` : ""}</span>`;
   }).join("")}</div>`;
@@ -501,7 +504,9 @@ function heldCreditBalances(provider) {
   return balances.filter((balance) => {
     if (!balance || !creditBalanceText(balance)) return false;
     if (balance.unlimited === true) return true;
-    const remaining = Number(balance.balance);
+    // Spend-only API analytics is valuable even without a remaining-balance field.
+    if (balance.balance == null && balance.used != null && Number.isFinite(Number(balance.used))) return true;
+    const remaining = balance.balance == null ? NaN : Number(balance.balance);
     if (Number.isFinite(remaining)) return remaining > 0;
     const pct = Number(balance.remainingPct);
     return Number.isFinite(pct) && pct > 0;

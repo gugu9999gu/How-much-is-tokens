@@ -19,6 +19,8 @@ assert.ok(ui.includes("cliAutoUpdate"), "CLI auto-update toggle must move into t
 assert.ok(ui.includes("키 파일이나 경로를 직접 입력하지 않고 로그인부터 시작합니다."));
 assert.ok(ui.includes("고급 설정"));
 assert.ok(ui.includes("API Key 직접 입력"), "manual credential fallback must remain available under advanced settings");
+assert.ok(ui.includes("API 키 등록"), "basic connection hub must expose API key shortcut");
+assert.ok(ui.includes('getElementById("apiProvidersGroup")'), "API key shortcut must open provider registration section");
 assert.ok(css.includes(".connection-card"));
 assert.ok(css.includes(".advanced-settings"));
 

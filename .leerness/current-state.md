@@ -15,9 +15,10 @@ doNotStore:
 <!-- leerness:managed -->
 # Current State
 
-Updated: 2026-10-26
+Updated: 2026-11-03
 
 ## Now
+- PR #42: OpenAI·Anthropic Tracking ID별 월간 API 비용·토큰·요청 수 조회 및 사용자 예산 잔여 계산(실제 크레딧과 분리) 구현. Windows 테스트·secure-storage·렌더러 smoke 성공, portable build 최종 확인 중.
 - 대기 중 <!-- leerness:auto -->
 - 사용량 카드 사실 칸은 계정 → 결제/한도 갱신 → 버전 → 리셋 쿠폰 순으로 고정했다. Claude 계정 ID는 `oauthAccount.accountUuid`와 OAuth profile `account.uuid`로 표시하고, 간소화 모드에서는 그 칸들의 보조 설명을 숨긴다.
 - 같은 계정으로 다시 로그인하면 새 프로필을 만들지 않고, 로그아웃으로 비활성화된 기존 프로필을 다시 연다. 계정 ID가 같은 활성 카드는 하나만 남긴다.
@@ -35,6 +36,7 @@ Updated: 2026-10-26
 - package/package-lock은 npm workflow run `34077244587`로 v1.0.25에 동기화했고 모든 일회성 validation/sync workflow는 feature branch에서 제거함.
 
 ## Next
+- PR #42 최종 Windows CI 확인, main 병합 및 사용자 Admin/Analytics API 자격증명으로 실제 조회 확인 필요.
 - 계획된 작업 없음 <!-- leerness:auto -->
 - 소스와 `.leerness`는 비공개 개발 저장소에만 둔다.
 

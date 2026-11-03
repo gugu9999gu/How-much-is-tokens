@@ -54,3 +54,10 @@ Verification command/result history. Append-only.
 - Package/package-lock version sync run `34077244587` used npm's own version command and succeeded; both files now report `1.0.25`.
 - Final Windows feature-head validation run `34077476812`, including Grok Bot shared-auth presentation and filesystem collision avoidance for managed login profiles, passed syntax checks, the complete regression suite, Leerness gate, Windows secure-storage smoke, and Electron minimal-settings renderer smoke.
 - All one-time validation/version-sync workflows were deleted from the feature branch before opening the formal PR.
+
+## 2026-11-03 — Tracking ID key-level spend and user monthly budget
+- OpenAI Organization Costs and Completions Usage APIs document api_key_ids filtering; Anthropic Usage and Cost Analytics API documents the same API Key ID filter. The Tracking ID is not used for authentication.
+- Separate API profiles store Admin key and Tracking ID through OS safeStorage, and optional monthlyBudgetUsd in non-secret settings. Budget remaining is computed from official cost and never represented as provider prepaid credit.
+- Unit tests cover month boundaries, page completeness, budget normalization/overspending and profile isolation. Windows secure-storage smoke covers distinct Tracking IDs under one Admin key, duplicate checks, budget edit/clear, and encryption at rest.
+- PR #42 Windows run 41608804392: syntax, complete npm test, Leerness gate, Windows DPAPI smoke, renderer UI smoke and Antigravity smoke succeeded. Final portable build verification pending at time of this entry.
+- User-owned Admin/Analytics credential live billing remains unverified; do not claim production billing reconciliation.
