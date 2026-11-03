@@ -105,7 +105,7 @@ Tasks:
 
 ### M-0005. OpenAI·Anthropic API 분석 계정 추적
 Status: in-progress
-Progress: 80%
+Progress: 95%
 
 Tasks:
 - [x] OpenAI Admin 사용량/비용 API, Anthropic Analytics API(베타) 계약 검증
@@ -114,5 +114,7 @@ Tasks:
 - [x] 사용액과 실제 잔여 크레딧을 구별하고 불가능한 잔액 조회는 미지원 표시
 - [x] 설정의 API 키 등록 바로가기·설명 및 간소화 UI 표시
 - [x] 단위 파서/보안 경계/옵션/페이지네이션 테스트 추가
+- [x] Tracking ID별 추가 프로필, 실제 키 식별자 필터, 월 예산 USD 편집·초기화·초과액 및 계산값 구분
+- [x] Windows 보안 저장소 및 렌더러 Tracking ID 폼 smoke 테스트 추가
 - [ ] 정식 PR Windows CI에서 npm test, 렌더러 스모크, Leerness gate 확인
 - [ ] 사용자 소유 관리자 자격증명으로 실제 API 값 검증

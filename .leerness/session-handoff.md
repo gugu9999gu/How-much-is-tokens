@@ -65,3 +65,13 @@ Last generated: 2026-10-26T03:07:31.143Z
 
 ## Next Exact Step
 - 없음
+
+## 2026-11-03 — OpenAI / Anthropic Tracking ID work
+### Completed
+- PR #42 implements per-key API analytics via official Admin / Analytics endpoints, secured credentials, user-defined budget remaining, and tracking ID form/editing.
+- Windows run 41608804392 passed tests, gate, DPAPI and renderer smoke through the build stage.
+### In Progress
+- Final Windows portable build and PR merge review.
+- Real organization Admin API live readings require user-owned credentials.
+### Next Exact Step
+- Confirm final PR run conclusion, merge PR #42 only after checks pass, then verify main workflow. Do not publish a new public binary without release preparation.
