@@ -28,10 +28,47 @@ app.whenReady().then(async () => {
         stabilityText: stability.textContent,
       };
     })()`);
-    assert.strictEqual(initial.cards, 3);
+    assert.strictEqual(initial.cards, 4);
     assert.ok(initial.falButtons.includes("+ API 계정"));
     assert.ok(initial.falButtons.includes("+ MCP 키"));
     assert.ok(initial.stabilityText.includes("공식 잔액 MCP 없음"));
+
+    const tracked = await win.webContents.executeJavaScript(`(async () => {
+      const card = document.querySelector('[data-api-provider="openai-api"]');
+      [...card.querySelectorAll('button')].find((b) => b.textContent.trim() === '+ API 계정').click();
+      const admin = card.querySelector('[data-api-field="adminKey"]');
+      const tracking = card.querySelector('[data-api-field="apiKeyId"]');
+      const budget = card.querySelector('[data-api-budget]');
+      card.querySelector('[data-media-label]').value = 'GPT key one';
+      admin.value = 'admin-test-key-no-real-secret';
+      tracking.value = 'key_012345fixture';
+      budget.value = '50.00';
+      const trackingType = tracking.type;
+      [...card.querySelectorAll('[data-media-account-editor] button')].find((b) => b.textContent.trim() === '추가하고 추적').click();
+      await new Promise((resolve) => setTimeout(resolve, 180));
+      const row = card.querySelector('[data-media-profile-id]');
+      return {
+        trackingType,
+        rowText: row?.textContent || '',
+        budget: row?.querySelector('[data-media-account-budget]')?.textContent || '',
+      };
+    })()`);
+    assert.strictEqual(tracked.trackingType, "text", "Tracking ID is distinct from a secret API Key");
+    assert.ok(tracked.rowText.includes("GPT key one"));
+    assert.ok(tracked.rowText.includes("Tracking ID 등록됨"));
+    assert.ok(tracked.rowText.includes("$50.00"), "user budget must be shown on the tracking profile");
+    assert.ok(tracked.rowText.includes("월 예산 잔여(계산) $37.50"));
+
+    const editedBudget = await win.webContents.executeJavaScript(`(async () => {
+      const card = document.querySelector('[data-api-provider="openai-api"]');
+      [...card.querySelectorAll('[data-media-profile-id] button')].find((b) => b.textContent.trim() === '키 편집').click();
+      card.querySelector('[data-api-budget]').value = '30';
+      [...card.querySelectorAll('[data-media-account-editor] button')].find((b) => b.textContent.trim() === '설정 저장').click();
+      await new Promise((resolve) => setTimeout(resolve, 180));
+      return card.querySelector('[data-media-profile-id]')?.textContent || '';
+    })()`);
+    assert.ok(editedBudget.includes("$30.00"), "budget edit must persist without replacing the Admin key");
+    assert.ok(editedBudget.includes("$17.50"), "budget remaining must recalculate on edit");
 
     const falAdded = await win.webContents.executeJavaScript(`(async () => {
       const card = document.querySelector('[data-api-provider="falai"]');
