@@ -3,10 +3,10 @@ const fs = require("fs");
 const path = require("path");
 const openai = require("../lib/api-providers/openai-api");
 const anthropic = require("../lib/api-providers/anthropic-api");
-const { utcMonthRange, collectAnalyticsPages, reportStatus } = require("../lib/api-providers/analytics-common");
+const { utcMonthRange, collectAnalyticsPages, reportStatus, monthlyBudgetBalance, maskedTrackingId } = require("../lib/api-providers/analytics-common");
 const { hasAllCreds } = require("../lib/api-providers/common");
 const { apiProviderById, apiProviderCatalog } = require("../lib/api-providers/registry");
-const { MEDIA_PROVIDER_IDS, normalizeMediaProviderProfiles } = require("../lib/media-provider-profiles");
+const { MEDIA_PROVIDER_IDS, normalizeMediaProviderProfiles, normalizeMonthlyBudgetUsd } = require("../lib/media-provider-profiles");
 const { safeCreditBalance } = require("../lib/credit-balances");
 
 const range = utcMonthRange(Date.parse("2026-10-30T01:23:45Z"));
@@ -47,6 +47,26 @@ assert.deepStrictEqual(anthropic.parseUsage([
 ]), { totalTokens: 5592000, requests: 4220 });
 assert.strictEqual(anthropic.parseUsage([{ usage: {} }]), null);
 
+// The API Key ID (Tracking ID) selects one key; an Admin key provides authorization.
+assert.strictEqual(maskedTrackingId("key_0123456789abc"), "…789abc");
+assert.strictEqual(maskedTrackingId(""), null);
+assert.ok(openai.credentials.some((field) => field.key === "apiKeyId" && field.label.includes("Tracking ID")));
+assert.ok(anthropic.credentials.some((field) => field.key === "apiKeyId" && field.label.includes("Tracking ID")));
+
+// A user-set budget is never the real balance of prepaid provider credits.
+assert.strictEqual(normalizeMonthlyBudgetUsd("50.25"), 50.25);
+for (const value of [0, -1, "not a number", "1.234", "1000000.01", Infinity]) {
+  assert.strictEqual(normalizeMonthlyBudgetUsd(value), null, `invalid budget: ${value}`);
+}
+const underBudget = monthlyBudgetBalance(50, 12.34);
+assert.strictEqual(underBudget.balance, 37.66);
+assert.strictEqual(underBudget.used, 12.34);
+assert.strictEqual(underBudget.limit, 50);
+assert.strictEqual(underBudget.source, "user-defined-budget");
+assert.ok(underBudget.remainingPct > 75 && underBudget.remainingPct < 76);
+assert.strictEqual(monthlyBudgetBalance(10, 15).balance, 0, "overspend must not produce negative budget remaining");
+assert.strictEqual(monthlyBudgetBalance(50, null), null, "cost query failure must not invent budget remaining");
+
 const onlyAdmin = { adminKey: "sk-admin-fixture", apiKeyId: "" };
 assert.ok(hasAllCreds(openai, onlyAdmin), "API key ID must remain optional");
 assert.ok(hasAllCreds(anthropic, onlyAdmin), "Anthropic key ID must remain optional");
@@ -57,6 +77,14 @@ assert.strictEqual(normalizeMediaProviderProfiles([
   { providerId: "openai-api", id: "my-gpt", label: "GPT 업무", enabled: true },
   { providerId: "anthropic-api", id: "my-claude", label: "Claude 업무", enabled: true },
 ]).length, 2);
+const withBudget = normalizeMediaProviderProfiles([
+  { providerId: "openai-api", id: "key-work", label: "GPT 업무", monthlyBudgetUsd: 125.50 },
+  { providerId: "anthropic-api", id: "key-personal", label: "Claude 개인", monthlyBudgetUsd: "3.45" },
+  { providerId: "stability", id: "no-budget", monthlyBudgetUsd: 100 },
+]);
+assert.strictEqual(withBudget[0].monthlyBudgetUsd, 125.50);
+assert.strictEqual(withBudget[1].monthlyBudgetUsd, 3.45);
+assert.ok(!Object.prototype.hasOwnProperty.call(withBudget[2], "monthlyBudgetUsd"));
 for (const provider of [openai, anthropic]) {
   assert.strictEqual(apiProviderById(provider.id), provider);
   const catalog = apiProviderCatalog().find((item) => item.id === provider.id);
@@ -72,6 +100,10 @@ assert.strictEqual(reportStatus({ ok: false, status: 429 }, { ok: false, status:
 const rendererSource = fs.readFileSync(path.join(__dirname, "..", "renderer", "app.js"), "utf8");
 assert.ok(rendererSource.includes('if (value == null || value === "") return null;'), "null remaining must not render as $0");
 assert.ok(rendererSource.includes('balance.balance == null && balance.used != null'), "spend-only credits must be visible even in compact mode");
+const settingsUi = fs.readFileSync(path.join(__dirname, "..", "renderer", "api-providers-settings.js"), "utf8");
+assert.ok(settingsUi.includes("Tracking ID"), "tracking scope label must be accessible");
+assert.ok(settingsUi.includes("data-api-budget"), "budget value must be editable");
+assert.ok(settingsUi.includes('input.type = cred.key === "apiKeyId" ? "text" : "password"'), "Tracking ID is not a secret API key");
 
 (async () => {
   const requests = [];
