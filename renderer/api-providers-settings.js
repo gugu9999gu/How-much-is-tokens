@@ -65,7 +65,7 @@ document.head.appendChild(apiProvidersStyle);
       ? row.creditBalances.find((balance) => balance && balance.id === "user-monthly-budget")
       : null;
     if (!budget || budget.balance == null || !Number.isFinite(Number(budget.balance))) return "";
-    return `월 예산 잔여(계산) ${Number(budget.balance).toFixed(2)}`;
+    return "월 예산 잔여(계산) $" + Number(budget.balance).toFixed(2);
   }
 
   function editorMonthlyBudget(editor) {
@@ -286,7 +286,7 @@ document.head.appendChild(apiProvidersStyle);
           ? (status.fields.apiKeyId ? " · Tracking ID 등록됨" : " · 조직 전체 조회")
           : "";
         const budgetLabel = supportsTracking(provider) && profile.monthlyBudgetUsd != null
-          ? ` · 월 예산 ${Number(profile.monthlyBudgetUsd).toFixed(2)}` : "";
+          ? " · 월 예산 $" + Number(profile.monthlyBudgetUsd).toFixed(2) : "";
         meta.textContent = (count ? `API 자격증명 ${count}개 저장됨` : "API 자격증명 확인 필요") + tracking + budgetLabel;
       }
       main.appendChild(meta);
