@@ -18,10 +18,10 @@ const openaiUrls = openai.reportUrls(target, Date.parse("2026-10-30T01:00:00Z"))
 const openaiCost = new URL(openaiUrls.cost);
 assert.strictEqual(openaiCost.hostname, "api.openai.com");
 assert.strictEqual(openaiCost.pathname, "/v1/organization/costs");
-assert.strictEqual(openaiCost.searchParams.get("api_key_ids[]"), "key_123");
+assert.strictEqual(openaiCost.searchParams.get("api_key_ids"), "key_123");
 assert.ok(!openaiUrls.cost.includes(target.adminKey), "Never place secret in URL");
 assert.strictEqual(new URL(openaiUrls.usage).pathname, "/v1/organization/usage/completions");
-assert.strictEqual(new URL(openai.reportUrls({ adminKey: "fixture" }).cost).searchParams.has("api_key_ids[]"), false);
+assert.strictEqual(new URL(openai.reportUrls({ adminKey: "fixture" }).cost).searchParams.has("api_key_ids"), false);
 
 const claudeUrls = anthropic.reportUrls({ adminKey: "fixture", apiKeyId: "apikey_123" }, Date.parse("2026-10-30T01:00:00Z"));
 assert.strictEqual(new URL(claudeUrls.cost).pathname, "/v1/organizations/analytics/cost");
