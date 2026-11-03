@@ -56,6 +56,30 @@ document.head.appendChild(apiProvidersStyle);
     return rows.find((row) => row && row.providerId === providerId && row.profileId === profileId) || null;
   }
 
+  function supportsTracking(provider) {
+    return provider && (provider.id === "openai-api" || provider.id === "anthropic-api");
+  }
+
+  function budgetCopy(row) {
+    const budget = Array.isArray(row && row.creditBalances)
+      ? row.creditBalances.find((balance) => balance && balance.id === "user-monthly-budget")
+      : null;
+    if (!budget || budget.balance == null || !Number.isFinite(Number(budget.balance))) return "";
+    return `월 예산 잔여(계산) ${Number(budget.balance).toFixed(2)}`;
+  }
+
+  function editorMonthlyBudget(editor) {
+    const input = editor.querySelector("[data-api-budget]");
+    if (!input) return undefined;
+    const text = input.value.trim();
+    if (!text) return null; // Clearing the field removes the local spending target.
+    if (!/^(?:0|[1-9]\d{0,6})(?:\.\d{1,2})?$/.test(text) ||
+        !Number.isFinite(Number(text)) || Number(text) < 0.01 || Number(text) > 1000000) {
+      throw new Error("월 예산은 0.01~1,000,000 USD, 소수점 두 자리까지 입력하세요.");
+    }
+    return Number(text);
+  }
+
   function usageCopy(row) {
     if (!row) return "새로고침 후 잔여량 표시";
     const balances = Array.isArray(row.creditBalances) ? row.creditBalances : [];
@@ -83,7 +107,7 @@ document.head.appendChild(apiProvidersStyle);
       const label = el("label", "field compact-field");
       label.appendChild(el("span", "field-label", cred.label || cred.key));
       const input = el("input", "secret-input");
-      input.type = "password";
+      input.type = cred.key === "apiKeyId" ? "text" : "password";
       input.dataset.apiField = cred.key;
       input.placeholder = values[cred.key] || cred.placeholder || cred.label || cred.key;
       if (cred.required === false) input.required = false;
@@ -125,6 +149,22 @@ document.head.appendChild(apiProvidersStyle);
 
     const isOAuthMcp = mode === "mcp" && provider.mcp && provider.mcp.auth === "oauth";
     if (!isOAuthMcp) credentialFields(provider, editor);
+    if (supportsTracking(provider) && !isOAuthMcp) {
+      const budgetLabel = el("label", "field compact-field");
+      budgetLabel.appendChild(el("span", "field-label", "월 사용 예산 (USD, 선택)"));
+      const budgetInput = el("input", "media-text-input");
+      budgetInput.type = "number";
+      budgetInput.min = "0.01";
+      budgetInput.max = "1000000";
+      budgetInput.step = "0.01";
+      budgetInput.placeholder = "예: 50.00";
+      budgetInput.dataset.apiBudget = "1";
+      budgetInput.value = profile && profile.monthlyBudgetUsd != null ? String(profile.monthlyBudgetUsd) : "";
+      budgetLabel.appendChild(budgetInput);
+      editor.appendChild(budgetLabel);
+      editor.appendChild(el("p", "media-mcp-note",
+        "Tracking ID는 비밀 API Key가 아닌 key_... / apikey_... 식별자입니다. 월 예산 잔여액은 조회된 지출을 빼서 계산하며 실제 선불 크레딧이 아닙니다."));
+    }
     if (mode === "mcp") {
       const endpoint = provider.mcp && provider.mcp.url ? provider.mcp.url : "";
       editor.appendChild(el("p", "media-mcp-note", isOAuthMcp
@@ -133,7 +173,7 @@ document.head.appendChild(apiProvidersStyle);
     }
 
     const actions = el("div", "api-secret-actions media-editor-actions");
-    const submit = el("button", "btn primary compact-btn", profile ? (isOAuthMcp ? "MCP 재연결" : "키 교체") : (isOAuthMcp ? "브라우저에서 연결" : "추가하고 추적"));
+    const submit = el("button", "btn primary compact-btn", profile ? (isOAuthMcp ? "MCP 재연결" : (supportsTracking(provider) ? "설정 저장" : "키 교체")) : (isOAuthMcp ? "브라우저에서 연결" : "추가하고 추적"));
     submit.type = "button";
     const cancel = el("button", "btn compact-btn", "취소");
     cancel.type = "button";
@@ -147,8 +187,15 @@ document.head.appendChild(apiProvidersStyle);
         } else if (profile) {
           const patch = {};
           fieldInputs(editor).forEach((input) => { if (input.value.trim()) patch[input.dataset.apiField] = input.value.trim(); });
-          if (!Object.keys(patch).length) throw new Error("교체할 키를 입력하세요.");
-          result = await api.saveMediaProviderAccountCredentials(provider.id, profile.id, patch);
+          const monthlyBudgetUsd = editorMonthlyBudget(editor);
+          if (Object.keys(patch).length) {
+            result = await api.saveMediaProviderAccountCredentials(provider.id, profile.id, patch);
+            if (!result || !result.ok) throw new Error((result && result.error) || "API 키를 저장하지 못했습니다.");
+          }
+          if (monthlyBudgetUsd !== undefined) {
+            result = await api.updateMediaProviderAccount(provider.id, profile.id, { monthlyBudgetUsd });
+          }
+          if (!result) throw new Error("교체할 키를 입력하세요.");
         } else {
           const labelInput = editor.querySelector("[data-media-label]");
           const label = labelInput ? labelInput.value.trim() : "";
@@ -157,7 +204,8 @@ document.head.appendChild(apiProvidersStyle);
           } else {
             const credentials = {};
             fieldInputs(editor).forEach((input) => { if (input.value.trim()) credentials[input.dataset.apiField] = input.value.trim(); });
-            result = await api.addMediaProviderAccount(provider.id, { label, mode, credentials });
+            const monthlyBudgetUsd = editorMonthlyBudget(editor);
+            result = await api.addMediaProviderAccount(provider.id, { label, mode, credentials, monthlyBudgetUsd });
           }
         }
         if (!result || !result.ok) {
@@ -226,12 +274,20 @@ document.head.appendChild(apiProvidersStyle);
       const balance = el("span", "media-account-balance", usageCopy(usage));
       balance.dataset.mediaBalance = `${provider.id}:${profile.id}`;
       main.append(titleRow, balance);
+      const budget = el("span", "media-account-budget", budgetCopy(usage));
+      budget.dataset.mediaBudget = `${provider.id}:${profile.id}`;
+      main.appendChild(budget);
       const meta = el("div", "media-account-meta");
       if (profile.mode === "mcp") {
         meta.textContent = status.mcpAuthorized || (provider.mcp && provider.mcp.auth === "bearer-api-key") ? "MCP 인증 저장됨" : "MCP 인증 필요";
       } else {
         const count = Object.values(status.fields || {}).filter(Boolean).length;
-        meta.textContent = count ? `API 자격증명 ${count}개 저장됨` : "API 자격증명 확인 필요";
+        const tracking = supportsTracking(provider)
+          ? (status.fields.apiKeyId ? " · Tracking ID 등록됨" : " · 조직 전체 조회")
+          : "";
+        const budgetLabel = supportsTracking(provider) && profile.monthlyBudgetUsd != null
+          ? ` · 월 예산 ${Number(profile.monthlyBudgetUsd).toFixed(2)}` : "";
+        meta.textContent = (count ? `API 자격증명 ${count}개 저장됨` : "API 자격증명 확인 필요") + tracking + budgetLabel;
       }
       main.appendChild(meta);
       item.appendChild(main);
@@ -378,6 +434,11 @@ document.head.appendChild(apiProvidersStyle);
       const [providerId, profileId] = String(node.dataset.mediaBalance || "").split(":");
       const row = rows.find((item) => item && item.providerId === providerId && item.profileId === profileId);
       node.textContent = usageCopy(row);
+    }
+    for (const node of list.querySelectorAll("[data-media-budget]")) {
+      const [providerId, profileId] = String(node.dataset.mediaBudget || "").split(":");
+      const row = rows.find((item) => item && item.providerId === providerId && item.profileId === profileId);
+      node.textContent = budgetCopy(row);
     }
   }
 
