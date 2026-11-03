@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const openai = require("../lib/api-providers/openai-api");
 const anthropic = require("../lib/api-providers/anthropic-api");
-const { utcMonthRange, collectAnalyticsPages, reportStatus, monthlyBudgetBalance, maskedTrackingId } = require("../lib/api-providers/analytics-common");
+const { utcMonthRange, collectAnalyticsPages, reportStatus, monthlyBudgetBalance, maskedTrackingId, validTrackingId } = require("../lib/api-providers/analytics-common");
 const { hasAllCreds } = require("../lib/api-providers/common");
 const { apiProviderById, apiProviderCatalog } = require("../lib/api-providers/registry");
 const { MEDIA_PROVIDER_IDS, normalizeMediaProviderProfiles, normalizeMonthlyBudgetUsd } = require("../lib/media-provider-profiles");
@@ -49,6 +49,13 @@ assert.strictEqual(anthropic.parseUsage([{ usage: {} }]), null);
 
 // The API Key ID (Tracking ID) selects one key; an Admin key provides authorization.
 assert.strictEqual(maskedTrackingId("key_0123456789abc"), "…789abc");
+assert.strictEqual(validTrackingId("openai-api", "key_123"), true);
+assert.strictEqual(validTrackingId("anthropic-api", "apikey_123"), true);
+assert.strictEqual(validTrackingId("openai-api", "sk-raw-secret"), false, "secret keys are not Tracking IDs");
+assert.strictEqual(validTrackingId("anthropic-api", "sk-ant-raw-secret"), false);
+assert.strictEqual(validTrackingId("openai-api", "apikey_123"), false);
+assert.throws(() => openai.reportUrls({ apiKeyId: "sk-should-not-go-in-url" }), /Tracking ID/);
+assert.throws(() => anthropic.reportUrls({ apiKeyId: "sk-ant-secret" }), /Tracking ID/);
 assert.strictEqual(maskedTrackingId(""), null);
 assert.ok(openai.credentials.some((field) => field.key === "apiKeyId" && field.label.includes("Tracking ID")));
 assert.ok(anthropic.credentials.some((field) => field.key === "apiKeyId" && field.label.includes("Tracking ID")));
