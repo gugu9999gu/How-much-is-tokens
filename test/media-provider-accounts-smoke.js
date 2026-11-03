@@ -63,6 +63,14 @@ app.whenReady().then(async () => {
     const admin = ["admin", "fixture", "not", "real"].join("-");
     const keyOneId = "key_work_fixture";
     const keyTwoId = "key_personal_fixture";
+    await assert.rejects(
+      integration.createMediaProviderAccount("openai-api", {
+        label: "Invalid Tracking ID",
+        credentials: { adminKey: admin, apiKeyId: "sk-accidentally-pasted-secret" },
+      }),
+      /Tracking ID/,
+      "A secret pasted in the Tracking ID input must be rejected before storage",
+    );
     const trackedOne = await integration.createMediaProviderAccount("openai-api", {
       label: "GPT Tracking 1",
       credentials: { adminKey: admin, apiKeyId: keyOneId },
