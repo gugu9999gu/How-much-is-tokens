@@ -281,7 +281,7 @@ assert.strictEqual(canRefresh({
   });
   assert.strictEqual(usage.status, "ok");
   assert.strictEqual(usage.remainingPct, 58);
-  assert.strictEqual(usage.plan, "pro");
+  assert.strictEqual(usage.plan, "Pro");
   assert.ok(calls.includes(OAUTH_TOKEN_URL));
   assert.strictEqual(JSON.parse(fs.readFileSync(usageFile, "utf8")).claudeAiOauth.refreshToken, "usage-refresh");
 
