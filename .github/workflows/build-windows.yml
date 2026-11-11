@@ -97,6 +97,7 @@ jobs:
           node --check lib/antigravity-bridge.js
           node --check lib/antigravity-cli.js
           node --check lib/providers/antigravity.js
+          node --check lib/claude-plans.js
           node --check lib/providers/claude.js
           node --check lib/providers/codex.js
           node --check lib/providers/copilot.js
@@ -114,6 +115,7 @@ jobs:
           node --check renderer/widget-enhancements.js
           node --check renderer/account-identity-ui.js
           node --check test/claude-usage.test.js
+          node --check test/claude-plans.test.js
           node --check test/cursor-credits.test.js
           node --check test/x-subscription.test.js
           node --check test/unified-subscription.test.js

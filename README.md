@@ -21,6 +21,8 @@
 - v1.0.12부터 화면 높이를 넘으면 카드 영역만 스크롤하며, `촘촘하게`와 상/우/하/좌 **엣지 숨김 패널**을 지원합니다.
 - v1.0.13부터 **토큰 영역 최대 높이**를 직접 지정할 수 있고, 엣지 방향을 연속 변경해도 헤더가 화면 밖으로 밀리지 않도록 재배치 로직을 안정화했습니다.
 
+v1.0.49부터 Claude의 기존 Max 5x는 **Max**, Max 20x는 **Ultra**로 표시합니다. Ultra에서 5시간 한도가 제공되지 않으면 주간 한도만 표시하며, 서버가 실제로 제공한 임시 세션 한도는 유지합니다.
+
 Windows가 SmartScreen 경고를 띄우면 **추가 정보 → 실행**을 누르면 됩니다. macOS 로컬 빌드는 Apple Developer ID 없이 ad-hoc 서명되어 이 Mac에서 실행됩니다. 다른 Mac으로 옮긴 앱은 처음 실행할 때 **우클릭 → 열기**를 사용하세요. macOS 빌드는 Apple Silicon(M1 이상)용입니다.
 
 ## 개발 실행
@@ -37,7 +39,7 @@ npm start
 npm run dist
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.48-portable.exe`입니다.
+결과물은 `dist/How-much-is-tokens-1.0.49-portable.exe`입니다.
 
 macOS Apple Silicon 앱은 macOS에서:
 
@@ -45,7 +47,7 @@ macOS Apple Silicon 앱은 macOS에서:
 npm run dist:mac
 ```
 
-결과물은 `dist/How-much-is-tokens-1.0.48-mac-arm64.dmg`와 `dist/How-much-is-tokens-1.0.48-mac-arm64.zip`입니다. Apple Developer ID가 없으면 패키징 후 ad-hoc 서명합니다.
+결과물은 `dist/How-much-is-tokens-1.0.49-mac-arm64.dmg`와 `dist/How-much-is-tokens-1.0.49-mac-arm64.zip`입니다. Apple Developer ID가 없으면 패키징 후 ad-hoc 서명합니다.
 
 ## 사용
 

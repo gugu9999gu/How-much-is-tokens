@@ -2,6 +2,8 @@ name: Publish Public Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -23,6 +25,11 @@ env:
 
 jobs:
   publish:
+    # An explicit release commit on main also starts publication.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.ref_type == 'tag' ||
+      (github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release: v'))
     runs-on: windows-latest
     timeout-minutes: 25
 
@@ -60,9 +67,17 @@ jobs:
         shell: pwsh
         env:
           REQUESTED_TAG: ${{ inputs.tag }}
+          RELEASE_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           $version = (node -p "require('./package.json').version").Trim()
           if (!$version) { throw "package.json version is empty" }
+          if ($env:GITHUB_EVENT_NAME -eq "push" -and $env:GITHUB_REF_TYPE -eq "branch") {
+            $subject = ([string]$env:RELEASE_COMMIT_MESSAGE -split '\r?\n')[0]
+            $prefix = "release: v$version"
+            if ($subject -ne $prefix -and -not $subject.StartsWith("$prefix ")) {
+              throw "Release commit subject must begin with $prefix"
+            }
+          }
 
           $tag = [string]$env:REQUESTED_TAG
           if ([string]::IsNullOrWhiteSpace($tag)) {

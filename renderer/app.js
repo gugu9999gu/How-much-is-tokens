@@ -413,8 +413,13 @@ function renderAccountMeta(provider) {
   return `<div class="account-meta">${cells.join("")}</div>`;
 }
 
-function displayPlan(plan) {
+function displayPlan(plan, providerId = "") {
   const text = String(plan || "").trim();
+  if (providerId === "claude") {
+    const compact = text.toLowerCase().replace(/^claude[\s_-]+/, "").replace(/[\s_-]+/g, "");
+    if (compact === "max20x" || compact === "ultra") return "Ultra";
+    if (compact === "max5x") return "Max";
+  }
   if (!text || /default_|_tier|claude_ai/i.test(text)) return "";
   if (text.length > 22) return "";
   return text.replace(/[_-]+/g, " ").replace(/\b[a-z]/g, (char) => char.toUpperCase());
@@ -437,7 +442,7 @@ function renderPinButton(provider) {
 function renderProviderTitle(provider, account, plan) {
   const logo = PROVIDER_LOGOS[providerLogoKey(provider)];
   const title = escapeHtml(`${provider.name || ""}${account}`);
-  const badge = displayPlan(plan.replace(/^ · /, "")) ;
+  const badge = displayPlan(plan.replace(/^ · /, ""), providerLogoKey(provider));
   const planBadge = badge ? `<em class="plan-badge">${escapeHtml(badge)}</em>` : "";
   const pin = renderPinButton(provider);
   if (!logo) return `<div class="provider-title"><b>${title}</b>${planBadge}${pin}</div>`;

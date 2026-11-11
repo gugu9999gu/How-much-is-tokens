@@ -44,6 +44,21 @@ assert.strictEqual(billingFromClaudeProfile({
   account: { has_claude_pro: true, has_claude_max: false },
   organization: { subscription_status: "active", subscription_created_at: "2025-07-22T00:43:28.093226Z" },
 }).planLabel, "Pro");
+assert.strictEqual(billingFromClaudeProfile({
+  account: { has_claude_max: true },
+  organization: { subscription_status: "active", organization_type: "claude_max", rate_limit_tier: "default_claude_max_20x" },
+}).planLabel, "Ultra");
+assert.strictEqual(billingFromClaudeProfile({
+  account: { has_claude_max: true },
+  organization: { subscription_status: "active" },
+}).planLabel, "Max");
+assert.strictEqual(billingFromClaudeProfile({
+  account: { has_claude_max: true },
+  organization: { subscription_status: "active", plan_display_name: "Ultra" },
+}).planLabelSource, "explicit");
+assert.strictEqual(billingFromClaudeProfile({
+  organization: { subscription_status: "active", organization_type: "claude_team", rate_limit_tier: "default_claude_max_20x" },
+}).planLabel, "Team");
 assert.strictEqual(billingFromClaudeProfile({ organization: { subscription_status: "active" } }).note, "다음 결제일 미제공");
 
 const cedar = couponsFromCedar({
