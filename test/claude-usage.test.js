@@ -281,7 +281,7 @@ assert.strictEqual(canRefresh({
   });
   assert.strictEqual(usage.status, "ok");
   assert.strictEqual(usage.remainingPct, 58);
-  assert.strictEqual(usage.plan, "pro");
+  assert.strictEqual(usage.plan, "Pro");
   assert.ok(calls.includes(OAUTH_TOKEN_URL));
   assert.strictEqual(JSON.parse(fs.readFileSync(usageFile, "utf8")).claudeAiOauth.refreshToken, "usage-refresh");
 
@@ -310,6 +310,37 @@ assert.strictEqual(canRefresh({
   assert.strictEqual(fresh.remainingPct, 90);
   assert.ok(!freshCalls.includes(OAUTH_TOKEN_URL), "a fresh access token must not be refreshed");
   assert.strictEqual(JSON.parse(fs.readFileSync(freshFile, "utf8")).claudeAiOauth.refreshToken, "old-refresh");
+
+  const ultraFile = path.join(authDir, "ultra.json");
+  writeCreds(ultraFile, {
+    ...expiredOauth, accessToken: "ultra-access", expiresAt: now + 60 * 60 * 1000,
+    subscriptionType: "max", rateLimitTier: "default_claude_max_20x",
+  });
+  const verifiedUltra = await fetchUsage({}, {}, null, {
+    credentialsFile: ultraFile, now,
+    requestJson: async (url) => {
+      if (url === "https://api.anthropic.com/api/oauth/usage") {
+        return { ok: true, status: 200, json: {
+          seven_day: { utilization: 43, resets_at: "2026-10-01T08:00:00Z" },
+        } };
+      }
+      if (url === "https://api.anthropic.com/api/oauth/profile") {
+        return { ok: true, status: 200, json: {
+          account: { has_claude_max: true },
+          organization: { subscription_status: "active", organization_type: "claude_max",
+            rate_limit_tier: "default_claude_max_20x" },
+        } };
+      }
+      return { ok: false, status: 404, json: null };
+    },
+  });
+  assert.strictEqual(verifiedUltra.plan, "Ultra");
+  assert.strictEqual(verifiedUltra.remainingPct, 57);
+  assert.deepStrictEqual(verifiedUltra.windows.map((win) => win.label), ["주간 한도"]);
+  assert.strictEqual(allUsageWindows({
+    five_hour: { utilization: 15, resets_at: "2026-09-27T08:00:00Z" },
+    seven_day: { utilization: 43, resets_at: "2026-10-01T08:00:00Z" },
+  }).length, 2, "do not hide a real session limit if the API provides one");
 
   const retryFile = path.join(authDir, "retry.json");
   writeCreds(retryFile, { ...expiredOauth, accessToken: "rejected-access", expiresAt: now + 60 * 60 * 1000 });
