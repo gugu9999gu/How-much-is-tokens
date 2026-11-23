@@ -81,6 +81,58 @@ assert.strictEqual(legacyFable.length, 1);
 assert.strictEqual(legacyFable[0].label, "Fable 주간 한도");
 assert.strictEqual(legacyFable[0].remainingPct, 88);
 
+// Some accounts receive Fable in model_scoped instead of limits[]. The
+// per-account OAuth response is authoritative, including model.id === null.
+const scopedPayload = allUsageWindows({
+  rate_limits: {
+    five_hour: { used_percentage: 25, resets_at: reset },
+    seven_day: { used_percentage: 50, resets_at: reset },
+    model_scoped: [
+      { display_name: "Fable", utilization: 17.5, resets_at: reset },
+      { display_name: "Sonnet", used_percentage: 35, resets_at: reset },
+      { display_name: "", utilization: 65, resets_at: reset },
+    ],
+  },
+});
+assert.deepStrictEqual(scopedPayload.map((row) => row.label), [
+  "Fable 주간 한도", "Sonnet 주간 한도", "5시간 한도", "주간 한도",
+]);
+assert.strictEqual(scopedPayload.find((row) => row.id === "weekly-scoped-fable").remainingPct, 82.5);
+assert.strictEqual(scopedPayload.find((row) => row.id === "five_hour").remainingPct, 75);
+assert.ok(!scopedPayload.some((row) => /추가 한도/.test(row.label)));
+
+const camelScoped = allUsageWindows({
+  modelScoped: [{ displayName: "Fable", usedPercent: 0, resetsAt: reset }],
+});
+assert.strictEqual(camelScoped.length, 1);
+assert.strictEqual(camelScoped[0].label, "Fable 주간 한도");
+assert.strictEqual(camelScoped[0].remainingPct, 100, "0% utilization is a valid unused quota");
+
+const scopeWithNullId = allUsageWindows({
+  limits: [
+    { kind: "weekly_scoped", percent: 25, resets_at: reset,
+      scope: { model: { id: null, display_name: "Fable" } } },
+  ],
+  rate_limits: { model_scoped: [
+    { display_name: "Fable", utilization: 45, resets_at: "2026-09-12T00:00:00Z" },
+  ] },
+  seven_day_overage_included: { utilization: 33, resets_at: "2026-09-13T00:00:00Z" },
+  seven_day_fable: { utilization: 44, resets_at: "2026-09-14T00:00:00Z" },
+});
+assert.strictEqual(scopeWithNullId.length, 1, "all Fable representations refer to the same weekly allowance");
+assert.strictEqual(scopeWithNullId[0].remainingPct, 75, "canonical limits[] value wins over conflicting fallback data");
+
+assert.strictEqual(allUsageWindows({
+  rate_limits: { model_scoped: [
+    { display_name: "", utilization: 25, resets_at: reset },
+    { display_name: "Fable", utilization: null, resets_at: reset },
+  ] },
+}).length, 0, "missing or invalid model data must never fabricate a quota");
+assert.strictEqual(allUsageWindows({
+  seven_day_fable: { utilization: "", resets_at: reset },
+}).length, 0, "empty values must not appear as 100% remaining");
+
+
 const extra = extraUsageCreditBalance({
   is_enabled: true,
   monthly_limit: 5000,
@@ -308,6 +360,9 @@ assert.strictEqual(canRefresh({
   });
   assert.strictEqual(fresh.status, "ok");
   assert.strictEqual(fresh.remainingPct, 90);
+  assert.ok(fresh.extras.some((item) => item.label === "Fable" && /크레딧 기반/.test(item.value)),
+    "Pro accounts without a scoped weekly quota must explain that Fable is credit-based");
+
   assert.ok(!freshCalls.includes(OAUTH_TOKEN_URL), "a fresh access token must not be refreshed");
   assert.strictEqual(JSON.parse(fs.readFileSync(freshFile, "utf8")).claudeAiOauth.refreshToken, "old-refresh");
 
@@ -336,6 +391,9 @@ assert.strictEqual(canRefresh({
   });
   assert.strictEqual(verifiedUltra.plan, "Ultra");
   assert.strictEqual(verifiedUltra.remainingPct, 57);
+  assert.ok(verifiedUltra.extras.some((item) => item.label === "Fable" && /미제공/.test(item.value)),
+    "eligible plans with no Fable row must show unknown rather than fabricate 0 or 100%");
+
   assert.deepStrictEqual(verifiedUltra.windows.map((win) => win.label), ["주간 한도"]);
   assert.strictEqual(allUsageWindows({
     five_hour: { utilization: 15, resets_at: "2026-09-27T08:00:00Z" },
@@ -497,6 +555,38 @@ assert.strictEqual(canRefresh({
   assert.strictEqual(firstAccount.accountId, "uuid-a");
   assert.strictEqual(secondAccount.accountId, "uuid-b", "a second Claude profile must not reuse the first account's cached identity");
   assert.deepStrictEqual(profileCalls, ["uuid-a", "uuid-b"]);
+
+  // The two separately authenticated account profiles can have different
+  // response schemas, but must each retain only their own Fable percentage.
+  const isolatedFableRequest = async (url, init) => {
+    if (url === "https://api.anthropic.com/api/oauth/usage") {
+      const bearer = init && init.headers && init.headers.Authorization;
+      if (bearer === "Bearer token-a") return { ok: true, status: 200, json: {
+        limits: [
+          { kind: "session", percent: 10, resets_at: reset },
+          { kind: "weekly_scoped", percent: 12, resets_at: reset,
+            scope: { model: { id: null, display_name: "Fable" } } },
+        ],
+      } };
+      if (bearer === "Bearer token-b") return { ok: true, status: 200, json: {
+        rate_limits: {
+          five_hour: { used_percentage: 20, resets_at: reset },
+          model_scoped: [{ display_name: "Fable", utilization: 68, resets_at: reset }],
+        },
+      } };
+      throw new Error("An unknown profile must not reuse another account's token");
+    }
+    return { ok: false, status: 404, json: null };
+  };
+  const withFableA = await fetchUsage({}, {}, profileA, { now, requestJson: isolatedFableRequest });
+  const withFableB = await fetchUsage({}, {}, profileB, { now, requestJson: isolatedFableRequest });
+  assert.strictEqual(withFableA.windows.find((win) => win.label === "Fable 주간 한도").remainingPct, 88);
+  assert.strictEqual(withFableB.windows.find((win) => win.label === "Fable 주간 한도").remainingPct, 32);
+  assert.strictEqual(withFableA.windows.filter((win) => /Fable/.test(win.label)).length, 1);
+  assert.strictEqual(withFableB.windows.filter((win) => /Fable/.test(win.label)).length, 1);
+  assert.ok(!withFableA.extras.some((item) => item.label === "Fable"));
+  assert.ok(!withFableB.extras.some((item) => item.label === "Fable"));
+
   fs.rmSync(isolatedRoot, { recursive: true, force: true });
 
   fs.rmSync(authDir, { recursive: true, force: true });

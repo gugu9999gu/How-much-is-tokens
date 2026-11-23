@@ -462,13 +462,27 @@ function quotaRank(win) {
   return 5;
 }
 
+// Compact view keeps three meters. For Claude, retain the shared weekly
+// allowance and Fable's separate weekly allowance ahead of other scoped rows.
+function compactQuotaPriority(provider, win) {
+  const rank = quotaRank(win);
+  if (baseProviderId(provider) !== "claude" || rank !== 1) return rank;
+  const text = ((win && win.id) || "") + " " + ((win && win.label) || "");
+  if (/fable/i.test(text)) return 1.5;
+  if (/^(?:weekly[-_]all|seven[-_]day)$/.test(String(win && win.id || "")) ||
+      String(win && win.label || "") === "주간 한도") return 1;
+  return 2;
+}
+
 function compactQuotaWindows(provider) {
   const windows = (Array.isArray(provider && provider.windows) ? provider.windows : [])
-    .filter((win) => win && Number.isFinite(Number(win.remainingPct)));
-  const preferred = windows.filter((win) => quotaRank(win) < 5).sort((a, b) => quotaRank(a) - quotaRank(b));
+    .filter((win) => win && win.remainingPct != null && win.remainingPct !== "" && Number.isFinite(Number(win.remainingPct)));
+  const preferred = windows.filter((win) => quotaRank(win) < 5)
+    .sort((a, b) => compactQuotaPriority(provider, a) - compactQuotaPriority(provider, b));
   const chosen = (preferred.length ? preferred : windows).slice(0, 3);
   if (chosen.length) return chosen;
-  if (provider && provider.status === "ok" && Number.isFinite(Number(provider.remainingPct))) {
+  if (provider && provider.status === "ok" && provider.remainingPct != null &&
+      provider.remainingPct !== "" && Number.isFinite(Number(provider.remainingPct))) {
     return [{ id: "primary", label: "잔여", remainingPct: Number(provider.remainingPct), resetAt: provider.resetAt }];
   }
   return [];
@@ -588,7 +602,13 @@ function renderProviderCard(provider) {
         : provider.status === "missing"
           ? "계정 없음"
           : provider.error || "오류";
-    const compactNote = [compactStatus, provider.stale ? "이전 값" : ""].filter(Boolean).join(" · ");
+    const fableExtra = providerKey === "claude" && provider.status === "ok"
+      ? (provider.extras || []).find((item) => item && item.label === "Fable")
+      : null;
+    const fableNote = fableExtra
+      ? (/크레딧 기반/.test(String(fableExtra.value || "")) ? "Fable 크레딧 기반" : "Fable 한도 미제공")
+      : "";
+    const compactNote = [compactStatus, fableNote, provider.stale ? "이전 값" : ""].filter(Boolean).join(" · ");
     return `
       <article class="row compact"${cardAttrs}>
         <div class="meta">

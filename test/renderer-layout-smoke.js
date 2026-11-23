@@ -170,6 +170,14 @@ app.whenReady().then(async () => {
     assert.ok(compactMeta.codexCredit.includes("1200"), "compact mode must show Codex credits while a quota window is still in use");
     assert.strictEqual(compactMeta.pin, true, "each token card must expose a pin control");
 
+    const claudeCompact = await win.webContents.executeJavaScript("(() => {\n  const multi = {\n    id: \"claude:profile:first\", providerId: \"claude\", name: \"Claude\", status: \"ok\", plan: \"Max\",\n    remainingPct: 70, windows: [\n      { id: \"session\", label: \"5시간 한도\", remainingPct: 70 },\n      { id: \"weekly-all\", label: \"주간 한도\", remainingPct: 60 },\n      { id: \"weekly-scoped-sonnet\", label: \"Sonnet 주간 한도\", remainingPct: 50 },\n      { id: \"weekly-scoped-opus\", label: \"Opus 주간 한도\", remainingPct: 40 },\n      { id: \"weekly-scoped-fable\", label: \"Fable 주간 한도\", remainingPct: 30 }\n    ], extras: []\n  };\n  const selected = compactQuotaWindows(multi);\n  const compactHtml = renderProviderCard(multi);\n  const proWithoutBucket = {\n    ...multi, id: \"claude:profile:second\", plan: \"Pro\",\n    windows: multi.windows.slice(0, 2),\n    extras: [{ label: \"Fable\", value: \"별도 주간 한도 없음 · 크레딧 기반\" }]\n  };\n  const maxWithoutBucket = {\n    ...proWithoutBucket, id: \"claude:profile:third\", plan: \"Max\",\n    extras: [{ label: \"Fable\", value: \"API에 모델별 한도 미제공\" }]\n  };\n  return {\n    labels: selected.map((win) => win.label),\n    compactHtmlHasFable: compactHtml.includes(\"Fable 주간 한도\"),\n    proNotice: renderProviderCard(proWithoutBucket).includes(\"Fable 크레딧 기반\"),\n    maxNotice: renderProviderCard(maxWithoutBucket).includes(\"Fable 한도 미제공\")\n  };\n})()");
+    assert.deepStrictEqual(claudeCompact.labels, ["5시간 한도", "주간 한도", "Fable 주간 한도"],
+      "compact Claude cards must not hide Fable behind other model-scoped limits");
+    assert.strictEqual(claudeCompact.compactHtmlHasFable, true);
+    assert.strictEqual(claudeCompact.proNotice, true, "Pro account must identify credit-based Fable access");
+    assert.strictEqual(claudeCompact.maxNotice, true, "eligible account with no scoped data must show unknown");
+
+
     const pinOrder = await win.webContents.executeJavaScript(`(async () => {
       const pin = async (providerId) => {
         document.querySelector('article[data-provider-id="' + providerId + '"] .pin-btn').click();
