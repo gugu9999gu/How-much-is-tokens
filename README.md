@@ -105,7 +105,7 @@ npm run dist:mac
 | Codex / ChatGPT | `~/.codex/auth.json` |
 | GitHub Copilot / VS Code | Copilot 로그인 파일 또는 설정의 GitHub 토큰 |
 | Grok / Grok Build | `~/.grok/auth.json` |
-| Antigravity | `agy -p "/usage"` (1.1.11+) 우선, 공식 custom status-line snapshot fallback |
+| Antigravity | `agy -p "/usage" --output-format json` (1.1.11+) 우선, 공식 custom status-line snapshot fallback |
 | OpenRouter | API Key(사용량/한도) · Management Key(계정 크레딧) |
 | fal.ai | `GET /v1/account/billing?expand=credits` (Admin scope API Key) |
 | Higgsfield | API Key ID/Secret (공개 잔액 API가 제한적이라 잔여 크레딧은 확인 가능한 경우에만 표시) |
@@ -137,7 +137,7 @@ fal.ai, Higgsfield, Magnific, ElevenLabs, Stability AI 등은 설정 → `생성
 
 - Claude: `5시간 한도`, `주간 한도`, Sonnet/Opus 등 모델별 주간 한도가 있으면 추가 표시
 - Codex / ChatGPT: 5시간 session window와 주간 window를 각각 표시
-- Antigravity: `Gemini 5시간 한도`, `Gemini 주간 한도`, `Claude/GPT 5시간 한도`, `Claude/GPT 주간 한도`를 실제로 제공된 만큼 표시
+- Antigravity: `Gemini 5시간 한도`, `Gemini 주간 한도`, `Claude/GPT 5시간 한도`, `Claude/GPT 주간 한도` 및 응답에 존재하는 Gemini 4 Argon 등 별도 모델 한도를 각각 표시
 - 실제 API/CLI에 특정 bucket이 없는 경우에는 존재하지 않는 한도를 추정해서 만들지 않음
 
 ### 제공자별 정렬
@@ -171,16 +171,17 @@ Antigravity 로그인 토큰이나 Windows Credential Manager의 값을 위젯�
 `agy` 1.1.11 이상에서는 공식 CLI가 read-only slash command를 headless print mode에서 직접 처리합니다. 따라서 위젯 새로고침 시 다음 공식 명령을 백그라운드에서 실행합니다.
 
 ```bash
-agy -p "/usage"
+agy -p "/usage" --output-format json
 ```
 
-이 명령은 모델 turn을 만들거나 AI quota를 소모하지 않고 실시간 quota를 다시 조회합니다. 위젯은 명령의 TSV 결과에서 Gemini / Claude·GPT의 5시간 및 주간 잔여량과 리셋 시각을 읽습니다.
+이 명령은 모델 turn을 만들거나 AI quota를 소모하지 않고 실시간 quota를 다시 조회합니다. 위젯은 구조화된 JSON의 버킷 ID를 기준으로 Gemini / Claude·GPT 및 별도 Gemini 모델의 잔여량과 리셋 시각을 읽습니다. TSV 응답은 호환용으로 처리합니다.
 
 안전장치:
 
 - 먼저 `agy --version`을 확인하고 **1.1.11 이상에서만** `/usage` headless 호출을 사용
 - 1.1.10 이하에서는 같은 입력이 일반 프롬프트로 처리될 수 있으므로 절대 자동 호출하지 않음
 - 최신 CLI 호출이 실패하면 기존 공식 custom status-line snapshot으로 fallback
+- 다계정 도우미(AGM)의 저장된 quota는 실시간 값으로 오인하지 않도록 표시하며, AGY의 `/usage` 실시간 결과를 별도 현재 CLI 카드로 유지
 - CLI가 OS keyring에 저장한 로그인 세션을 자체적으로 사용하므로 위젯은 자격증명 값을 알 수 없음
 - 최초 로그인, 로그아웃, 계정 권한 해제처럼 refresh로 복구할 수 없는 인증 상태만 사용자가 `agy`에서 다시 로그인해야 함
 
