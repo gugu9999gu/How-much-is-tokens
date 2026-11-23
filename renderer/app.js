@@ -476,12 +476,13 @@ function compactQuotaPriority(provider, win) {
 
 function compactQuotaWindows(provider) {
   const windows = (Array.isArray(provider && provider.windows) ? provider.windows : [])
-    .filter((win) => win && Number.isFinite(Number(win.remainingPct)));
+    .filter((win) => win && win.remainingPct != null && win.remainingPct !== "" && Number.isFinite(Number(win.remainingPct)));
   const preferred = windows.filter((win) => quotaRank(win) < 5)
     .sort((a, b) => compactQuotaPriority(provider, a) - compactQuotaPriority(provider, b));
   const chosen = (preferred.length ? preferred : windows).slice(0, 3);
   if (chosen.length) return chosen;
-  if (provider && provider.status === "ok" && Number.isFinite(Number(provider.remainingPct))) {
+  if (provider && provider.status === "ok" && provider.remainingPct != null &&
+      provider.remainingPct !== "" && Number.isFinite(Number(provider.remainingPct))) {
     return [{ id: "primary", label: "잔여", remainingPct: Number(provider.remainingPct), resetAt: provider.resetAt }];
   }
   return [];
