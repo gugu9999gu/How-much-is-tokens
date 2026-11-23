@@ -45,4 +45,32 @@ assert.deepStrictEqual(fallback.map((row) => row.remainingPct), [82, 73, 61]);
 assert.strictEqual(profileIdForEmail("User@Example.com"), profileIdForEmail("user@example.com"));
 assert.ok(profileIdForEmail("a@example.com").startsWith("agm-"));
 
+// A registered AGM account is not a substitute for a fresh CLI /usage result.
+const { combineAntigravityRows } = require("../lib/usage");
+const saved = [{
+  id: "antigravity:agm-account",
+  accountLabel: "기본 계정",
+  status: "ok",
+  remainingPct: 21,
+  windows: [{ id: "gemini-pro", remainingPct: 21, source: "agm" }],
+}];
+const current = {
+  id: "antigravity",
+  status: "ok",
+  stale: false,
+  remainingPct: 75,
+  windows: [{ id: "gemini-weekly", remainingPct: 75, source: "agy-print-usage" }],
+};
+const combined = combineAntigravityRows(saved, current);
+assert.strictEqual(combined.length, 2, "live CLI quota must remain visible even with AGM installed");
+assert.strictEqual(combined[0].remainingPct, 75);
+assert.strictEqual(combined[0].accountLabel, "현재 CLI · 실시간");
+assert.strictEqual(combined[1].remainingPct, 21);
+assert.strictEqual(combined[1].stale, true, "AGM DB snapshots must not be presented as live quota");
+assert.deepStrictEqual(combineAntigravityRows(saved, { ...current, stale: true }), [
+  { ...saved[0], stale: true, staleReason: "AGM 마지막 저장값",
+    extras: [{ label: "사용량 출처", value: "AGM 저장값" }] },
+]);
+assert.deepStrictEqual(combineAntigravityRows([], current), [current]);
+
 console.log("Antigravity encrypted multi-account adapter tests passed");
