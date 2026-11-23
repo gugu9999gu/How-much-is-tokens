@@ -488,16 +488,30 @@ function compactQuotaWindows(provider) {
   return [];
 }
 
+function compactWeeklyResetText(win, now = Date.now()) {
+  if (quotaRank(win) !== 1 || !win || win.resetAt == null || win.resetAt === "") return "";
+  const timestamp = Number(win.resetAt);
+  // Do not present an unavailable, invalid or expired reset timestamp as a future date.
+  if (!Number.isFinite(timestamp) || timestamp <= now) return "";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "";
+  const two = (value) => String(value).padStart(2, "0");
+  return (date.getMonth() + 1) + "/" + date.getDate() + " " + two(date.getHours()) + ":" + two(date.getMinutes());
+}
+
 function renderCompactQuotas(provider) {
   const windows = compactQuotaWindows(provider);
   if (!windows.length) return "";
-  return `<div class="compact-quotas">${windows.map((win) => `
+  return `<div class="compact-quotas">${windows.map((win) => {
+    const renewal = compactWeeklyResetText(win);
+    return `
     <div class="compact-quota">
       <span>${escapeHtml(win.label || "한도")}</span>
       <span class="track"><i style="--pct:${Number(win.remainingPct) || 0}; --tone:${tone(win.remainingPct)};"></i></span>
       <b>${pctLabel(win.remainingPct)}%</b>
-    </div>
-  `).join("")}</div>`;
+      ${renewal ? '<small class="compact-quota-reset">갱신 ' + escapeHtml(renewal) + '</small>' : ""}
+    </div>`;
+  }).join("")}</div>`;
 }
 
 function measuredUsagePct(source) {

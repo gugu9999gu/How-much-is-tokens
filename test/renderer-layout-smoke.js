@@ -165,6 +165,19 @@ app.whenReady().then(async () => {
     assert.strictEqual(compactMeta.accountDisplay, "", "compact mode must omit account details");
     assert.strictEqual(compactMeta.accountText, "");
     assert.ok(compactMeta.quota.includes("75%"), "compact mode must show the remaining quota directly");
+
+    const weeklyRenewal = await win.webContents.executeJavaScript("(() => {\n  const future = Date.now() + 6 * 24 * 60 * 60 * 1000;\n  const full = new Date(future);\n  const two = (n) => String(n).padStart(2, \"0\");\n  const formatted = (date) => (date.getMonth() + 1) + \"/\" + date.getDate() + \" \" + two(date.getHours()) + \":\" + two(date.getMinutes());\n  const session = { id: \"session\", label: \"5시간 한도\", remainingPct: 80, resetAt: future };\n  const weekly = { id: \"weekly-all\", label: \"주간 한도\", remainingPct: 63, resetAt: future };\n  const fable = { id: \"weekly-scoped-fable\", label: \"Fable 주간 한도\", remainingPct: 41, resetAt: future + 3600000 };\n  const provider = {\n    id: \"claude:profile:fixture\", providerId: \"claude\", name: \"Claude\", status: \"ok\", plan: \"Max\",\n    remainingPct: 80, windows: [session, weekly, fable], extras: []\n  };\n  const element = document.createElement(\"div\");\n  element.innerHTML = renderProviderCard(provider);\n  const rows = [...element.querySelectorAll(\".compact-quota\")].map((row) => ({\n    label: row.querySelector(\"span:first-child\")?.textContent || \"\",\n    reset: row.querySelector(\".compact-quota-reset\")?.textContent || \"\"\n  }));\n  const codexHtml = renderCompactQuotas({\n    id: \"codex\", providerId: \"codex\",\n    windows: [{ id: \"weekly\", label: \"주간 한도\", remainingPct: 72, resetAt: future }]\n  });\n  return {\n    rows, expected: formatted(full), fableExpected: formatted(new Date(future + 3600000)),\n    missing: compactWeeklyResetText({ ...weekly, resetAt: null }),\n    invalid: compactWeeklyResetText({ ...weekly, resetAt: \"invalid\" }),\n    expired: compactWeeklyResetText({ ...weekly, resetAt: Date.now() - 60 * 1000 }),\n    fiveHour: compactWeeklyResetText(session),\n    codex: codexHtml.includes(\"갱신 \" + formatted(full)),\n    percent: element.querySelectorAll(\".compact-quota b\")[1]?.textContent || \"\"\n  };\n})()");
+    assert.deepStrictEqual(weeklyRenewal.rows.map((row) => row.label), ["5시간 한도", "주간 한도", "Fable 주간 한도"]);
+    assert.strictEqual(weeklyRenewal.rows[0].reset, "", "5-hour window must not show a weekly reset date");
+    assert.strictEqual(weeklyRenewal.rows[1].reset, "갱신 " + weeklyRenewal.expected);
+    assert.strictEqual(weeklyRenewal.rows[2].reset, "갱신 " + weeklyRenewal.fableExpected);
+    assert.strictEqual(weeklyRenewal.percent, "63%", "short date must not replace the remaining percentage");
+    assert.strictEqual(weeklyRenewal.missing, "", "missing resetAt must not become a fabricated date");
+    assert.strictEqual(weeklyRenewal.invalid, "", "invalid resetAt must not become a fabricated date");
+    assert.strictEqual(weeklyRenewal.expired, "", "expired timestamps must not display a future renewal");
+    assert.strictEqual(weeklyRenewal.fiveHour, "");
+    assert.strictEqual(weeklyRenewal.codex, true, "weekly reset abbreviation must work for other providers");
+
     assert.ok(compactMeta.falCredit.includes("$42.50"), "compact mode must show held credits when AI usage is zero");
     assert.strictEqual(compactMeta.elevenCredit, "", "compact mode must keep a usage meter from being repeated as credits");
     assert.ok(compactMeta.codexCredit.includes("1200"), "compact mode must show Codex credits while a quota window is still in use");

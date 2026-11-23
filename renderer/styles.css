@@ -267,6 +267,15 @@ button:hover { background: rgba(255,255,255,0.12); }
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+.compact-quota > .compact-quota-reset {
+  grid-column: 2 / 4;
+  justify-self: end;
+  margin-top: -3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .compact-quota.compact-credit {
   grid-template-columns: minmax(0, 1fr) auto;
 }
