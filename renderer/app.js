@@ -502,14 +502,26 @@ function compactWeeklyResetText(win, now = Date.now()) {
 function renderCompactQuotas(provider) {
   const windows = compactQuotaWindows(provider);
   if (!windows.length) return "";
+  const now = Date.now();
+  // Combine only visible weekly and Fable renewals within a Claude account.
+  // Compare actual epoch minutes, not localized labels that can repeat.
+  const isClaude = baseProviderId(provider) === "claude";
+  const weekly = isClaude && windows.find((win) => quotaRank(win) === 1 &&
+    (/^(?:weekly(?:[-_]all)?|seven[-_]day)$/i.test(String(win.id || "")) || win.label === "주간 한도"));
+  const fable = isClaude && windows.find((win) => quotaRank(win) === 1 &&
+    /\bfable\b/i.test(String(win.id || "") + " " + String(win.label || "")));
+  const shared = weekly && fable && weekly !== fable &&
+    compactWeeklyResetText(weekly, now) && compactWeeklyResetText(fable, now) &&
+    Math.floor(Number(weekly.resetAt) / 60000) === Math.floor(Number(fable.resetAt) / 60000);
   return `<div class="compact-quotas">${windows.map((win) => {
-    const renewal = compactWeeklyResetText(win);
+    const renewal = shared && win === weekly ? "" : compactWeeklyResetText(win, now);
+    const renewalLabel = shared && win === fable ? "주간·Fable 갱신 " : "갱신 ";
     return `
     <div class="compact-quota">
       <span>${escapeHtml(win.label || "한도")}</span>
       <span class="track"><i style="--pct:${Number(win.remainingPct) || 0}; --tone:${tone(win.remainingPct)};"></i></span>
       <b>${pctLabel(win.remainingPct)}%</b>
-      ${renewal ? '<small class="compact-quota-reset">갱신 ' + escapeHtml(renewal) + '</small>' : ""}
+      ${renewal ? '<small class="compact-quota-reset">' + renewalLabel + escapeHtml(renewal) + '</small>' : ""}
     </div>`;
   }).join("")}</div>`;
 }
